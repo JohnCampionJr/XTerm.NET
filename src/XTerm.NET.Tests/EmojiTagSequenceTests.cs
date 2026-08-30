@@ -9,6 +9,7 @@ namespace XTerm.Tests;
 /// 🏴gbsct at eight columns because each tag advanced the cursor by its table width, and which
 /// width that was depended on the Wcwidth version the HOST happened to resolve.
 /// </summary>
+[TestClass]
 public class EmojiTagSequenceTests
 {
     private const string BlackFlag = "🏴";
@@ -20,38 +21,38 @@ public class EmojiTagSequenceTests
         return BlackFlag + tags + CancelTag;
     }
 
-    [Theory]
-    [InlineData("gbeng")]
-    [InlineData("gbsct")]
-    [InlineData("gbwls")]
+    [TestMethod]
+    [DataRow("gbeng")]
+    [DataRow("gbsct")]
+    [DataRow("gbwls")]
     public void A_subdivision_flag_is_one_cluster_two_columns(string code)
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 20, Rows = 3 });
         terminal.Write(Subdivision(code));
 
-        Assert.Equal(2, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(2);
         var line = terminal.Buffer.Lines[0]!;
-        Assert.Equal(2, line[0].Width);
-        Assert.Equal(Subdivision(code), line[0].Content);
+        line[0].Width.Should().Be(2);
+        line[0].Content.Should().Be(Subdivision(code));
     }
 
-    [Fact]
+    [TestMethod]
     public void What_follows_the_flag_lands_beside_it()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 20, Rows = 3 });
         terminal.Write(Subdivision("gbsct") + "X");
 
-        Assert.Equal("X", terminal.Buffer.Lines[0]![2].Content);
-        Assert.Equal(3, terminal.Buffer.X);
+        (terminal.Buffer.Lines[0]![2].Content).Should().Be("X");
+        terminal.Buffer.X.Should().Be(3);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_lone_tag_character_is_zero_width()
     {
         // Like a lone ZWJ: a format character with nothing to decorate occupies nothing.
         var terminal = new Terminal(new TerminalOptions { Cols = 20, Rows = 3 });
         terminal.Write("󠁧");
 
-        Assert.Equal(0, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(0);
     }
 }

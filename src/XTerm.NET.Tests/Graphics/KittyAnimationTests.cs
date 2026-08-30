@@ -15,6 +15,7 @@ namespace XTerm.Tests.Graphics;
 /// onto a canvas, so an error in the offsets or the blend produces a picture that is the right size
 /// and the wrong content, which no structural assertion would catch.</para>
 /// </summary>
+[TestClass]
 public class KittyAnimationTests
 {
     private const string Esc = "\u001b";
@@ -59,7 +60,7 @@ public class KittyAnimationTests
         // Placing it is the only way to reach the image from outside, and C=1 keeps the cursor put.
         terminal.Write(Apc($"a=p,i={id},C=1,q=2"));
         var image = ImageAssertions.ImageAt(terminal, 0, 0);
-        Assert.NotNull(image);
+        image.Should().NotBeNull();
         return image!;
     }
 
@@ -80,37 +81,37 @@ public class KittyAnimationTests
 
     // ---- adding frames ----------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void A_still_picture_has_no_animation_until_a_frame_is_added()
     {
         var terminal = WithImage();
         var image = Image(terminal);
 
-        Assert.Null(image.Animation);
+        image.Animation.Should().BeNull();
 
         terminal.Write(Apc("a=f,i=1,f=32,s=4,v=4,q=2", Rgba(4, 4, 0, 255, 0)));
 
-        Assert.NotNull(image.Animation);
-        Assert.Equal(2, image.Animation!.FrameCount);
+        image.Animation.Should().NotBeNull();
+        (image.Animation!.FrameCount).Should().Be(2);
     }
 
     /// <summary>The root frame is frame one, and it is the picture the image was made from.</summary>
-    [Fact]
+    [TestMethod]
     public void The_root_frame_is_the_original_picture()
     {
         var terminal = WithImage();
         var image = Image(terminal);
         terminal.Write(Apc("a=f,i=1,f=32,s=4,v=4,q=2", Rgba(4, 4, 0, 255, 0)));
 
-        Assert.True(image.Animation!.TryGetFrame(1, out var root));
-        Assert.Equal((255, (byte)0, (byte)0, (byte)255), Pixel(root.Pixels, 4, 0, 0));
+        (image.Animation!.TryGetFrame(1, out var root)).Should().BeTrue();
+        Pixel(root.Pixels, 4, 0, 0).Should().Be((255, (byte)0, (byte)0, (byte)255));
     }
 
     /// <summary>
     /// A frame need only carry the pixels that changed. The rest of the canvas comes from the frame
     /// the client names with c=, which is the whole point of the delta form.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_partial_frame_composes_onto_a_named_base_frame()
     {
         var terminal = WithImage();
@@ -119,9 +120,9 @@ public class KittyAnimationTests
         // A single blue pixel at (1,1), over the red root.
         terminal.Write(Apc("a=f,i=1,c=1,x=1,y=1,f=32,s=1,v=1,q=2", Rgba(1, 1, 0, 0, 255)));
 
-        Assert.True(image.Animation!.TryGetFrame(2, out var frame));
-        Assert.Equal((0, (byte)0, (byte)255, (byte)255), Pixel(frame.Pixels, 4, 1, 1));
-        Assert.Equal((255, (byte)0, (byte)0, (byte)255), Pixel(frame.Pixels, 4, 0, 0));
+        (image.Animation!.TryGetFrame(2, out var frame)).Should().BeTrue();
+        Pixel(frame.Pixels, 4, 1, 1).Should().Be((0, (byte)0, (byte)255, (byte)255));
+        Pixel(frame.Pixels, 4, 0, 0).Should().Be((255, (byte)0, (byte)0, (byte)255));
     }
 
     /// <summary>
@@ -129,7 +130,7 @@ public class KittyAnimationTests
     /// client says otherwise. The colour arrives as RGBA and the buffer is BGRA, so a swap here is
     /// a picture that looks right until something is transparent.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_unbased_frame_starts_from_the_background_colour()
     {
         var terminal = WithImage();
@@ -138,12 +139,12 @@ public class KittyAnimationTests
         // Y=4278190335 is 0xff0000ff: opaque red in RGBA.
         terminal.Write(Apc("a=f,i=1,Y=4278190335,x=1,y=1,f=32,s=1,v=1,q=2", Rgba(1, 1, 0, 0, 255)));
 
-        Assert.True(image.Animation!.TryGetFrame(2, out var frame));
-        Assert.Equal((255, (byte)0, (byte)0, (byte)255), Pixel(frame.Pixels, 4, 0, 0));
-        Assert.Equal((0, (byte)0, (byte)255, (byte)255), Pixel(frame.Pixels, 4, 1, 1));
+        (image.Animation!.TryGetFrame(2, out var frame)).Should().BeTrue();
+        Pixel(frame.Pixels, 4, 0, 0).Should().Be((255, (byte)0, (byte)0, (byte)255));
+        Pixel(frame.Pixels, 4, 1, 1).Should().Be((0, (byte)0, (byte)255, (byte)255));
     }
 
-    [Fact]
+    [TestMethod]
     public void An_unbased_frame_with_no_colour_is_transparent()
     {
         var terminal = WithImage();
@@ -151,15 +152,15 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=f,i=1,x=1,y=1,f=32,s=1,v=1,q=2", Rgba(1, 1, 0, 0, 255)));
 
-        Assert.True(image.Animation!.TryGetFrame(2, out var frame));
-        Assert.Equal((0, (byte)0, (byte)0, (byte)0), Pixel(frame.Pixels, 4, 0, 0));
+        (image.Animation!.TryGetFrame(2, out var frame)).Should().BeTrue();
+        Pixel(frame.Pixels, 4, 0, 0).Should().Be((0, (byte)0, (byte)0, (byte)0));
     }
 
     /// <summary>
     /// Editing a frame with r= composes onto that frame itself, so several rectangles can build one
     /// frame up piece by piece without a new frame each time.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Editing_a_frame_composes_onto_itself()
     {
         var terminal = WithImage();
@@ -168,17 +169,17 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=f,i=1,r=2,x=0,y=0,f=32,s=1,v=1,q=2", Rgba(1, 1, 0, 0, 255)));
 
-        Assert.Equal(2, image.Animation!.FrameCount);
-        Assert.True(image.Animation.TryGetFrame(2, out var frame));
-        Assert.Equal((0, (byte)0, (byte)255, (byte)255), Pixel(frame.Pixels, 4, 0, 0));
-        Assert.Equal((0, (byte)255, (byte)0, (byte)255), Pixel(frame.Pixels, 4, 3, 3));
+        (image.Animation!.FrameCount).Should().Be(2);
+        image.Animation.TryGetFrame(2, out var frame).Should().BeTrue();
+        Pixel(frame.Pixels, 4, 0, 0).Should().Be((0, (byte)0, (byte)255, (byte)255));
+        Pixel(frame.Pixels, 4, 3, 3).Should().Be((0, (byte)255, (byte)0, (byte)255));
     }
 
     /// <summary>
     /// Editing the root must not change the image's own pixels. A host may have uploaded them as a
     /// texture and been told they never change.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Editing_the_root_frame_leaves_the_images_own_pixels_alone()
     {
         var terminal = WithImage();
@@ -187,13 +188,13 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=f,i=1,r=1,x=0,y=0,X=1,f=32,s=1,v=1,q=2", Rgba(1, 1, 0, 0, 255)));
 
-        Assert.Equal((255, (byte)0, (byte)0, (byte)255), Pixel(image.Pixels, 4, 0, 0));
-        Assert.True(image.Animation!.TryGetFrame(1, out var root));
-        Assert.Equal((0, (byte)0, (byte)255, (byte)255), Pixel(root.Pixels, 4, 0, 0));
+        Pixel(image.Pixels, 4, 0, 0).Should().Be((255, (byte)0, (byte)0, (byte)255));
+        (image.Animation!.TryGetFrame(1, out var root)).Should().BeTrue();
+        Pixel(root.Pixels, 4, 0, 0).Should().Be((0, (byte)0, (byte)255, (byte)255));
     }
 
     /// <summary>X=1 overwrites outright; the default blends, so a translucent pixel lets the base through.</summary>
-    [Fact]
+    [TestMethod]
     public void The_composition_mode_decides_whether_pixels_blend_or_replace()
     {
         var terminal = WithImage();
@@ -203,17 +204,17 @@ public class KittyAnimationTests
         terminal.Write(Apc("a=f,i=1,c=1,x=0,y=0,f=32,s=1,v=1,q=2", Rgba(1, 1, 0, 0, 255, 128)));
         terminal.Write(Apc("a=f,i=1,c=1,x=0,y=0,X=1,f=32,s=1,v=1,q=2", Rgba(1, 1, 0, 0, 255, 128)));
 
-        Assert.True(image.Animation!.TryGetFrame(2, out var blended));
-        Assert.True(image.Animation.TryGetFrame(3, out var replaced));
+        (image.Animation!.TryGetFrame(2, out var blended)).Should().BeTrue();
+        image.Animation.TryGetFrame(3, out var replaced).Should().BeTrue();
 
         var mixed = Pixel(blended.Pixels, 4, 0, 0);
-        Assert.True(mixed.R is > 100 and < 200, $"red should have survived the blend, got {mixed.R}");
-        Assert.True(mixed.B is > 100 and < 200, $"blue should have come through, got {mixed.B}");
+        (mixed.R is > 100 and < 200).Should().BeTrue($"red should have survived the blend, got {mixed.R}");
+        (mixed.B is > 100 and < 200).Should().BeTrue($"blue should have come through, got {mixed.B}");
 
-        Assert.Equal((0, (byte)0, (byte)255, (byte)128), Pixel(replaced.Pixels, 4, 0, 0));
+        Pixel(replaced.Pixels, 4, 0, 0).Should().Be((0, (byte)0, (byte)255, (byte)128));
     }
 
-    [Fact]
+    [TestMethod]
     public void A_frame_for_an_unknown_image_is_refused()
     {
         var terminal = WithImage();
@@ -221,13 +222,13 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=f,i=99,f=32,s=4,v=4", Rgba(4, 4, 0, 255, 0)));
 
-        Assert.Contains(replies, r => r.Contains("ENOENT"));
+        replies.Should().Contain(r => r.Contains("ENOENT"));
     }
 
     // ---- client driven ----------------------------------------------------------------------------
 
     /// <summary>The simplest animation: the client says which frame to show, and nothing else moves.</summary>
-    [Fact]
+    [TestMethod]
     public void A_client_can_make_a_frame_current()
     {
         var terminal = WithImage();
@@ -236,11 +237,11 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=a,i=1,c=2,q=2"));
 
-        Assert.Equal(2, image.Animation!.CurrentFrame);
-        Assert.Equal((0, (byte)255, (byte)0, (byte)255), Pixel(image.CurrentPixels, 4, 0, 0));
+        (image.Animation!.CurrentFrame).Should().Be(2);
+        Pixel(image.CurrentPixels, 4, 0, 0).Should().Be((0, (byte)255, (byte)0, (byte)255));
     }
 
-    [Fact]
+    [TestMethod]
     public void A_frame_that_does_not_exist_cannot_be_made_current()
     {
         var terminal = WithImage();
@@ -250,14 +251,14 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=a,i=1,c=9"));
 
-        Assert.Contains(replies, r => r.Contains("ENOENT"));
+        replies.Should().Contain(r => r.Contains("ENOENT"));
     }
 
     /// <summary>
     /// The image's own pixels stay the root frame whatever is current, so a host that cached them
     /// is not lied to; what moves is <c>CurrentPixels</c>.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_current_frame_moves_but_the_root_does_not()
     {
         var terminal = WithImage();
@@ -266,8 +267,8 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=a,i=1,c=2,q=2"));
 
-        Assert.Equal((255, (byte)0, (byte)0, (byte)255), Pixel(image.Pixels, 4, 0, 0));
-        Assert.Equal((0, (byte)255, (byte)0, (byte)255), Pixel(image.CurrentPixels, 4, 0, 0));
+        Pixel(image.Pixels, 4, 0, 0).Should().Be((255, (byte)0, (byte)0, (byte)255));
+        Pixel(image.CurrentPixels, 4, 0, 0).Should().Be((0, (byte)255, (byte)0, (byte)255));
     }
 
     // ---- terminal driven --------------------------------------------------------------------------
@@ -283,38 +284,38 @@ public class KittyAnimationTests
         return (terminal, image);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_stopped_animation_does_not_move()
     {
         var (terminal, image) = Running(state: "1");
 
-        Assert.False(terminal.AdvanceAnimations(TimeSpan.FromSeconds(10)));
-        Assert.Equal(1, image.Animation!.CurrentFrame);
+        terminal.AdvanceAnimations(TimeSpan.FromSeconds(10)).Should().BeFalse();
+        (image.Animation!.CurrentFrame).Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Time_shorter_than_the_gap_does_not_advance_the_frame()
     {
         var (terminal, image) = Running(gap: 100);
 
-        Assert.False(terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60)));
-        Assert.Equal(1, image.Animation!.CurrentFrame);
+        terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60)).Should().BeFalse();
+        (image.Animation!.CurrentFrame).Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Time_past_the_gap_advances_the_frame()
     {
         var (terminal, image) = Running(gap: 100);
 
-        Assert.True(terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(120)));
-        Assert.Equal(2, image.Animation!.CurrentFrame);
+        terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(120)).Should().BeTrue();
+        (image.Animation!.CurrentFrame).Should().Be(2);
     }
 
     /// <summary>
     /// Several gaps inside one slice step several frames. A host that repaints late must not make
     /// the animation run slow -- the elapsed time is what decides, not the number of calls.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_long_slice_steps_more_than_one_frame()
     {
         var (terminal, image) = Running(gap: 50);
@@ -322,27 +323,27 @@ public class KittyAnimationTests
         // Three gaps: 1 -> 2 -> 1 -> 2.
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(160));
 
-        Assert.Equal(2, image.Animation!.CurrentFrame);
+        (image.Animation!.CurrentFrame).Should().Be(2);
     }
 
     /// <summary>Running loops back to the first frame rather than stopping at the last.</summary>
-    [Fact]
+    [TestMethod]
     public void A_running_animation_loops()
     {
         var (terminal, image) = Running(gap: 50);
 
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60));
-        Assert.Equal(2, image.Animation!.CurrentFrame);
+        (image.Animation!.CurrentFrame).Should().Be(2);
 
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60));
-        Assert.Equal(1, image.Animation.CurrentFrame);
+        image.Animation.CurrentFrame.Should().Be(1);
     }
 
     /// <summary>
     /// A finite loop count plays that many minus one, then stops -- which is the protocol's
     /// arithmetic, not an off-by-one. v=2 means one loop.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_finite_loop_count_stops_when_it_is_spent()
     {
         var terminal = WithImage();
@@ -357,11 +358,11 @@ public class KittyAnimationTests
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60));
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(500));
 
-        Assert.Equal(AnimationState.Stopped, image.Animation!.State);
+        (image.Animation!.State).Should().Be(AnimationState.Stopped);
     }
 
     /// <summary>Unspecified loops means forever, not none.</summary>
-    [Fact]
+    [TestMethod]
     public void An_unspecified_loop_count_runs_indefinitely()
     {
         var (terminal, image) = Running(gap: 50);
@@ -369,29 +370,29 @@ public class KittyAnimationTests
         for (int i = 0; i < 20; i++)
             terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60));
 
-        Assert.NotEqual(AnimationState.Stopped, image.Animation!.State);
+        (image.Animation!.State).Should().NotBe(AnimationState.Stopped);
     }
     /// <summary>
     /// Loading mode waits at the last frame instead of looping, so an animation can start playing
     /// before all of it has arrived without repeating the part that has.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_loading_animation_waits_at_the_last_frame()
     {
         var (terminal, image) = Running(gap: 50, state: "2");
 
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60));
-        Assert.Equal(2, image.Animation!.CurrentFrame);
+        (image.Animation!.CurrentFrame).Should().Be(2);
 
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(500));
-        Assert.Equal(2, image.Animation.CurrentFrame);
+        image.Animation.CurrentFrame.Should().Be(2);
     }
 
     /// <summary>
     /// The serial changes with the visible pixels, which is how a host spots a stale texture without
     /// comparing buffers.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_frame_serial_changes_when_the_picture_does()
     {
         var (terminal, image) = Running(gap: 50);
@@ -399,32 +400,32 @@ public class KittyAnimationTests
 
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60));
 
-        Assert.NotEqual(before, image.FrameSerial);
+        image.FrameSerial.Should().NotBe(before);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_terminal_with_no_animation_reports_none_running()
     {
         var terminal = WithImage();
         Image(terminal);
 
-        Assert.False(terminal.HasRunningAnimations());
-        Assert.False(terminal.AdvanceAnimations(TimeSpan.FromSeconds(1)));
+        terminal.HasRunningAnimations().Should().BeFalse();
+        terminal.AdvanceAnimations(TimeSpan.FromSeconds(1)).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_running_animation_is_reported_as_running()
     {
         var (terminal, _) = Running();
 
-        Assert.True(terminal.HasRunningAnimations());
+        terminal.HasRunningAnimations().Should().BeTrue();
     }
 
     /// <summary>
     /// An animation on an image that was transmitted but never placed still runs. A client may set
     /// one going and only then decide where to show it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_unplaced_animation_still_runs()
     {
         var terminal = Fresh();
@@ -433,15 +434,15 @@ public class KittyAnimationTests
         terminal.Write(Apc("a=a,i=1,r=1,z=50,q=2"));
         terminal.Write(Apc("a=a,i=1,s=3,q=2"));
 
-        Assert.True(terminal.HasRunningAnimations());
-        Assert.True(terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60)));
+        terminal.HasRunningAnimations().Should().BeTrue();
+        terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(60)).Should().BeTrue();
     }
 
     /// <summary>
     /// A gapless frame is never shown. It exists to hold base data for the frames that compose
     /// against it -- a static background under a moving object, say.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_gapless_frame_is_skipped_rather_than_displayed()
     {
         var terminal = WithImage();
@@ -458,7 +459,7 @@ public class KittyAnimationTests
         // is what makes this a test of the skip rather than of the arithmetic around it.
         terminal.AdvanceAnimations(TimeSpan.FromMilliseconds(100));
 
-        Assert.Equal(1, image.Animation!.CurrentFrame);
+        (image.Animation!.CurrentFrame).Should().Be(1);
     }
 
     // ---- composing frames -------------------------------------------------------------------------
@@ -466,7 +467,7 @@ public class KittyAnimationTests
     /// <summary>
     /// a=c copies a rectangle from one frame onto another with no pixels crossing the wire.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_rectangle_can_be_composed_from_one_frame_onto_another()
     {
         var terminal = WithImage();
@@ -476,12 +477,12 @@ public class KittyAnimationTests
         // A 1x1 block from the root's (0,0) onto frame 2 at (2,2).
         terminal.Write(Apc("a=c,i=1,r=1,c=2,w=1,h=1,X=0,Y=0,x=2,y=2,C=1,q=2"));
 
-        Assert.True(image.Animation!.TryGetFrame(2, out var frame));
-        Assert.Equal((255, (byte)0, (byte)0, (byte)255), Pixel(frame.Pixels, 4, 2, 2));
-        Assert.Equal((0, (byte)255, (byte)0, (byte)255), Pixel(frame.Pixels, 4, 0, 0));
+        (image.Animation!.TryGetFrame(2, out var frame)).Should().BeTrue();
+        Pixel(frame.Pixels, 4, 2, 2).Should().Be((255, (byte)0, (byte)0, (byte)255));
+        Pixel(frame.Pixels, 4, 0, 0).Should().Be((0, (byte)255, (byte)0, (byte)255));
     }
 
-    [Fact]
+    [TestMethod]
     public void Composing_from_a_frame_that_does_not_exist_is_refused()
     {
         var terminal = WithImage();
@@ -491,11 +492,11 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=c,i=1,r=9,c=2,w=1,h=1"));
 
-        Assert.Contains(replies, r => r.Contains("ENOENT"));
+        replies.Should().Contain(r => r.Contains("ENOENT"));
     }
 
     /// <summary>A rectangle running off the edge is EINVAL, which the protocol states outright.</summary>
-    [Fact]
+    [TestMethod]
     public void Composing_out_of_bounds_is_refused()
     {
         var terminal = WithImage();
@@ -505,14 +506,14 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=c,i=1,r=1,c=2,w=4,h=4,x=2,y=2"));
 
-        Assert.Contains(replies, r => r.Contains("EINVAL"));
+        replies.Should().Contain(r => r.Contains("EINVAL"));
     }
 
     /// <summary>
     /// One frame onto itself with overlapping rectangles is refused: the answer would depend on the
     /// order the pixels were copied in, so there is no right one.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Composing_a_frame_onto_itself_with_overlap_is_refused()
     {
         var terminal = WithImage();
@@ -522,11 +523,11 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=c,i=1,r=2,c=2,w=3,h=3,X=0,Y=0,x=1,y=1"));
 
-        Assert.Contains(replies, r => r.Contains("EINVAL"));
+        replies.Should().Contain(r => r.Contains("EINVAL"));
     }
 
     /// <summary>The same frame is fine when the rectangles do not touch.</summary>
-    [Fact]
+    [TestMethod]
     public void Composing_a_frame_onto_itself_without_overlap_is_allowed()
     {
         var terminal = WithImage();
@@ -536,7 +537,7 @@ public class KittyAnimationTests
 
         terminal.Write(Apc("a=c,i=1,r=2,c=2,w=2,h=2,X=0,Y=0,x=2,y=2,C=1"));
 
-        Assert.DoesNotContain(replies, r => r.Contains("EINVAL"));
+        replies.Should().NotContain(r => r.Contains("EINVAL"));
     }
 
     /// <summary>
@@ -550,21 +551,21 @@ public class KittyAnimationTests
     /// overflow itself needs gigabytes to reach; what is checkable here is that the sum is a long
     /// and that it counts both halves.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void An_animation_counts_its_frames_against_the_budget()
     {
         var terminal = WithImage();
         var image = Image(terminal);
 
         var root = image.ByteCount;
-        Assert.Equal(4 * 4 * TerminalImage.BytesPerPixel, root);
-        Assert.Null(image.Animation);
+        root.Should().Be(4 * 4 * TerminalImage.BytesPerPixel);
+        image.Animation.Should().BeNull();
 
         terminal.Write(Apc("a=f,i=1,z=100,f=32,s=4,v=4,q=2", Rgba(4, 4, 0, 255, 0)));
 
         // Both halves, added together rather than one of them clamped and then added.
-        Assert.NotNull(image.Animation);
-        Assert.Equal(root + image.Animation!.ByteCount, image.ByteCount);
-        Assert.True(image.ByteCount > root, "the frames have to reach the budget somehow");
+        image.Animation.Should().NotBeNull();
+        image.ByteCount.Should().Be(root + image.Animation!.ByteCount);
+        (image.ByteCount > root).Should().BeTrue("the frames have to reach the budget somehow");
     }
 }

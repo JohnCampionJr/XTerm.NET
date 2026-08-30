@@ -6,12 +6,13 @@ namespace XTerm.Tests;
 /// Buffer bookkeeping and selection: what breaks when a row index, a wrap flag or a trimmed line
 /// is tracked slightly wrong.
 /// </summary>
+[TestClass]
 public class BufferAndSelectionTests
 {
     private static Terminal NewTerminal(int cols = 10, int rows = 4, int scrollback = 10) =>
         new(new TerminalOptions { Cols = cols, Rows = rows, Scrollback = scrollback });
 
-    [Fact]
+    [TestMethod]
     public void Copying_wrapped_text_does_not_break_it_at_the_wrap()
     {
         // IsWrapped means "this line continues the previous one", so whether row y joins row y+1
@@ -23,11 +24,11 @@ public class BufferAndSelectionTests
         terminal.Selection.UpdateSelection(4, 1);
         var text = terminal.Selection.GetSelectionText();
 
-        Assert.DoesNotContain("\n", text);
-        Assert.StartsWith("abcdefghij", text);
+        text.Should().NotContain("\n");
+        text.Should().StartWith("abcdefghij");
     }
 
-    [Fact]
+    [TestMethod]
     public void Separate_lines_keep_their_newline()
     {
         var terminal = NewTerminal(cols: 10);
@@ -36,10 +37,10 @@ public class BufferAndSelectionTests
         terminal.Selection.StartSelection(0, 0);
         terminal.Selection.UpdateSelection(2, 1);
 
-        Assert.Contains("\n", terminal.Selection.GetSelectionText());
+        terminal.Selection.GetSelectionText().Should().Contain("\n");
     }
 
-    [Fact]
+    [TestMethod]
     public void Clearing_the_scrollback_reports_the_rows_it_dropped()
     {
         // Anything tracking absolute rows -- a selection, a search hit, a shell-integration mark --
@@ -52,26 +53,26 @@ public class BufferAndSelectionTests
             terminal.Write($"line {i}\r\n");
 
         var before = terminal.Buffer.YBase;
-        Assert.True(before > 0, "test needs scrollback to have accumulated");
+        (before > 0).Should().BeTrue("test needs scrollback to have accumulated");
 
         terminal.Buffer.ClearScrollback();
 
-        Assert.Equal(before, trimmed);
-        Assert.Equal(0, terminal.Buffer.YBase);
+        trimmed.Should().Be(before);
+        terminal.Buffer.YBase.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetLine_returns_null_for_a_row_that_is_not_there()
     {
         // The signature promises a nullable; it threw instead, so a caller written against the
         // contract was one stale row index away from taking down the write loop.
         var terminal = NewTerminal();
 
-        Assert.Null(terminal.Buffer.GetLine(-1));
-        Assert.Null(terminal.Buffer.GetLine(10_000));
+        terminal.Buffer.GetLine(-1).Should().BeNull();
+        terminal.Buffer.GetLine(10_000).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Trimming_releases_the_lines_it_drops()
     {
         // Advancing the start index alone kept every trimmed line referenced until a later push
@@ -81,9 +82,9 @@ public class BufferAndSelectionTests
 
         list.TrimStart(2);
 
-        Assert.Equal(2, list.Length);
-        Assert.Equal("c", list[0]);
-        Assert.Equal("d", list[1]);
+        list.Length.Should().Be(2);
+        list[0].Should().Be("c");
+        list[1].Should().Be("d");
     }
 
     private static string[] Contents<T>(XTerm.Buffer.CircularList<T> list) where T : class =>
@@ -96,7 +97,7 @@ public class BufferAndSelectionTests
         return list;
     }
 
-    [Fact]
+    [TestMethod]
     public void Splicing_into_a_full_list_inserts_where_it_was_asked_to()
     {
         // At capacity the insert became an append, so a reflowed line landed at the bottom of the
@@ -107,10 +108,10 @@ public class BufferAndSelectionTests
 
         // The same splice with room to grow gives a,X,b,c,d. At capacity the oldest falls off the
         // front, which is 'a' -- X still lands immediately before the 'b' it was inserted ahead of.
-        Assert.Equal(["X", "b", "c", "d"], Contents(list));
+        Contents(list).Should().Equal(["X", "b", "c", "d"]);
     }
 
-    [Fact]
+    [TestMethod]
     public void Splicing_a_full_list_agrees_with_the_same_splice_that_had_room()
     {
         // The eviction is the ONLY difference capacity is allowed to make. Anything else means
@@ -122,10 +123,10 @@ public class BufferAndSelectionTests
         var full = Abcd();
         full.Splice(1, 0, "X");
 
-        Assert.Equal(Contents(roomy).Skip(1).ToArray(), Contents(full));
+        Contents(full).Should().Equal(Contents(roomy).Skip(1).ToArray());
     }
 
-    [Fact]
+    [TestMethod]
     public void Splicing_several_items_into_a_full_list_keeps_them_together_and_in_order()
     {
         // Advancing `start` per item while each insert also evicted one moved the target twice
@@ -134,10 +135,10 @@ public class BufferAndSelectionTests
 
         list.Splice(2, 0, "X", "Y");
 
-        Assert.Equal(["X", "Y", "c", "d"], Contents(list));
+        Contents(list).Should().Equal(["X", "Y", "c", "d"]);
     }
 
-    [Fact]
+    [TestMethod]
     public void Splicing_at_the_front_of_a_full_list_drops_the_item_that_scrolls_off()
     {
         // Inserted at index 0 of a full list, the new item is itself the oldest, so it falls off
@@ -146,16 +147,16 @@ public class BufferAndSelectionTests
 
         list.Splice(0, 0, "X");
 
-        Assert.Equal(["a", "b", "c", "d"], Contents(list));
+        Contents(list).Should().Equal(["a", "b", "c", "d"]);
     }
 
-    [Fact]
+    [TestMethod]
     public void Splicing_at_the_end_of_a_full_list_appends_and_drops_the_oldest()
     {
         var list = Abcd();
 
         list.Splice(4, 0, "X");
 
-        Assert.Equal(["b", "c", "d", "X"], Contents(list));
+        Contents(list).Should().Equal(["b", "c", "d", "X"]);
     }
 }

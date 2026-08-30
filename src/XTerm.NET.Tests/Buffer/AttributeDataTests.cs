@@ -2,45 +2,47 @@ using XTerm.Buffer;
 
 namespace XTerm.Tests.Buffer;
 
+[TestClass]
+
 public class AttributeDataTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_Default_SetsDefaultValues()
     {
         // Arrange & Act
         var attr = new AttributeData();
 
         // Assert
-        Assert.Equal(256, attr.Fg);
-        Assert.Equal(257, attr.Bg);
-        Assert.Equal(0, attr.Extended);
+        attr.Fg.Should().Be(256);
+        attr.Bg.Should().Be(257);
+        attr.Extended.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_WithParameters_SetsValues()
     {
         // Arrange & Act
         var attr = new AttributeData(10, 20, 5);
 
         // Assert
-        Assert.Equal(10, attr.Fg);
-        Assert.Equal(20, attr.Bg);
-        Assert.Equal(5, attr.Extended);
+        attr.Fg.Should().Be(10);
+        attr.Bg.Should().Be(20);
+        attr.Extended.Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void Default_Property_ReturnsDefaultAttributes()
     {
         // Act
         var attr = AttributeData.Default;
 
         // Assert
-        Assert.Equal(256, attr.Fg);
-        Assert.Equal(257, attr.Bg);
-        Assert.Equal(0, attr.Extended);
+        attr.Fg.Should().Be(256);
+        attr.Bg.Should().Be(257);
+        attr.Extended.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetBold_True_SetsBoldFlag()
     {
         // Arrange
@@ -50,10 +52,10 @@ public class AttributeDataTests
         attr.SetBold(true);
 
         // Assert
-        Assert.True(attr.IsBold());
+        attr.IsBold().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetBold_False_ClearsBoldFlag()
     {
         // Arrange
@@ -64,10 +66,10 @@ public class AttributeDataTests
         attr.SetBold(false);
 
         // Assert
-        Assert.False(attr.IsBold());
+        attr.IsBold().Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetDim_True_SetsDimFlag()
     {
         // Arrange
@@ -77,10 +79,10 @@ public class AttributeDataTests
         attr.SetDim(true);
 
         // Assert
-        Assert.True(attr.IsDim());
+        attr.IsDim().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetItalic_True_SetsItalicFlag()
     {
         // Arrange
@@ -90,10 +92,10 @@ public class AttributeDataTests
         attr.SetItalic(true);
 
         // Assert
-        Assert.True(attr.IsItalic());
+        attr.IsItalic().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetUnderline_True_SetsUnderlineFlag()
     {
         // Arrange
@@ -103,10 +105,10 @@ public class AttributeDataTests
         attr.SetUnderline(true);
 
         // Assert
-        Assert.True(attr.IsUnderline());
+        attr.IsUnderline().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetBlink_True_SetsBlinkFlag()
     {
         // Arrange
@@ -116,10 +118,10 @@ public class AttributeDataTests
         attr.SetBlink(true);
 
         // Assert
-        Assert.True(attr.IsBlink());
+        attr.IsBlink().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetInverse_True_SetsInverseFlag()
     {
         // Arrange
@@ -129,10 +131,10 @@ public class AttributeDataTests
         attr.SetInverse(true);
 
         // Assert
-        Assert.True(attr.IsInverse());
+        attr.IsInverse().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetInvisible_True_SetsInvisibleFlag()
     {
         // Arrange
@@ -142,10 +144,10 @@ public class AttributeDataTests
         attr.SetInvisible(true);
 
         // Assert
-        Assert.True(attr.IsInvisible());
+        attr.IsInvisible().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetStrikethrough_True_SetsStrikethroughFlag()
     {
         // Arrange
@@ -155,10 +157,10 @@ public class AttributeDataTests
         attr.SetStrikethrough(true);
 
         // Assert
-        Assert.True(attr.IsStrikethrough());
+        attr.IsStrikethrough().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetOverline_True_SetsOverlineFlag()
     {
         // Arrange
@@ -168,10 +170,10 @@ public class AttributeDataTests
         attr.SetOverline(true);
 
         // Assert
-        Assert.True(attr.IsOverline());
+        attr.IsOverline().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void MultipleFlags_CanBeSetSimultaneously()
     {
         // Arrange
@@ -183,12 +185,12 @@ public class AttributeDataTests
         attr.SetUnderline(true);
 
         // Assert
-        Assert.True(attr.IsBold());
-        Assert.True(attr.IsItalic());
-        Assert.True(attr.IsUnderline());
+        attr.IsBold().Should().BeTrue();
+        attr.IsItalic().Should().BeTrue();
+        attr.IsUnderline().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetFgColor_SetsColor()
     {
         // Arrange
@@ -199,10 +201,10 @@ public class AttributeDataTests
         attr.SetFgColor(color);
 
         // Assert
-        Assert.Equal(color, attr.GetFgColor());
+        attr.GetFgColor().Should().Be(color);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetFgColor_WithMode_SetsColorAndMode()
     {
         // Arrange
@@ -214,11 +216,11 @@ public class AttributeDataTests
         attr.SetFgColor(color, mode);
 
         // Assert
-        Assert.Equal(color, attr.GetFgColor());
-        Assert.Equal(mode, attr.GetFgColorMode());
+        attr.GetFgColor().Should().Be(color);
+        attr.GetFgColorMode().Should().Be(mode);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetBgColor_SetsColor()
     {
         // Arrange
@@ -229,10 +231,10 @@ public class AttributeDataTests
         attr.SetBgColor(color);
 
         // Assert
-        Assert.Equal(color, attr.GetBgColor());
+        attr.GetBgColor().Should().Be(color);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetBgColor_WithMode_SetsColorAndMode()
     {
         // Arrange
@@ -244,11 +246,11 @@ public class AttributeDataTests
         attr.SetBgColor(color, mode);
 
         // Assert
-        Assert.Equal(color, attr.GetBgColor());
-        Assert.Equal(mode, attr.GetBgColorMode());
+        attr.GetBgColor().Should().Be(color);
+        attr.GetBgColorMode().Should().Be(mode);
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_SameAttributes_ReturnsTrue()
     {
         // Arrange
@@ -256,11 +258,11 @@ public class AttributeDataTests
         var attr2 = new AttributeData(10, 20, 5);
 
         // Act & Assert
-        Assert.True(attr1.Equals(attr2));
-        Assert.True(attr1 == attr2);
+        attr1.Equals(attr2).Should().BeTrue();
+        ((attr1 == attr2)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_DifferentFg_ReturnsFalse()
     {
         // Arrange
@@ -268,11 +270,11 @@ public class AttributeDataTests
         var attr2 = new AttributeData(15, 20, 5);
 
         // Act & Assert
-        Assert.False(attr1.Equals(attr2));
-        Assert.True(attr1 != attr2);
+        attr1.Equals(attr2).Should().BeFalse();
+        ((attr1 != attr2)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_DifferentBg_ReturnsFalse()
     {
         // Arrange
@@ -280,10 +282,10 @@ public class AttributeDataTests
         var attr2 = new AttributeData(10, 25, 5);
 
         // Act & Assert
-        Assert.False(attr1.Equals(attr2));
+        attr1.Equals(attr2).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_DifferentExtended_ReturnsFalse()
     {
         // Arrange
@@ -291,10 +293,10 @@ public class AttributeDataTests
         var attr2 = new AttributeData(10, 20, 10);
 
         // Act & Assert
-        Assert.False(attr1.Equals(attr2));
+        attr1.Equals(attr2).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Clone_CreatesIndependentCopy()
     {
         // Arrange
@@ -306,19 +308,19 @@ public class AttributeDataTests
         var clone = attr;
 
         // Assert
-        Assert.Equal(attr.Fg, clone.Fg);
-        Assert.Equal(attr.Bg, clone.Bg);
-        Assert.Equal(attr.Extended, clone.Extended);
-        Assert.True(clone.IsBold());
-        Assert.True(clone.IsItalic());
+        clone.Fg.Should().Be(attr.Fg);
+        clone.Bg.Should().Be(attr.Bg);
+        clone.Extended.Should().Be(attr.Extended);
+        clone.IsBold().Should().BeTrue();
+        clone.IsItalic().Should().BeTrue();
         
         // Verify it's a true copy
         clone.SetBold(false);
-        Assert.True(attr.IsBold());
-        Assert.False(clone.IsBold());
+        attr.IsBold().Should().BeTrue();
+        clone.IsBold().Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void GetHashCode_SameAttributes_ReturnsSameHash()
     {
         // Arrange
@@ -326,10 +328,10 @@ public class AttributeDataTests
         var attr2 = new AttributeData(10, 20, 5);
 
         // Act & Assert
-        Assert.Equal(attr1.GetHashCode(), attr2.GetHashCode());
+        attr2.GetHashCode().Should().Be(attr1.GetHashCode());
     }
 
-    [Fact]
+    [TestMethod]
     public void AllFlags_CanBeToggled()
     {
         // Arrange
@@ -347,15 +349,15 @@ public class AttributeDataTests
         attr.SetOverline(true);
 
         // Assert - All should be true
-        Assert.True(attr.IsBold());
-        Assert.True(attr.IsDim());
-        Assert.True(attr.IsItalic());
-        Assert.True(attr.IsUnderline());
-        Assert.True(attr.IsBlink());
-        Assert.True(attr.IsInverse());
-        Assert.True(attr.IsInvisible());
-        Assert.True(attr.IsStrikethrough());
-        Assert.True(attr.IsOverline());
+        attr.IsBold().Should().BeTrue();
+        attr.IsDim().Should().BeTrue();
+        attr.IsItalic().Should().BeTrue();
+        attr.IsUnderline().Should().BeTrue();
+        attr.IsBlink().Should().BeTrue();
+        attr.IsInverse().Should().BeTrue();
+        attr.IsInvisible().Should().BeTrue();
+        attr.IsStrikethrough().Should().BeTrue();
+        attr.IsOverline().Should().BeTrue();
 
         // Act - Clear all flags
         attr.SetBold(false);
@@ -369,22 +371,22 @@ public class AttributeDataTests
         attr.SetOverline(false);
 
         // Assert - All should be false
-        Assert.False(attr.IsBold());
-        Assert.False(attr.IsDim());
-        Assert.False(attr.IsItalic());
-        Assert.False(attr.IsUnderline());
-        Assert.False(attr.IsBlink());
-        Assert.False(attr.IsInverse());
-        Assert.False(attr.IsInvisible());
-        Assert.False(attr.IsStrikethrough());
-        Assert.False(attr.IsOverline());
+        attr.IsBold().Should().BeFalse();
+        attr.IsDim().Should().BeFalse();
+        attr.IsItalic().Should().BeFalse();
+        attr.IsUnderline().Should().BeFalse();
+        attr.IsBlink().Should().BeFalse();
+        attr.IsInverse().Should().BeFalse();
+        attr.IsInvisible().Should().BeFalse();
+        attr.IsStrikethrough().Should().BeFalse();
+        attr.IsOverline().Should().BeFalse();
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(7)]
-    [InlineData(15)]
-    [InlineData(255)]
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(7)]
+    [DataRow(15)]
+    [DataRow(255)]
     public void SetFgColor_VariousValues_WorksCorrectly(int color)
     {
         // Arrange
@@ -394,14 +396,14 @@ public class AttributeDataTests
         attr.SetFgColor(color);
 
         // Assert
-        Assert.Equal(color, attr.GetFgColor());
+        attr.GetFgColor().Should().Be(color);
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(7)]
-    [InlineData(15)]
-    [InlineData(255)]
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(7)]
+    [DataRow(15)]
+    [DataRow(255)]
     public void SetBgColor_VariousValues_WorksCorrectly(int color)
     {
         // Arrange
@@ -411,6 +413,6 @@ public class AttributeDataTests
         attr.SetBgColor(color);
 
         // Assert
-        Assert.Equal(color, attr.GetBgColor());
+        attr.GetBgColor().Should().Be(color);
     }
 }

@@ -12,6 +12,7 @@ namespace XTerm.Tests;
 /// which matters more here than in a standalone terminal: a hosted .NET terminal has no signal to
 /// fall back on, so this is the only way an application inside XTerm.NET finds out at all.
 /// </remarks>
+[TestClass]
 public class InBandResizeTests
 {
     private const string Esc = "\u001b";
@@ -25,17 +26,17 @@ public class InBandResizeTests
         return replies;
     }
 
-    [Fact]
+    [TestMethod]
     public void Begins_and_ends_with_the_mode()
     {
         var terminal = Fresh();
-        Assert.False(terminal.InBandResize);
+        terminal.InBandResize.Should().BeFalse();
 
         terminal.Write($"{Esc}[?2048h");
-        Assert.True(terminal.InBandResize);
+        terminal.InBandResize.Should().BeTrue();
 
         terminal.Write($"{Esc}[?2048l");
-        Assert.False(terminal.InBandResize);
+        terminal.InBandResize.Should().BeFalse();
     }
 
     /// <summary>
@@ -43,7 +44,7 @@ public class InBandResizeTests
     /// learns the size the moment it asks to be kept informed, rather than enabling this and then
     /// waiting for a resize that may never come.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Setting_the_mode_reports_immediately()
     {
         var terminal = Fresh();
@@ -51,14 +52,14 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}[?2048h");
 
-        Assert.Equal(new[] { $"{Esc}[48;5;20;0;0t" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[48;5;20;0;0t" });
     }
 
     /// <summary>
     /// Rows before columns, and pixels after characters. Getting the order wrong is silent: an
     /// application reads a 20x5 terminal as 5x20 and lays itself out sideways.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_rows_before_columns_on_a_resize()
     {
         var terminal = Fresh();
@@ -67,10 +68,10 @@ public class InBandResizeTests
 
         terminal.Resize(100, 40);
 
-        Assert.Equal(new[] { $"{Esc}[48;40;100;0;0t" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[48;40;100;0;0t" });
     }
 
-    [Fact]
+    [TestMethod]
     public void Says_nothing_when_the_mode_was_never_set()
     {
         var terminal = Fresh();
@@ -78,10 +79,10 @@ public class InBandResizeTests
 
         terminal.Resize(100, 40);
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void Stops_reporting_once_the_mode_is_reset()
     {
         var terminal = Fresh();
@@ -91,14 +92,14 @@ public class InBandResizeTests
 
         terminal.Resize(100, 40);
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 
     /// <summary>
     /// A resize to the size it already is returns early and is not a resize event, so there is
     /// nothing to report. An application that gets a report anyway would redraw for nothing.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_resize_that_changes_nothing_reports_nothing()
     {
         var terminal = Fresh();
@@ -107,10 +108,10 @@ public class InBandResizeTests
 
         terminal.Resize(20, 5);
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reports_every_resize_not_just_the_first()
     {
         var terminal = Fresh();
@@ -120,7 +121,7 @@ public class InBandResizeTests
         terminal.Resize(100, 40);
         terminal.Resize(80, 24);
 
-        Assert.Equal(new[] { $"{Esc}[48;40;100;0;0t", $"{Esc}[48;24;80;0;0t" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[48;40;100;0;0t", $"{Esc}[48;24;80;0;0t" });
     }
 
     // ---- pixel dimensions ------------------------------------------------------------------------
@@ -132,7 +133,7 @@ public class InBandResizeTests
     /// a number that looks real, and an application sizing an image off it would be wrong rather
     /// than uninformed.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_zero_pixels_when_the_host_does_not_answer()
     {
         var terminal = Fresh();
@@ -140,10 +141,10 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}[?2048h");
 
-        Assert.Equal(new[] { $"{Esc}[48;5;20;0;0t" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[48;5;20;0;0t" });
     }
 
-    [Fact]
+    [TestMethod]
     public void Reports_the_hosts_pixel_size_when_it_answers()
     {
         var terminal = Fresh();
@@ -160,7 +161,7 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}[?2048h");
 
-        Assert.Equal(new[] { $"{Esc}[48;5;20;900;1600t" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[48;5;20;900;1600t" });
     }
 
     /// <summary>
@@ -168,11 +169,11 @@ public class InBandResizeTests
     /// whether unsolicited XTWINOPS queries are answered at all. Mode 2048 is itself the
     /// application's request; reusing that gate would leave the pixel fields permanently zero.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Pixel_size_does_not_depend_on_the_XTWINOPS_gate()
     {
         var terminal = Fresh();
-        Assert.False(terminal.Options.WindowOptions.GetWinSizePixels);
+        terminal.Options.WindowOptions.GetWinSizePixels.Should().BeFalse();
         terminal.WindowInfoRequested += (_, e) =>
         {
             e.WidthPixels = 800;
@@ -183,7 +184,7 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}[?2048h");
 
-        Assert.Equal(new[] { $"{Esc}[48;5;20;600;800t" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[48;5;20;600;800t" });
     }
 
     /// <summary>
@@ -191,7 +192,7 @@ public class InBandResizeTests
     /// one the terminal has already applied — and a host that recalculates its pixel metrics in
     /// <see cref="Terminal.Resized"/> has done so before the report asks for them.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_after_the_host_has_been_told()
     {
         var terminal = Fresh();
@@ -203,14 +204,14 @@ public class InBandResizeTests
 
         terminal.Resize(100, 40);
 
-        Assert.Equal(new[] { "resized", "reported" }, order);
+        order.Should().Equal(new[] { "resized", "reported" });
     }
 
     /// <summary>
     /// The host's pixel metrics are current by the time they are asked for, which is the practical
     /// payoff of reporting last.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Picks_up_pixel_metrics_the_host_updates_during_the_resize()
     {
         var terminal = Fresh();
@@ -234,7 +235,7 @@ public class InBandResizeTests
 
         terminal.Resize(100, 40);
 
-        Assert.Equal(new[] { $"{Esc}[48;40;100;800;1000t" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[48;40;100;800;1000t" });
     }
 
     // ---- a reset has to clear it -----------------------------------------------------------------
@@ -244,7 +245,7 @@ public class InBandResizeTests
     /// would keep writing reports at whatever runs next, which never asked for them and will read
     /// them as input.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_full_reset_clears_the_mode()
     {
         var terminal = Fresh();
@@ -252,10 +253,10 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}c");   // RIS
 
-        Assert.False(terminal.InBandResize);
+        terminal.InBandResize.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_full_reset_stops_the_reports()
     {
         var terminal = Fresh();
@@ -265,12 +266,12 @@ public class InBandResizeTests
 
         terminal.Resize(100, 40);
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 
     // ---- DECRQM, which is the only way to discover the mode exists -------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Reports_the_mode_as_reset_when_idle()
     {
         var terminal = Fresh();
@@ -278,10 +279,10 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}[?2048$p");
 
-        Assert.Equal(new[] { $"{Esc}[?2048;2$y" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[?2048;2$y" });
     }
 
-    [Fact]
+    [TestMethod]
     public void Reports_the_mode_as_set_once_enabled()
     {
         var terminal = Fresh();
@@ -290,7 +291,7 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}[?2048$p");
 
-        Assert.Equal(new[] { $"{Esc}[?2048;1$y" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[?2048;1$y" });
     }
 
     /// <summary>
@@ -298,7 +299,7 @@ public class InBandResizeTests
     /// learn that reports will arrive, so a stale "set" after a reset would leave it waiting for
     /// notifications that are never coming.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Decrqm_reports_reset_after_a_reset()
     {
         var terminal = Fresh();
@@ -308,10 +309,10 @@ public class InBandResizeTests
 
         terminal.Write($"{Esc}[?2048$p");
 
-        Assert.Equal(new[] { $"{Esc}[?2048;2$y" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[?2048;2$y" });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_pixel_only_change_reports_through_the_public_notify()
     {
         // Font-size and zoom changes alter the text area's pixels with the grid unchanged; the
@@ -331,16 +332,16 @@ public class InBandResizeTests
         };
 
         t.Write("\u001b[?2048h");
-        Assert.Single(reports);                    // enabling reports once, per the spec
+        reports.Should().ContainSingle();                    // enabling reports once, per the spec
         reports.Clear();
 
         px = (Height: 240, Width: 480);            // zoom: same grid, new pixels
         t.NotifyTextAreaPixelsChanged();
-        Assert.Equal("\u001b[48;5;20;240;480t", reports.Single());
+        reports.Single().Should().Be("\u001b[48;5;20;240;480t");
 
         t.Write("\u001b[?2048l");
         reports.Clear();
         t.NotifyTextAreaPixelsChanged();           // mode off: safe no-op
-        Assert.Empty(reports);
+        reports.Should().BeEmpty();
     }
 }

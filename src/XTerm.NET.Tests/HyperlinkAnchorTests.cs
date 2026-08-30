@@ -1,6 +1,5 @@
 using XTerm.Buffer;
 using XTerm.Options;
-using Xunit;
 
 namespace XTerm.Tests;
 
@@ -12,6 +11,7 @@ namespace XTerm.Tests;
 /// so the two are complementary rather than the same feature, and only this one can answer "what is
 /// under the pointer".</para>
 /// </summary>
+[TestClass]
 public class HyperlinkAnchorTests
 {
     private const string Esc = "\u001b";
@@ -25,115 +25,115 @@ public class HyperlinkAnchorTests
 
     private static BufferLine Row(Terminal t, int row = 0) => t.Buffer.Lines[t.Buffer.YBase + row]!;
 
-    [Fact]
+    [TestMethod]
     public void A_link_covers_the_text_printed_inside_it()
     {
         var t = Fresh();
         t.Write(Link("https://example.com") + "click here" + EndLink());
 
-        Assert.True(Row(t).TryGetLinkAt(3, out var link));
-        Assert.Equal("https://example.com", link.Url);
-        Assert.Equal(0, link.Column);
-        Assert.Equal(10, link.Cols);
+        Row(t).TryGetLinkAt(3, out var link).Should().BeTrue();
+        link.Url.Should().Be("https://example.com");
+        link.Column.Should().Be(0);
+        link.Cols.Should().Be(10);
     }
 
     /// <summary>The whole reason this cannot be a regex: no URL appears on screen at all.</summary>
-    [Fact]
+    [TestMethod]
     public void The_display_text_need_not_look_like_a_url()
     {
         var t = Fresh();
         t.Write(Link("https://example.com/deep/path") + "click here" + EndLink());
 
         var text = string.Concat(Enumerable.Range(0, 10).Select(c => Row(t)[c].Content));
-        Assert.Equal("click here", text);
-        Assert.DoesNotContain("http", text);
-        Assert.True(Row(t).TryGetLinkAt(0, out _));
+        text.Should().Be("click here");
+        text.Should().NotContain("http");
+        Row(t).TryGetLinkAt(0, out _).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Text_outside_the_link_is_not_covered()
     {
         var t = Fresh();
         t.Write("before " + Link("https://example.com") + "link" + EndLink() + " after");
 
-        Assert.False(Row(t).TryGetLinkAt(0, out _), "text before the link");
-        Assert.True(Row(t).TryGetLinkAt(7, out _), "the link itself");
-        Assert.False(Row(t).TryGetLinkAt(11, out _), "text after the link");
+        Row(t).TryGetLinkAt(0, out _).Should().BeFalse("text before the link");
+        Row(t).TryGetLinkAt(7, out _).Should().BeTrue("the link itself");
+        Row(t).TryGetLinkAt(11, out _).Should().BeFalse("text after the link");
     }
 
     /// <summary>One span, not one per character.</summary>
-    [Fact]
+    [TestMethod]
     public void A_contiguous_link_is_a_single_span()
     {
         var t = Fresh();
         t.Write(Link("https://example.com") + "abcdefgh" + EndLink());
 
-        Assert.Single(Row(t).Links);
-        Assert.Equal(8, Row(t).Links[0].Cols);
+        (Row(t).Links).Should().ContainSingle();
+        (Row(t).Links[0].Cols).Should().Be(8);
     }
 
     /// <summary>
     /// The id groups spans that are not contiguous, so a link that wrapped is one link.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_id_parameter_is_kept()
     {
         var t = Fresh();
         t.Write(Link("https://example.com", "id=42") + "abc" + EndLink());
 
-        Assert.True(Row(t).TryGetLinkAt(1, out var link));
-        Assert.Equal("42", link.Id);
+        Row(t).TryGetLinkAt(1, out var link).Should().BeTrue();
+        link.Id.Should().Be("42");
     }
 
     /// <summary>Two different links side by side stay two spans.</summary>
-    [Fact]
+    [TestMethod]
     public void Adjacent_links_to_different_urls_are_not_joined()
     {
         var t = Fresh();
         t.Write(Link("https://a.example") + "aa" + EndLink()
               + Link("https://b.example") + "bb" + EndLink());
 
-        Assert.Equal(2, Row(t).Links.Count);
-        Assert.True(Row(t).TryGetLinkAt(0, out var first));
-        Assert.True(Row(t).TryGetLinkAt(2, out var second));
-        Assert.Equal("https://a.example", first.Url);
-        Assert.Equal("https://b.example", second.Url);
+        (Row(t).Links.Count).Should().Be(2);
+        Row(t).TryGetLinkAt(0, out var first).Should().BeTrue();
+        Row(t).TryGetLinkAt(2, out var second).Should().BeTrue();
+        first.Url.Should().Be("https://a.example");
+        second.Url.Should().Be("https://b.example");
     }
 
-    [Fact]
+    [TestMethod]
     public void Typing_over_a_link_takes_those_columns_out_of_it()
     {
         var t = Fresh();
         t.Write(Link("https://example.com") + "abcdefgh" + EndLink());
         t.Write($"{Esc}[1;1HXX");
 
-        Assert.False(Row(t).TryGetLinkAt(0, out _), "the overwritten columns are not the link");
-        Assert.True(Row(t).TryGetLinkAt(2, out var rest));
-        Assert.Equal(2, rest.Column);
-        Assert.Equal(6, rest.Cols);
+        Row(t).TryGetLinkAt(0, out _).Should().BeFalse("the overwritten columns are not the link");
+        Row(t).TryGetLinkAt(2, out var rest).Should().BeTrue();
+        rest.Column.Should().Be(2);
+        rest.Cols.Should().Be(6);
     }
 
     /// <summary>Writing through the middle leaves the two halves.</summary>
-    [Fact]
+    [TestMethod]
     public void Typing_through_the_middle_splits_it()
     {
         var t = Fresh();
         t.Write(Link("https://example.com") + "abcdefgh" + EndLink());
         t.Write($"{Esc}[1;4HXX");
 
-        Assert.Equal(2, Row(t).Links.Count);
-        Assert.True(Row(t).TryGetLinkAt(0, out var left));
-        Assert.True(Row(t).TryGetLinkAt(5, out var right));
-        Assert.Equal(3, left.Cols);
-        Assert.Equal(3, right.Cols);
-        Assert.False(Row(t).TryGetLinkAt(3, out _));
+        (Row(t).Links.Count).Should().Be(2);
+        Row(t).TryGetLinkAt(0, out var left).Should().BeTrue();
+        Row(t).TryGetLinkAt(5, out var right).Should().BeTrue();
+        left.Cols.Should().Be(3);
+        right.Cols.Should().Be(3);
+        Row(t).TryGetLinkAt(3, out _).Should().BeFalse();
     }
 
     /// <summary>
     /// The batched writer bypasses Print, so it keeps the bookkeeping itself. Without that a link
     /// would cover the text or not depending on which writer happened to take it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_batched_and_per_character_paths_agree()
     {
         const string input = "before ";
@@ -144,12 +144,12 @@ public class HyperlinkAnchorTests
         perCharacter.UseRunPrinting = false;
         perCharacter.Write(input + Link("https://example.com") + "click here" + EndLink() + " after");
 
-        Assert.Equal(Describe(perCharacter), Describe(batched));
-        Assert.Equal("https://example.com@7+10", Describe(batched));
+        Describe(batched).Should().Be(Describe(perCharacter));
+        Describe(batched).Should().Be("https://example.com@7+10");
     }
 
     /// <summary>And the byte entry, which is a third writer again.</summary>
-    [Fact]
+    [TestMethod]
     public void The_byte_entry_agrees_too()
     {
         var viaString = Fresh();
@@ -159,11 +159,11 @@ public class HyperlinkAnchorTests
         viaBytes.Write(System.Text.Encoding.UTF8.GetBytes(
             Link("https://example.com") + "click here" + EndLink()));
 
-        Assert.Equal(Describe(viaString), Describe(viaBytes));
+        Describe(viaBytes).Should().Be(Describe(viaString));
     }
 
     /// <summary>A recycled line is a new line: the ring hands back the object it is about to drop.</summary>
-    [Fact]
+    [TestMethod]
     public void A_line_reused_by_the_ring_carries_no_links_over()
     {
         var t = new Terminal(new TerminalOptions { Cols = 20, Rows = 3, Scrollback = 2 });
@@ -173,22 +173,21 @@ public class HyperlinkAnchorTests
             t.Write($"line {i}\r\n");
 
         for (var i = 0; i < t.Buffer.Lines.Length; i++)
-            Assert.False(t.Buffer.Lines[i]?.HasLinks ?? false,
-                         $"row {i} kept a link from a line the ring had dropped");
+            (t.Buffer.Lines[i]?.HasLinks ?? false).Should().BeFalse($"row {i} kept a link from a line the ring had dropped");
     }
 
     /// <summary>Ordinary output carries no links, and pays nothing to say so.</summary>
-    [Fact]
+    [TestMethod]
     public void Text_with_no_link_records_none()
     {
         var t = Fresh();
         t.Write("just some ordinary output");
 
-        Assert.False(Row(t).HasLinks);
-        Assert.Empty(Row(t).Links);
+        (Row(t).HasLinks).Should().BeFalse();
+        (Row(t).Links).Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_moves_a_link_with_its_text_and_removes_the_old_span()
     {
         var t = Fresh(cols: 10, rows: 5);
@@ -197,13 +196,13 @@ public class HyperlinkAnchorTests
 
         t.Resize(20, 5);
 
-        Assert.False(Row(t, 1).HasLinks);
-        Assert.True(Row(t).TryGetLinkAt(12, out var link));
-        Assert.Equal(10, link.Column);
-        Assert.Equal(4, link.Cols);
+        (Row(t, 1).HasLinks).Should().BeFalse();
+        Row(t).TryGetLinkAt(12, out var link).Should().BeTrue();
+        link.Column.Should().Be(10);
+        link.Cols.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void Widening_joins_the_pieces_of_one_wrapped_link()
     {
         var t = Fresh(cols: 10, rows: 5);
@@ -212,12 +211,12 @@ public class HyperlinkAnchorTests
 
         t.Resize(20, 5);
 
-        var link = Assert.Single(Row(t).Links);
-        Assert.Equal(0, link.Column);
-        Assert.Equal(14, link.Cols);
+        var link = (Row(t).Links).Should().ContainSingle().Which;
+        link.Column.Should().Be(0);
+        link.Cols.Should().Be(14);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_splits_a_link_at_each_new_wrap_boundary()
     {
         var t = Fresh(cols: 12, rows: 6);
@@ -231,11 +230,11 @@ public class HyperlinkAnchorTests
             .Where(line => line?.HasLinks == true)
             .Select(line => line!.Links.Single())
             .ToArray();
-        Assert.Equal(new[] { 4, 4, 2 }, spans.Select(span => span.Cols));
-        Assert.All(spans, span =>
+        spans.Select(span => span.Cols).Should().Equal(new[] { 4, 4, 2 });
+        spans.Should().AllSatisfy(span =>
         {
-            Assert.Equal(0, span.Column);
-            Assert.Equal("wrapped", span.Id);
+            span.Column.Should().Be(0);
+            span.Id.Should().Be("wrapped");
         });
     }
 
@@ -244,35 +243,35 @@ public class HyperlinkAnchorTests
     /// history, but a link is a property of its text, and an erased span left clickable is an
     /// invisible link.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Erasing_the_text_takes_the_link_with_it()
     {
         var t = Fresh();
         t.Write(Link("https://example.com") + "abcdefgh" + EndLink());
         t.Write($"{Esc}[1;3H{Esc}[K");   // erase from column 3 to end of line
 
-        Assert.True(Row(t).TryGetLinkAt(0, out var kept), "the unerased head should keep its link");
-        Assert.Equal(2, kept.Cols);
-        Assert.False(Row(t).TryGetLinkAt(4, out _), "the erased span must not stay clickable");
+        Row(t).TryGetLinkAt(0, out var kept).Should().BeTrue("the unerased head should keep its link");
+        kept.Cols.Should().Be(2);
+        Row(t).TryGetLinkAt(4, out _).Should().BeFalse("the erased span must not stay clickable");
     }
 
     /// <summary>
     /// A new link that names no id must not inherit the previous link's — that would join two
     /// unrelated links into one.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_new_link_without_an_id_does_not_inherit_the_old_one()
     {
         var t = Fresh(cols: 30);
         t.Write(Link("https://a.example", "id=7") + "aa" + EndLink());
         t.Write(Link("https://b.example") + "bb" + EndLink());
 
-        Assert.True(Row(t).TryGetLinkAt(2, out var second));
-        Assert.Null(second.Id);
+        Row(t).TryGetLinkAt(2, out var second).Should().BeTrue();
+        second.Id.Should().BeNull();
     }
 
     /// <summary>Splitting a link in the middle keeps Links in left-to-right order.</summary>
-    [Fact]
+    [TestMethod]
     public void A_split_keeps_the_spans_in_order()
     {
         var t = Fresh(cols: 40);
@@ -281,20 +280,20 @@ public class HyperlinkAnchorTests
         t.Write($"{Esc}[1;3HXX");   // split the first link through the middle
 
         var columns = Row(t).Links.Select(l => l.Column).ToList();
-        Assert.Equal(columns.OrderBy(c => c), columns);
+        columns.Should().Equal(columns.OrderBy(c => c));
     }
 
     /// <summary>The prompt walks clamp extreme rows instead of wrapping the arithmetic.</summary>
-    [Fact]
+    [TestMethod]
     public void Prompt_navigation_survives_extreme_rows()
     {
         var t = Fresh();
         t.Write($"{Esc}]133;A\u0007$ ");
 
-        Assert.True(t.TryFindPreviousPrompt(int.MaxValue, out _));
-        Assert.False(t.TryFindPreviousPrompt(int.MinValue, out _));
-        Assert.True(t.TryFindNextPrompt(int.MinValue, out _));
-        Assert.False(t.TryFindNextPrompt(int.MaxValue, out _));
+        t.TryFindPreviousPrompt(int.MaxValue, out _).Should().BeTrue();
+        t.TryFindPreviousPrompt(int.MinValue, out _).Should().BeFalse();
+        t.TryFindNextPrompt(int.MinValue, out _).Should().BeTrue();
+        t.TryFindNextPrompt(int.MaxValue, out _).Should().BeFalse();
     }
 
     private static string Describe(Terminal t)

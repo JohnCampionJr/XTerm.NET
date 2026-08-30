@@ -10,6 +10,7 @@ namespace XTerm.Tests;
 /// Covers OSC 4 (indexed palette), OSC 10/11/12 (foreground, background, cursor), and the
 /// OSC 104/110/111/112 resets.
 /// </summary>
+[TestClass]
 public class ColorPaletteTests
 {
     private Terminal CreateTerminal(ThemeOptions? theme = null)
@@ -32,50 +33,50 @@ public class ColorPaletteTests
 
     // ---- defaults ----------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Defaults_MatchXtermAnsiColors()
     {
         var terminal = CreateTerminal();
 
-        Assert.Equal(0x000000, terminal.Colors[0]);
-        Assert.Equal(0xCD0000, terminal.Colors[1]);
-        Assert.Equal(0xFFFFFF, terminal.Colors[15]);
+        terminal.Colors[0].Should().Be(0x000000);
+        terminal.Colors[1].Should().Be(0xCD0000);
+        terminal.Colors[15].Should().Be(0xFFFFFF);
     }
 
-    [Fact]
+    [TestMethod]
     public void Defaults_ComputeThe216ColorCube()
     {
         var terminal = CreateTerminal();
 
-        Assert.Equal(0x000000, terminal.Colors[16]);   // cube origin
-        Assert.Equal(0xFFFFFF, terminal.Colors[231]);  // cube far corner
-        Assert.Equal(0x005FAF, terminal.Colors[25]);   // r=0 g=1 b=3 -> 0,95,175
+        terminal.Colors[16].Should().Be(0x000000);   // cube origin
+        terminal.Colors[231].Should().Be(0xFFFFFF);  // cube far corner
+        terminal.Colors[25].Should().Be(0x005FAF);   // r=0 g=1 b=3 -> 0,95,175
     }
 
-    [Fact]
+    [TestMethod]
     public void Defaults_ComputeTheGrayscaleRamp()
     {
         var terminal = CreateTerminal();
 
-        Assert.Equal(0x080808, terminal.Colors[232]);
-        Assert.Equal(0xEEEEEE, terminal.Colors[255]);
+        terminal.Colors[232].Should().Be(0x080808);
+        terminal.Colors[255].Should().Be(0xEEEEEE);
     }
 
-    [Fact]
+    [TestMethod]
     public void Defaults_PreserveThePreviousQueryAnswers_WhenNoThemeIsSet()
     {
         // This change must not move colours for an embedder that sets no theme; it only stops the
         // answers being constants.
         var terminal = CreateTerminal();
 
-        Assert.Equal(0xFFFFFF, terminal.Colors.Foreground);
-        Assert.Equal(0x000000, terminal.Colors.Background);
-        Assert.Equal(0xFFFFFF, terminal.Colors.Cursor);
+        terminal.Colors.Foreground.Should().Be(0xFFFFFF);
+        terminal.Colors.Background.Should().Be(0x000000);
+        terminal.Colors.Cursor.Should().Be(0xFFFFFF);
     }
 
     // ---- the light background case ------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Theme_SetsTheBackground_AndTheQueryReportsIt()
     {
         // The reason this PR exists. A program asks what the background is before choosing its own
@@ -85,32 +86,32 @@ public class ColorPaletteTests
 
         terminal.Write("\x1B]11;?\x07");
 
-        Assert.Equal("\u001b]11;rgb:ffff/ffff/ffff\u0007", Assert.Single(replies));
+        replies.Should().ContainSingle().Which.Should().Be("\u001b]11;rgb:ffff/ffff/ffff\u0007");
     }
 
-    [Fact]
+    [TestMethod]
     public void IsLightBackground_FollowsTheTheme()
     {
-        Assert.True(CreateTerminal(new ThemeOptions { Background = "#ffffff" }).Colors.IsLightBackground);
-        Assert.False(CreateTerminal(new ThemeOptions { Background = "#000000" }).Colors.IsLightBackground);
+        (CreateTerminal(new ThemeOptions { Background = "#ffffff" }).Colors.IsLightBackground).Should().BeTrue();
+        (CreateTerminal(new ThemeOptions { Background = "#000000" }).Colors.IsLightBackground).Should().BeFalse();
 
         // Luma-weighted rather than averaged: pure blue is dark despite a high channel value.
-        Assert.False(CreateTerminal(new ThemeOptions { Background = "#0000ff" }).Colors.IsLightBackground);
+        (CreateTerminal(new ThemeOptions { Background = "#0000ff" }).Colors.IsLightBackground).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ApplyTheme_ReseedsAtRuntime_ForAnOsThemeFlip()
     {
         var terminal = CreateTerminal(new ThemeOptions { Background = "#000000" });
-        Assert.False(terminal.Colors.IsLightBackground);
+        terminal.Colors.IsLightBackground.Should().BeFalse();
 
         terminal.Colors.ApplyTheme(new ThemeOptions { Background = "#ffffff", Foreground = "#000000" });
 
-        Assert.True(terminal.Colors.IsLightBackground);
-        Assert.Equal(0x000000, terminal.Colors.Foreground);
+        terminal.Colors.IsLightBackground.Should().BeTrue();
+        terminal.Colors.Foreground.Should().Be(0x000000);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_RestoresTheEmbedderTheme_NotAFactoryDarkPalette()
     {
         // The failure this guards: a program sets colours, then resets, and a light terminal is
@@ -119,37 +120,37 @@ public class ColorPaletteTests
 
         terminal.Write("\x1B]11;rgb:00/00/00\x07");
         terminal.Write("\x1B]4;0;#123456\x07");
-        Assert.Equal(0x000000, terminal.Colors.Background);
+        terminal.Colors.Background.Should().Be(0x000000);
 
         terminal.Write("\x1B]111\x07");
         terminal.Write("\x1B]104\x07");
 
-        Assert.Equal(0xFFFFFF, terminal.Colors.Background);
-        Assert.Equal(0xEEEEEE, terminal.Colors[0]);
+        terminal.Colors.Background.Should().Be(0xFFFFFF);
+        terminal.Colors[0].Should().Be(0xEEEEEE);
     }
 
-    [Fact]
+    [TestMethod]
     public void Theme_OverridesAnsiSlots()
     {
         var terminal = CreateTerminal(new ThemeOptions { Red = "#ff8800", BrightWhite = "rgb:11/22/33" });
 
-        Assert.Equal(0xFF8800, terminal.Colors[1]);
-        Assert.Equal(0x112233, terminal.Colors[15]);
+        terminal.Colors[1].Should().Be(0xFF8800);
+        terminal.Colors[15].Should().Be(0x112233);
     }
 
     // ---- OSC 4 -------------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Osc4_SetsAnIndexedColor()
     {
         var terminal = CreateTerminal();
 
         terminal.Write("\x1B]4;1;rgb:ff/00/00\x07");
 
-        Assert.Equal(0xFF0000, terminal.Colors[1]);
+        terminal.Colors[1].Should().Be(0xFF0000);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc4_SetsMultiplePairsInOneSequence()
     {
         // Theme scripts send all sixteen at once rather than as sixteen sequences.
@@ -157,12 +158,12 @@ public class ColorPaletteTests
 
         terminal.Write("\x1B]4;1;#ff0000;2;#00ff00;3;#0000ff\x07");
 
-        Assert.Equal(0xFF0000, terminal.Colors[1]);
-        Assert.Equal(0x00FF00, terminal.Colors[2]);
-        Assert.Equal(0x0000FF, terminal.Colors[3]);
+        terminal.Colors[1].Should().Be(0xFF0000);
+        terminal.Colors[2].Should().Be(0x00FF00);
+        terminal.Colors[3].Should().Be(0x0000FF);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc4_QueriesAnIndexedColor()
     {
         var terminal = CreateTerminal();
@@ -170,10 +171,10 @@ public class ColorPaletteTests
 
         terminal.Write("\x1B]4;1;?\x07");
 
-        Assert.Equal("\u001b]4;1;rgb:cdcd/0000/0000\u0007", Assert.Single(replies));
+        replies.Should().ContainSingle().Which.Should().Be("\u001b]4;1;rgb:cdcd/0000/0000\u0007");
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc4_QueryReflectsAPriorSet()
     {
         var terminal = CreateTerminal();
@@ -182,10 +183,10 @@ public class ColorPaletteTests
 
         terminal.Write("\x1B]4;5;?\x07");
 
-        Assert.Equal("\u001b]4;5;rgb:0101/0202/0303\u0007", Assert.Single(replies));
+        replies.Should().ContainSingle().Which.Should().Be("\u001b]4;5;rgb:0101/0202/0303\u0007");
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc4_IgnoresOutOfRangeAndMalformedEntries()
     {
         var terminal = CreateTerminal();
@@ -193,10 +194,10 @@ public class ColorPaletteTests
         terminal.Write("\x1B]4;999;#ffffff\x07");
         terminal.Write("\x1B]4;1;notacolor\x07");
 
-        Assert.Equal(0xCD0000, terminal.Colors[1]);
+        terminal.Colors[1].Should().Be(0xCD0000);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc104_ResetsASingleIndex()
     {
         var terminal = CreateTerminal();
@@ -205,23 +206,23 @@ public class ColorPaletteTests
 
         terminal.Write("\x1B]104;1\x07");
 
-        Assert.Equal(0xCD0000, terminal.Colors[1]);
-        Assert.Equal(0xFFFFFF, terminal.Colors[2]);
+        terminal.Colors[1].Should().Be(0xCD0000);
+        terminal.Colors[2].Should().Be(0xFFFFFF);
     }
 
     // ---- OSC 10/11/12 ------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Osc10_SetsForeground()
     {
         var terminal = CreateTerminal();
 
         terminal.Write("\x1B]10;#abcdef\x07");
 
-        Assert.Equal(0xABCDEF, terminal.Colors.Foreground);
+        terminal.Colors.Foreground.Should().Be(0xABCDEF);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc10_WithMultipleSpecs_AdvancesThroughResources()
     {
         // xterm defines OSC 10 ; fg ; bg as setting both; handling only the first drops the
@@ -230,25 +231,25 @@ public class ColorPaletteTests
 
         terminal.Write("\x1B]10;#111111;#222222;#333333\x07");
 
-        Assert.Equal(0x111111, terminal.Colors.Foreground);
-        Assert.Equal(0x222222, terminal.Colors.Background);
-        Assert.Equal(0x333333, terminal.Colors.Cursor);
+        terminal.Colors.Foreground.Should().Be(0x111111);
+        terminal.Colors.Background.Should().Be(0x222222);
+        terminal.Colors.Cursor.Should().Be(0x333333);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc12_SetsCursor()
     {
         var terminal = CreateTerminal();
 
         terminal.Write("\x1B]12;red\x07");
 
-        Assert.Equal(0xFF0000, terminal.Colors.Cursor);
+        terminal.Colors.Cursor.Should().Be(0xFF0000);
     }
 
-    [Theory]
-    [InlineData("110", 0xFFFFFF)]
-    [InlineData("111", 0x000000)]
-    [InlineData("112", 0xFFFFFF)]
+    [TestMethod]
+    [DataRow("110", 0xFFFFFF)]
+    [DataRow("111", 0x000000)]
+    [DataRow("112", 0xFFFFFF)]
     public void Osc110To112_ResetTheirOwnResource(string code, int expected)
     {
         var terminal = CreateTerminal();
@@ -264,10 +265,10 @@ public class ColorPaletteTests
             "111" => terminal.Colors.Background,
             _ => terminal.Colors.Cursor,
         };
-        Assert.Equal(expected, actual);
+        actual.Should().Be(expected);
     }
 
-    [Fact]
+    [TestMethod]
     public void ColorChanged_FiresForSetsAndNotForNoOps()
     {
         var terminal = CreateTerminal();
@@ -277,15 +278,15 @@ public class ColorPaletteTests
         terminal.Write("\x1B]4;1;#ff0000\x07");
         terminal.Write("\x1B]4;1;#ff0000\x07");   // same value, no repaint needed
 
-        var change = Assert.Single(changes);
-        Assert.Equal(ColorTarget.Indexed, change.Target);
-        Assert.Equal(1, change.Index);
-        Assert.Equal(0xFF0000, change.Rgb);
+        var change = changes.Should().ContainSingle().Which;
+        change.Target.Should().Be(ColorTarget.Indexed);
+        change.Index.Should().Be(1);
+        change.Rgb.Should().Be(0xFF0000);
     }
 
     // ---- no-op suppression and index handling ------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void ResetAllColors_IsSilent_WhenNothingHasChanged()
     {
         // Every other setter here suppresses a no-op. A bare OSC 104 on an untouched palette used to
@@ -296,10 +297,10 @@ public class ColorPaletteTests
 
         terminal.Write("\u001b]104\u0007");
 
-        Assert.Empty(changes);
+        changes.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetAllColors_StillFires_WhenSomethingHadChanged()
     {
         var terminal = CreateTerminal();
@@ -310,12 +311,12 @@ public class ColorPaletteTests
 
         terminal.Write("\u001b]104\u0007");
 
-        var change = Assert.Single(changes);
-        Assert.Equal(ColorTarget.Indexed, change.Target);
-        Assert.Equal(0xCD0000, terminal.Colors[1]);
+        var change = changes.Should().ContainSingle().Which;
+        change.Target.Should().Be(ColorTarget.Indexed);
+        terminal.Colors[1].Should().Be(0xCD0000);
     }
 
-    [Fact]
+    [TestMethod]
     public void ApplyTheme_IsSilent_WhenTheThemeIsUnchanged()
     {
         var terminal = CreateTerminal(new ThemeOptions { Background = "#ffffff" });
@@ -324,10 +325,10 @@ public class ColorPaletteTests
 
         terminal.Colors.ApplyTheme(new ThemeOptions { Background = "#ffffff" });
 
-        Assert.Empty(changes);
+        changes.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void ApplyTheme_FiresOnceForARealChange()
     {
         var terminal = CreateTerminal(new ThemeOptions { Background = "#000000" });
@@ -336,13 +337,13 @@ public class ColorPaletteTests
 
         terminal.Colors.ApplyTheme(new ThemeOptions { Background = "#ffffff" });
 
-        Assert.Equal(ColorTarget.All, Assert.Single(changes).Target);
+        changes.Should().ContainSingle().Which.Target.Should().Be(ColorTarget.All);
     }
 
-    [Theory]
-    [InlineData(-1)]
-    [InlineData(256)]
-    [InlineData(999)]
+    [TestMethod]
+    [DataRow(-1)]
+    [DataRow(256)]
+    [DataRow(999)]
     public void PaletteIndex_OutOfRange_Throws(int index)
     {
         // Not clamped. Clamping made SetColor(999, ...) quietly rewrite entry 255 and the indexer
@@ -350,12 +351,12 @@ public class ColorPaletteTests
         // been none.
         var terminal = CreateTerminal();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => terminal.Colors[index]);
-        Assert.Throws<ArgumentOutOfRangeException>(() => terminal.Colors.SetColor(index, 0x123456));
-        Assert.Throws<ArgumentOutOfRangeException>(() => terminal.Colors.ResetColor(index));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => terminal.Colors[index]);
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => terminal.Colors.SetColor(index, 0x123456));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => terminal.Colors.ResetColor(index));
     }
 
-    [Fact]
+    [TestMethod]
     public void PaletteIndex_OutOfRangeOverOsc_IsStillIgnoredRatherThanThrown()
     {
         // The parser must not surface a malformed sequence as an exception; InputHandler range-checks
@@ -364,13 +365,13 @@ public class ColorPaletteTests
 
         var ex = Record.Exception(() => terminal.Write("\u001b]4;999;#ffffff\u0007"));
 
-        Assert.Null(ex);
-        Assert.Equal(0xEEEEEE, terminal.Colors[255]);
+        ex.Should().BeNull();
+        terminal.Colors[255].Should().Be(0xEEEEEE);
     }
 
     // ---- concurrency -------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public async Task ApplyTheme_IsNeverObservedHalfApplied()
     {
         // The bug this pins: ApplyTheme used to Array.Copy into the live array, and Array.Copy is not
@@ -391,7 +392,7 @@ public class ColorPaletteTests
         int[] darkAnsi = ReadAnsi(terminal);
         terminal.Colors.ApplyTheme(light);
         int[] lightAnsi = ReadAnsi(terminal);
-        Assert.NotEqual(darkAnsi, lightAnsi);
+        lightAnsi.Should().NotEqual(darkAnsi);
 
         using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(3));
         var mixed = 0;
@@ -420,7 +421,7 @@ public class ColorPaletteTests
 
         await Task.WhenAll(reader, writer);
 
-        Assert.Equal(0, Volatile.Read(ref mixed));
+        Volatile.Read(ref mixed).Should().Be(0);
     }
 
     /// <summary>
@@ -442,7 +443,7 @@ public class ColorPaletteTests
         return values;
     }
 
-    [Fact]
+    [TestMethod]
     public void Take_ReturnsAViewThatDoesNotMoveAfterwards()
     {
         // The property that lets a renderer trust a snapshot for a whole frame. Writes copy on
@@ -454,52 +455,52 @@ public class ColorPaletteTests
 
         terminal.Write("\u001b]4;1;#123456\u0007");
 
-        Assert.Equal(original, before[1]);
-        Assert.Equal(0x123456, terminal.Colors[1]);
-        Assert.Equal(0x123456, terminal.Colors.Take()[1]);
+        before[1].Should().Be(original);
+        terminal.Colors[1].Should().Be(0x123456);
+        (terminal.Colors.Take()[1]).Should().Be(0x123456);
     }
 
     // ---- colour spec parsing -----------------------------------------------------------------
 
-    [Theory]
-    [InlineData("rgb:ff/00/00", 0xFF0000)]
-    [InlineData("rgb:f/0/0", 0xFF0000)]              // 1 digit: f is FULL intensity, not 0x0f
-    [InlineData("rgb:ffff/0000/0000", 0xFF0000)]     // 4 digits, as emitted by queries
-    [InlineData("#ff0000", 0xFF0000)]
-    [InlineData("#f00", 0xFF0000)]
-    [InlineData("#ffff00000000", 0xFF0000)]
-    [InlineData("red", 0xFF0000)]
-    [InlineData("RED", 0xFF0000)]
+    [TestMethod]
+    [DataRow("rgb:ff/00/00", 0xFF0000)]
+    [DataRow("rgb:f/0/0", 0xFF0000)]              // 1 digit: f is FULL intensity, not 0x0f
+    [DataRow("rgb:ffff/0000/0000", 0xFF0000)]     // 4 digits, as emitted by queries
+    [DataRow("#ff0000", 0xFF0000)]
+    [DataRow("#f00", 0xFF0000)]
+    [DataRow("#ffff00000000", 0xFF0000)]
+    [DataRow("red", 0xFF0000)]
+    [DataRow("RED", 0xFF0000)]
     public void ColorSpec_ParsesTheFormsProgramsActuallySend(string spec, int expected)
     {
-        Assert.True(ColorSpec.TryParse(spec, out var rgb));
-        Assert.Equal(expected, rgb);
+        ColorSpec.TryParse(spec, out var rgb).Should().BeTrue();
+        rgb.Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    [InlineData("rgb:ff/00")]
-    [InlineData("rgb:gg/00/00")]
-    [InlineData("#ff00")]
-    [InlineData("chartreuse")]
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("   ")]
+    [DataRow(null)]
+    [DataRow("rgb:ff/00")]
+    [DataRow("rgb:gg/00/00")]
+    [DataRow("#ff00")]
+    [DataRow("chartreuse")]
     public void ColorSpec_RejectsWhatItCannotRead(string? spec)
     {
-        Assert.False(ColorSpec.TryParse(spec, out _));
+        ColorSpec.TryParse(spec, out _).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ColorSpec_FormatWidensChannelsByRepetition()
     {
         // 0xff must become 0xffff, not 0xff00: full intensity has to survive the widening.
-        Assert.Equal("rgb:ffff/0000/8080", ColorSpec.Format(0xFF0080));
+        ColorSpec.Format(0xFF0080).Should().Be("rgb:ffff/0000/8080");
     }
 
-    [Fact]
+    [TestMethod]
     public void ColorSpec_RoundTripsThroughFormatAndParse()
     {
-        Assert.True(ColorSpec.TryParse(ColorSpec.Format(0x123456), out var rgb));
-        Assert.Equal(0x123456, rgb);
+        ColorSpec.TryParse(ColorSpec.Format(0x123456), out var rgb).Should().BeTrue();
+        rgb.Should().Be(0x123456);
     }
 }

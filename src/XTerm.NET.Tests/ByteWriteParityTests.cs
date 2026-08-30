@@ -1,7 +1,6 @@
 using System.Text;
 using XTerm;
 using XTerm.Options;
-using Xunit;
 
 namespace XTerm.Tests;
 
@@ -14,25 +13,26 @@ namespace XTerm.Tests;
 /// reason the entry is worth having: a PTY read boundary lands mid-codepoint routinely, and a caller
 /// that decodes each read on its own corrupts that character every time.
 /// </summary>
+[TestClass]
 public class ByteWriteParityTests
 {
     private const int Cols = 20;
     private const int Rows = 5;
 
-    public static TheoryData<string, string> Cases() => new()
+    public static IEnumerable<object[]> Cases() => new[]
     {
-        { "ascii", "hello world" },
-        { "wrapping ascii", new string('a', Cols * 3 + 5) },
-        { "controls", "abc\r\ndef\tghi" },
-        { "sgr", "\u001b[31mred\u001b[0m plain" },
-        { "two byte utf8", "café naïve" },
-        { "three byte utf8", "世界こんにちは" },
-        { "four byte utf8", "\U0001F600\U0001F601 emoji" },
-        { "mixed", "abc世界\U0001F600def\u001b[32mghi" },
-        { "combining", "éà" },
-        { "zwj sequence", "\U0001F468‍\U0001F469‍\U0001F467" },
-        { "wrap onto multibyte", new string('x', Cols - 1) + "世界" },
-        { "osc", "\u001b]0;a titletail" },
+        new object[] { "ascii", "hello world" },
+        new object[] { "wrapping ascii", new string('a', Cols * 3 + 5) },
+        new object[] { "controls", "abc\r\ndef\tghi" },
+        new object[] { "sgr", "\u001b[31mred\u001b[0m plain" },
+        new object[] { "two byte utf8", "café naïve" },
+        new object[] { "three byte utf8", "世界こんにちは" },
+        new object[] { "four byte utf8", "\U0001F600\U0001F601 emoji" },
+        new object[] { "mixed", "abc世界\U0001F600def\u001b[32mghi" },
+        new object[] { "combining", "éà" },
+        new object[] { "zwj sequence", "\U0001F468‍\U0001F469‍\U0001F467" },
+        new object[] { "wrap onto multibyte", new string('x', Cols - 1) + "世界" },
+        new object[] { "osc", "\u001b]0;a titletail" },
     };
 
     /// <summary>
@@ -44,7 +44,7 @@ public class ByteWriteParityTests
     /// disappear: a byte quietly dropped shortens the stream, which is corruption a caller cannot
     /// see, while U+FFFD is the standard way of saying something was there and could not be read.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void Bytes_held_across_a_switch_to_the_string_entry_become_a_replacement()
     {
         var terminal = NewTerminal();
@@ -52,11 +52,11 @@ public class ByteWriteParityTests
         terminal.Write(new byte[] { 0xE4, 0xB8 });   // two thirds of a three-byte codepoint
         terminal.Write("ok");
 
-        Assert.Equal("\uFFFDok", FirstRow(terminal));
+        FirstRow(terminal).Should().Be("\uFFFDok");
     }
 
     /// <summary>The mirror: a high surrogate held from the string entry, abandoned by byte input.</summary>
-    [Fact]
+    [TestMethod]
     public void A_surrogate_held_across_a_switch_to_the_byte_entry_becomes_a_replacement()
     {
         var terminal = NewTerminal();
@@ -64,37 +64,35 @@ public class ByteWriteParityTests
         terminal.Write("\uD83D");                    // the high half of an emoji, alone
         terminal.Write(new byte[] { (byte)'o', (byte)'k' });
 
-        Assert.Equal("\uFFFDok", FirstRow(terminal));
+        FirstRow(terminal).Should().Be("\uFFFDok");
     }
 
-    [Theory]
-    [MemberData(nameof(Cases))]
+    [TestMethod]
+    [DynamicData(nameof(Cases))]
     public void Byte_and_string_writes_agree(string name, string input)
     {
         var viaString = RunString(input);
         var viaBytes = RunBytes(input, chunkSize: 0);
 
-        Assert.True(viaString == viaBytes,
-            $"'{name}' diverged.\n--- string ---\n{viaString}\n--- bytes ---\n{viaBytes}");
+        ((viaString == viaBytes)).Should().BeTrue($"'{name}' diverged.\n--- string ---\n{viaString}\n--- bytes ---\n{viaBytes}");
     }
 
     /// <summary>
     /// The same input delivered one byte at a time. Every multi-byte sequence is therefore split
     /// across calls, which is what a PTY read boundary does and what the carry exists to survive.
     /// </summary>
-    [Theory]
-    [MemberData(nameof(Cases))]
+    [TestMethod]
+    [DynamicData(nameof(Cases))]
     public void Splitting_a_sequence_across_writes_changes_nothing(string name, string input)
     {
         var whole = RunBytes(input, chunkSize: 0);
         var byteAtATime = RunBytes(input, chunkSize: 1);
 
-        Assert.True(whole == byteAtATime,
-            $"'{name}' diverged when split.\n--- one write ---\n{whole}\n--- byte at a time ---\n{byteAtATime}");
+        ((whole == byteAtATime)).Should().BeTrue($"'{name}' diverged when split.\n--- one write ---\n{whole}\n--- byte at a time ---\n{byteAtATime}");
     }
 
     /// <summary>Every possible split point of a short multi-byte string, not just the pathological one.</summary>
-    [Fact]
+    [TestMethod]
     public void Every_split_point_agrees()
     {
         const string input = "a世b\U0001F600c";
@@ -107,7 +105,7 @@ public class ByteWriteParityTests
             terminal.Write(bytes.AsSpan(0, split));
             terminal.Write(bytes.AsSpan(split));
 
-            Assert.True(expected == Describe(terminal), $"split after {split} of {bytes.Length} bytes diverged");
+            ((expected == Describe(terminal))).Should().BeTrue($"split after {split} of {bytes.Length} bytes diverged");
         }
     }
 

@@ -9,6 +9,7 @@ using XTerm.Parser;
 /// vt100.net both implement. Each test names a sequence a real program emits and the behavior the
 /// reference parsers give it.
 /// </summary>
+[TestClass]
 public class ParserConformanceTests
 {
     private static readonly string Esc = ((char)0x1B).ToString();
@@ -25,7 +26,7 @@ public class ParserConformanceTests
             .Select(i => string.IsNullOrEmpty(line[i].Content) ? " " : line[i].Content));
     }
 
-    [Fact]
+    [TestMethod]
     public void An_escape_sequence_does_not_inherit_the_previous_ones_intermediate()
     {
         // terminfo's enacs is ESC ( B ESC ) 0. The leftover "(" from the first designator used to
@@ -37,14 +38,14 @@ public class ParserConformanceTests
 
         parser.Parse($"{Esc}(B{Esc})0");
 
-        Assert.Equal(2, seen.Count);
-        Assert.Equal(("B", "("), seen[0]);
-        Assert.Equal(("0", ")"), seen[1]);
+        seen.Count.Should().Be(2);
+        seen[0].Should().Be(("B", "("));
+        seen[1].Should().Be(("0", ")"));
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
+    [TestMethod]
+    [DataRow(true)]
+    [DataRow(false)]
     public void Can_and_sub_abandon_a_sequence_in_flight(bool useCan)
     {
         // What CAN is for. Without the transition the parser stayed inside the cancelled CSI and
@@ -52,10 +53,10 @@ public class ParserConformanceTests
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[1;2" + (useCan ? Can : Sub) + "hello");
 
-        Assert.Equal("hello", Row(terminal, 0, 5));
+        Row(terminal, 0, 5).Should().Be("hello");
     }
 
-    [Fact]
+    [TestMethod]
     public void Can_abandons_an_osc_without_dispatching_half_a_title()
     {
         var terminal = NewTerminal();
@@ -64,11 +65,11 @@ public class ParserConformanceTests
 
         terminal.Write($"{Esc}]0;half a tit{Can}rest");
 
-        Assert.Empty(titles);
-        Assert.Equal("rest", Row(terminal, 0, 4));
+        titles.Should().BeEmpty();
+        Row(terminal, 0, 4).Should().Be("rest");
     }
 
-    [Fact]
+    [TestMethod]
     public void C1_string_terminator_ends_an_osc()
     {
         // 0x9C is the terminator ECMA-48 defines for OSC. It was appended to the payload instead,
@@ -79,20 +80,20 @@ public class ParserConformanceTests
 
         terminal.Write($"{Esc}]0;my title{C1St}after");
 
-        Assert.Equal(["my title"], titles);
-        Assert.Equal("after", Row(terminal, 0, 5));
+        titles.Should().Equal(["my title"]);
+        Row(terminal, 0, 5).Should().Be("after");
     }
 
-    [Fact]
+    [TestMethod]
     public void Del_is_not_printed_as_a_cell()
     {
         var terminal = NewTerminal();
         terminal.Write("a" + (char)0x7F + "b");
 
-        Assert.Equal("ab", Row(terminal, 0, 2));
+        Row(terminal, 0, 2).Should().Be("ab");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_private_marker_after_a_parameter_poisons_the_sequence()
     {
         // CSI 1 ? 5 h is malformed. Honouring the half that parsed made it SM 15; the spec's
@@ -102,11 +103,11 @@ public class ParserConformanceTests
         terminal.Write($"{Esc}[1?5h");
         terminal.Write("ok");
 
-        Assert.Equal("ok", Row(terminal, 0, 2));
-        Assert.False(terminal.InsertMode);
+        Row(terminal, 0, 2).Should().Be("ok");
+        terminal.InsertMode.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_control_inside_an_escape_intermediate_still_executes()
     {
         // EscapeIntermediate was missing from the control-character dispatch, so a line feed
@@ -115,10 +116,10 @@ public class ParserConformanceTests
         terminal.Write("first");
         terminal.Write($"{Esc}(" + "\n" + "B");
 
-        Assert.Equal(1, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_abandons_a_partial_utf8_sequence()
     {
         // The byte entry point holds a truncated multi-byte prefix across calls, by design. Reset
@@ -131,6 +132,6 @@ public class ParserConformanceTests
         parser.Reset();
         parser.Parse(new byte[] { 0xE2, 0x82, 0xAC });    // a whole one
 
-        Assert.Equal(["\u20AC"], printed);
+        printed.Should().Equal(["\u20AC"]);
     }
 }

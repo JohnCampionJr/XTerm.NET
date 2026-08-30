@@ -11,30 +11,31 @@ namespace XTerm.Tests;
 /// understands the mode at all. Holding the frame is the renderer's decision, and so is the timeout
 /// that has to bound it.
 /// </remarks>
+[TestClass]
 public class SynchronizedOutputTests
 {
     private const string Esc = "\u001b";
 
     private static Terminal Fresh() => new(new TerminalOptions { Cols = 20, Rows = 5 });
 
-    [Fact]
+    [TestMethod]
     public void Begins_and_ends_with_the_mode()
     {
         var terminal = Fresh();
-        Assert.False(terminal.SynchronizedOutput);
+        terminal.SynchronizedOutput.Should().BeFalse();
 
         terminal.Write($"{Esc}[?2026h");
-        Assert.True(terminal.SynchronizedOutput);
+        terminal.SynchronizedOutput.Should().BeTrue();
 
         terminal.Write($"{Esc}[?2026l");
-        Assert.False(terminal.SynchronizedOutput);
+        terminal.SynchronizedOutput.Should().BeFalse();
     }
 
     /// <summary>
     /// A renderer needs to know the moment an update starts and ends, not to discover it on its next
     /// frame — so the change is an event, not just a property.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Raises_an_event_at_each_edge()
     {
         var terminal = Fresh();
@@ -44,7 +45,7 @@ public class SynchronizedOutputTests
         terminal.Write($"{Esc}[?2026h");
         terminal.Write($"{Esc}[?2026l");
 
-        Assert.Equal(new[] { true, false }, edges);
+        edges.Should().Equal(new[] { true, false });
     }
 
     /// <summary>
@@ -52,7 +53,7 @@ public class SynchronizedOutputTests
     /// should reach a renderer — an event per frame that says nothing changed is noise it would have
     /// to filter itself.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Repeating_the_same_state_raises_nothing()
     {
         var terminal = Fresh();
@@ -63,14 +64,14 @@ public class SynchronizedOutputTests
         terminal.Write($"{Esc}[?2026h");
         terminal.Write($"{Esc}[?2026h");
 
-        Assert.Equal(1, edges);
+        edges.Should().Be(1);
     }
 
     /// <summary>
     /// The content written inside an update is ordinary content — the mode changes nothing about how
     /// it is parsed or stored, only when a renderer is willing to show it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Content_written_inside_an_update_lands_normally()
     {
         var terminal = Fresh();
@@ -79,7 +80,7 @@ public class SynchronizedOutputTests
         terminal.Write("hello");
         terminal.Write($"{Esc}[?2026l");
 
-        Assert.Equal("hello", terminal.Buffer.Lines[0]!.TranslateToString(true).TrimEnd());
+        (terminal.Buffer.Lines[0]!.TranslateToString(true).TrimEnd()).Should().Be("hello");
     }
 
     // ---- a reset has to clear it ----------------------------------------------------------------
@@ -87,7 +88,7 @@ public class SynchronizedOutputTests
     // Raised in review. RIS is exactly how someone recovers from an application that began an update
     // and then died, so it is the one path that must not leave the mode set.
 
-    [Fact]
+    [TestMethod]
     public void A_full_reset_clears_the_mode()
     {
         var terminal = Fresh();
@@ -95,7 +96,7 @@ public class SynchronizedOutputTests
 
         terminal.Write($"{Esc}c");   // RIS
 
-        Assert.False(terminal.SynchronizedOutput);
+        terminal.SynchronizedOutput.Should().BeFalse();
     }
 
     /// <summary>
@@ -103,7 +104,7 @@ public class SynchronizedOutputTests
     /// application's begin is swallowed as "no change" and its end raises a lone false. The
     /// transitions-only contract inverts, and stays inverted.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Events_stay_paired_across_a_reset()
     {
         var terminal = Fresh();
@@ -116,14 +117,14 @@ public class SynchronizedOutputTests
         terminal.Write($"{Esc}[?2026h");
         terminal.Write($"{Esc}[?2026l");
 
-        Assert.Equal(new[] { true, false }, edges);
+        edges.Should().Equal(new[] { true, false });
     }
 
     /// <summary>
     /// The worst of the three in the field: a client that probes before drawing is told a frame is
     /// already open when none is.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Decrqm_reports_reset_after_a_reset()
     {
         var terminal = Fresh();
@@ -134,14 +135,14 @@ public class SynchronizedOutputTests
         terminal.DataReceived += (_, e) => replies.Add(e.Data);
         terminal.Write($"{Esc}[?2026$p");
 
-        Assert.Equal(new[] { $"{Esc}[?2026;2$y" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[?2026;2$y" });
     }
 
     /// <summary>
     /// A renderer holding a frame has to be told it can stop, and RIS is the one case where nothing
     /// else will tell it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_reset_during_an_update_ends_it_for_a_listener()
     {
         var terminal = Fresh();
@@ -152,12 +153,12 @@ public class SynchronizedOutputTests
 
         terminal.Write($"{Esc}c");
 
-        Assert.Equal(new[] { false }, edges);
+        edges.Should().Equal(new[] { false });
     }
 
     // ---- DECRQM, which is how an application discovers the mode exists --------------------------
 
-    [Fact]
+    [TestMethod]
     public void Reports_the_mode_as_reset_when_idle()
     {
         var terminal = Fresh();
@@ -166,10 +167,10 @@ public class SynchronizedOutputTests
 
         terminal.Write($"{Esc}[?2026$p");
 
-        Assert.Equal(new[] { $"{Esc}[?2026;2$y" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[?2026;2$y" });
     }
 
-    [Fact]
+    [TestMethod]
     public void Reports_the_mode_as_set_during_an_update()
     {
         var terminal = Fresh();
@@ -179,6 +180,6 @@ public class SynchronizedOutputTests
         terminal.Write($"{Esc}[?2026h");
         terminal.Write($"{Esc}[?2026$p");
 
-        Assert.Equal(new[] { $"{Esc}[?2026;1$y" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}[?2026;1$y" });
     }
 }

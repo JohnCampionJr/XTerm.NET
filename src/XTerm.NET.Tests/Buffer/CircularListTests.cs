@@ -4,20 +4,22 @@ using XTerm.Buffer;
 
 namespace XTerm.Tests.Buffer;
 
+[TestClass]
+
 public class CircularListTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_CreatesEmptyList()
     {
         // Arrange & Act
         var list = new CircularList<BufferLine>(10);
 
         // Assert
-        Assert.Equal(0, list.Length);
-        Assert.Equal(10, list.MaxLength);
+        list.Length.Should().Be(0);
+        list.MaxLength.Should().Be(10);
     }
 
-    [Fact]
+    [TestMethod]
     public void Push_AddsItem()
     {
         // Arrange
@@ -28,11 +30,11 @@ public class CircularListTests
         list.Push(line);
 
         // Assert
-        Assert.Equal(1, list.Length);
-        Assert.Equal(line, list[0]);
+        list.Length.Should().Be(1);
+        list[0].Should().Equal(line);
     }
 
-    [Fact]
+    [TestMethod]
     public void Push_MultipleTimes_AddsItems()
     {
         // Arrange
@@ -47,13 +49,13 @@ public class CircularListTests
         list.Push(line3);
 
         // Assert
-        Assert.Equal(3, list.Length);
-        Assert.Equal(line1, list[0]);
-        Assert.Equal(line2, list[1]);
-        Assert.Equal(line3, list[2]);
+        list.Length.Should().Be(3);
+        list[0].Should().Equal(line1);
+        list[1].Should().Equal(line2);
+        list[2].Should().Equal(line3);
     }
 
-    [Fact]
+    [TestMethod]
     public void Push_ExceedMaxLength_OverwritesOldest()
     {
         // Arrange
@@ -75,13 +77,13 @@ public class CircularListTests
         list.Push(line4); // Should overwrite line1
 
         // Assert
-        Assert.Equal(3, list.Length);
-        Assert.Equal("2", list[0][0].Content); // line1 was overwritten
-        Assert.Equal("3", list[1][0].Content);
-        Assert.Equal("4", list[2][0].Content);
+        list.Length.Should().Be(3);
+        list[0][0].Content.Should().Be("2"); // line1 was overwritten
+        list[1][0].Content.Should().Be("3");
+        list[2][0].Content.Should().Be("4");
     }
 
-    [Fact]
+    [TestMethod]
     public void Pop_RemovesAndReturnsLastItem()
     {
         // Arrange
@@ -95,11 +97,11 @@ public class CircularListTests
         var popped = list.Pop();
 
         // Assert
-        Assert.Equal(line2, popped);
-        Assert.Equal(1, list.Length);
+        popped.Should().Equal(line2);
+        list.Length.Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Pop_EmptyList_ReturnsNull()
     {
         // Arrange
@@ -109,10 +111,10 @@ public class CircularListTests
         var popped = list.Pop();
 
         // Assert
-        Assert.Null(popped);
+        popped.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Indexer_Get_ReturnsItem()
     {
         // Arrange
@@ -124,10 +126,10 @@ public class CircularListTests
         var retrieved = list[0];
 
         // Assert
-        Assert.Equal(line, retrieved);
+        retrieved.Should().Equal(line);
     }
 
-    [Fact]
+    [TestMethod]
     public void Indexer_Set_SetsItem()
     {
         // Arrange
@@ -140,10 +142,10 @@ public class CircularListTests
         list[0] = line2;
 
         // Assert
-        Assert.Equal(line2, list[0]);
+        list[0].Should().Equal(line2);
     }
 
-    [Fact]
+    [TestMethod]
     public void Indexer_OutOfBounds_ThrowsException()
     {
         // Arrange
@@ -151,11 +153,11 @@ public class CircularListTests
         list.Push(new BufferLine(80));
 
         // Act & Assert
-        Assert.Throws<IndexOutOfRangeException>(() => list[-1]);
-        Assert.Throws<IndexOutOfRangeException>(() => list[10]);
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => list[-1]);
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => list[10]);
     }
 
-    [Fact]
+    [TestMethod]
     public void Splice_DeleteOnly_RemovesItems()
     {
         // Arrange
@@ -176,12 +178,12 @@ public class CircularListTests
         list.Splice(1, 1); // Remove line2
 
         // Assert
-        Assert.Equal(2, list.Length);
-        Assert.Equal("1", list[0][0].Content);
-        Assert.Equal("3", list[1][0].Content);
+        list.Length.Should().Be(2);
+        list[0][0].Content.Should().Be("1");
+        list[1][0].Content.Should().Be("3");
     }
 
-    [Fact]
+    [TestMethod]
     public void Splice_InsertOnly_AddsItems()
     {
         // Arrange
@@ -201,13 +203,13 @@ public class CircularListTests
         list.Splice(1, 0, lineInsert); // Insert at position 1
 
         // Assert
-        Assert.Equal(3, list.Length);
-        Assert.Equal("1", list[0][0].Content);
-        Assert.Equal("X", list[1][0].Content);
-        Assert.Equal("2", list[2][0].Content);
+        list.Length.Should().Be(3);
+        list[0][0].Content.Should().Be("1");
+        list[1][0].Content.Should().Be("X");
+        list[2][0].Content.Should().Be("2");
     }
 
-    [Fact]
+    [TestMethod]
     public void Splice_DeleteAndInsert_ReplacesItems()
     {
         // Arrange
@@ -230,13 +232,13 @@ public class CircularListTests
         list.Splice(1, 1, lineNew); // Replace line2 with lineNew
 
         // Assert
-        Assert.Equal(3, list.Length);
-        Assert.Equal("1", list[0][0].Content);
-        Assert.Equal("N", list[1][0].Content);
-        Assert.Equal("3", list[2][0].Content);
+        list.Length.Should().Be(3);
+        list[0][0].Content.Should().Be("1");
+        list[1][0].Content.Should().Be("N");
+        list[2][0].Content.Should().Be("3");
     }
 
-    [Fact]
+    [TestMethod]
     public void Splice_OutOfBounds_ThrowsException()
     {
         // Arrange
@@ -244,11 +246,11 @@ public class CircularListTests
         list.Push(new BufferLine(80));
 
         // Act & Assert
-        Assert.Throws<IndexOutOfRangeException>(() => list.Splice(-1, 1));
-        Assert.Throws<IndexOutOfRangeException>(() => list.Splice(10, 1));
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => list.Splice(-1, 1));
+        Assert.ThrowsExactly<IndexOutOfRangeException>(() => list.Splice(10, 1));
     }
 
-    [Fact]
+    [TestMethod]
     public void TrimStart_RemovesItemsFromStart()
     {
         // Arrange
@@ -269,12 +271,12 @@ public class CircularListTests
         list.TrimStart(1);
 
         // Assert
-        Assert.Equal(2, list.Length);
-        Assert.Equal("2", list[0][0].Content);
-        Assert.Equal("3", list[1][0].Content);
+        list.Length.Should().Be(2);
+        list[0][0].Content.Should().Be("2");
+        list[1][0].Content.Should().Be("3");
     }
 
-    [Fact]
+    [TestMethod]
     public void TrimStart_ExceedLength_TrimsToEmpty()
     {
         // Arrange
@@ -286,10 +288,10 @@ public class CircularListTests
         list.TrimStart(5);
 
         // Assert
-        Assert.Equal(0, list.Length);
+        list.Length.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void TrimStart_NegativeCount_DoesNothing()
     {
         // Arrange
@@ -301,10 +303,10 @@ public class CircularListTests
         list.TrimStart(-1);
 
         // Assert
-        Assert.Equal(2, list.Length);
+        list.Length.Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void ShiftElements_Right_ShiftsElements()
     {
         // Arrange
@@ -327,11 +329,11 @@ public class CircularListTests
         list.ShiftElements(1, 2, 1); // Shift 2 elements starting at index 1, right by 1
 
         // Assert
-        Assert.Equal("2", list[2][0].Content);
-        Assert.Equal("3", list[3][0].Content);
+        list[2][0].Content.Should().Be("2");
+        list[3][0].Content.Should().Be("3");
     }
 
-    [Fact]
+    [TestMethod]
     public void ShiftElements_Left_ShiftsElements()
     {
         // Arrange
@@ -352,11 +354,11 @@ public class CircularListTests
         list.ShiftElements(1, 2, -1); // Shift 2 elements starting at index 1, left by 1
 
         // Assert
-        Assert.Equal("2", list[0][0].Content);
-        Assert.Equal("3", list[1][0].Content);
+        list[0][0].Content.Should().Be("2");
+        list[1][0].Content.Should().Be("3");
     }
 
-    [Fact]
+    [TestMethod]
     public void Recycle_AtMaxCapacity_ReturnsPoppedItem()
     {
         // Arrange
@@ -373,11 +375,11 @@ public class CircularListTests
         var recycled = list.Recycle();
 
         // Assert
-        Assert.NotNull(recycled);
-        Assert.Equal(2, list.Length);
+        recycled.Should().NotBeNull();
+        list.Length.Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void Recycle_BelowMaxCapacity_ReturnsNull()
     {
         // Arrange
@@ -388,10 +390,10 @@ public class CircularListTests
         var recycled = list.Recycle();
 
         // Assert
-        Assert.Null(recycled);
+        recycled.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Clear_RemovesAllItems()
     {
         // Arrange
@@ -404,10 +406,10 @@ public class CircularListTests
         list.Clear();
 
         // Assert
-        Assert.Equal(0, list.Length);
+        list.Length.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_Expand_IncreasesMaxLength()
     {
         // Arrange
@@ -419,11 +421,11 @@ public class CircularListTests
         list.Resize(10);
 
         // Assert
-        Assert.Equal(10, list.MaxLength);
-        Assert.Equal(2, list.Length);
+        list.MaxLength.Should().Be(10);
+        list.Length.Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_Shrink_DecreasesMaxLength()
     {
         // Arrange
@@ -444,13 +446,13 @@ public class CircularListTests
         list.Resize(2);
 
         // Assert
-        Assert.Equal(2, list.MaxLength);
-        Assert.Equal(2, list.Length);
-        Assert.Equal("1", list[0][0].Content);
-        Assert.Equal("2", list[1][0].Content);
+        list.MaxLength.Should().Be(2);
+        list.Length.Should().Be(2);
+        list[0][0].Content.Should().Be("1");
+        list[1][0].Content.Should().Be("2");
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_SameSize_DoesNothing()
     {
         // Arrange
@@ -461,11 +463,11 @@ public class CircularListTests
         list.Resize(10);
 
         // Assert
-        Assert.Equal(10, list.MaxLength);
-        Assert.Equal(1, list.Length);
+        list.MaxLength.Should().Be(10);
+        list.Length.Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetItems_ReturnsAllItems()
     {
         // Arrange
@@ -482,13 +484,13 @@ public class CircularListTests
         var items = list.GetItems().ToList();
 
         // Assert
-        Assert.Equal(3, items.Count);
-        Assert.Equal(line1, items[0]);
-        Assert.Equal(line2, items[1]);
-        Assert.Equal(line3, items[2]);
+        items.Count.Should().Be(3);
+        items[0].Should().Equal(line1);
+        items[1].Should().Equal(line2);
+        items[2].Should().Equal(line3);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetItems_EmptyList_ReturnsEmptyEnumerable()
     {
         // Arrange
@@ -498,10 +500,10 @@ public class CircularListTests
         var items = list.GetItems().ToList();
 
         // Assert
-        Assert.Empty(items);
+        items.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void CircularBehavior_MaintainsOrder()
     {
         // Arrange
@@ -518,11 +520,11 @@ public class CircularListTests
 
         // Act & Assert
         // After pushing 7 items into a list with max 5, oldest 2 should be overwritten
-        Assert.Equal(5, list.Length);
-        Assert.Equal("2", list[0][0].Content); // Items 0 and 1 were overwritten
-        Assert.Equal("3", list[1][0].Content);
-        Assert.Equal("4", list[2][0].Content);
-        Assert.Equal("5", list[3][0].Content);
-        Assert.Equal("6", list[4][0].Content);
+        list.Length.Should().Be(5);
+        list[0][0].Content.Should().Be("2"); // Items 0 and 1 were overwritten
+        list[1][0].Content.Should().Be("3");
+        list[2][0].Content.Should().Be("4");
+        list[3][0].Content.Should().Be("5");
+        list[4][0].Content.Should().Be("6");
     }
 }

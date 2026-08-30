@@ -6,6 +6,7 @@ namespace XTerm.Tests;
 /// Lifecycle and state that outlives a single sequence: what a terminal still believes after a
 /// reset, after a dispose, or after a program leaves a mode set.
 /// </summary>
+[TestClass]
 public class ApiLifecycleTests
 {
     private static readonly string Esc = ((char)0x1B).ToString();
@@ -13,7 +14,7 @@ public class ApiLifecycleTests
     private static Terminal NewTerminal(int cols = 20, int rows = 6) =>
         new(new TerminalOptions { Cols = cols, Rows = rows });
 
-    [Fact]
+    [TestMethod]
     public void Terminal_is_disposable_and_disposing_twice_is_harmless()
     {
         // It always had the method; without the interface no using statement, DI container or
@@ -28,7 +29,7 @@ public class ApiLifecycleTests
         second.Dispose();
     }
 
-    [Fact]
+    [TestMethod]
     public void Writing_to_a_disposed_terminal_is_ignored_rather_than_thrown()
     {
         // Deliberate: a host reads its pty on a background thread, and disposing the control while
@@ -37,10 +38,10 @@ public class ApiLifecycleTests
         terminal.Dispose();
 
         var ex = Record.Exception(() => terminal.Write("after"));
-        Assert.Null(ex);
+        ex.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_restores_the_charset_designations()
     {
         // ResetCharsets existed for this and was called from nowhere, so a program that
@@ -50,23 +51,23 @@ public class ApiLifecycleTests
         terminal.Write($"{Esc}c");         // RIS
         terminal.Write("q");
 
-        Assert.Equal("q", terminal.Buffer.Lines[0]![0].Content);
+        (terminal.Buffer.Lines[0]![0].Content).Should().Be("q");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_restores_the_sixel_modes()
     {
         // They survived RIS, so DECRQM went on reporting mode 80 as set after a reset.
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[?80h");
-        Assert.True(terminal.SixelDisplayMode);
+        terminal.SixelDisplayMode.Should().BeTrue();
 
         terminal.Write($"{Esc}c");
-        Assert.False(terminal.SixelDisplayMode);
-        Assert.True(terminal.SixelPrivateColorRegisters);
+        terminal.SixelDisplayMode.Should().BeFalse();
+        terminal.SixelPrivateColorRegisters.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reverse_wraparound_moves_the_cursor_back_over_the_wrap()
     {
         // DECSET 45 was stored and reported and nothing read it, so a shell erasing a wrapped
@@ -76,11 +77,11 @@ public class ApiLifecycleTests
         terminal.Write($"{Esc}[2;1H");     // row 2, column 1
         terminal.Write("\b");
 
-        Assert.Equal(0, terminal.Buffer.Y);
-        Assert.Equal(9, terminal.Buffer.X);
+        terminal.Buffer.Y.Should().Be(0);
+        terminal.Buffer.X.Should().Be(9);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_notification_that_fails_to_build_is_not_raised()
     {
         // Missing braces meant only the inner if was guarded, so a failed build raised the event
@@ -92,10 +93,10 @@ public class ApiLifecycleTests
 
         terminal.Write($"{Esc}]99;i=x:d=1;{Esc}\\");   // done, but nothing to show
 
-        Assert.All(raised, t => Assert.False(string.IsNullOrEmpty(t)));
+        raised.Should().AllSatisfy(t => string.IsNullOrEmpty(t).Should().BeFalse());
     }
 
-    [Fact]
+    [TestMethod]
     public void A_reset_is_not_undone_by_a_restore_of_what_was_saved_before_it()
     {
         // RIS reset the live charset tables but left the SAVED cursor context alone, so the reset
@@ -108,10 +109,10 @@ public class ApiLifecycleTests
         terminal.Write($"{Esc}8");         // DECRC
         terminal.Write("q");
 
-        Assert.Equal("q", terminal.Buffer.Lines[terminal.Buffer.YBase]![0].Content);
+        (terminal.Buffer.Lines[terminal.Buffer.YBase]![0].Content).Should().Be("q");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_reset_clears_the_saved_cursor_on_the_screen_it_is_not_looking_at()
     {
         // DECSC state is per-screen, so a reset that cleared only the active buffer would leave
@@ -128,10 +129,10 @@ public class ApiLifecycleTests
         terminal.Write($"{Esc}8");
         terminal.Write("q");
 
-        Assert.Equal("q", terminal.Buffer.Lines[terminal.Buffer.YBase]![0].Content);
+        (terminal.Buffer.Lines[terminal.Buffer.YBase]![0].Content).Should().Be("q");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reverse_wrap_stops_at_the_top_of_the_scrolling_region()
     {
         // Bounded at row 0, backspacing off the left edge on the region's first row moved the
@@ -142,11 +143,11 @@ public class ApiLifecycleTests
         terminal.Write($"{Esc}[3;1H");     // top row of the region, column 1
         terminal.Write("\b");
 
-        Assert.Equal(2, terminal.Buffer.Y);   // still on row 3 (0-based 2)
-        Assert.Equal(0, terminal.Buffer.X);
+        terminal.Buffer.Y.Should().Be(2);   // still on row 3 (0-based 2)
+        terminal.Buffer.X.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reverse_wrap_lands_on_the_right_margin_not_the_screen_edge()
     {
         // The row above ends where the pane ends. Landing at Cols - 1 put the cursor outside the
@@ -158,11 +159,11 @@ public class ApiLifecycleTests
         terminal.Write($"{Esc}[3;5H");     // row 3, at the left margin
         terminal.Write("\b");
 
-        Assert.Equal(1, terminal.Buffer.Y);
-        Assert.Equal(11, terminal.Buffer.X);   // right margin (col 12, 0-based 11)
+        terminal.Buffer.Y.Should().Be(1);
+        terminal.Buffer.X.Should().Be(11);   // right margin (col 12, 0-based 11)
     }
 
-    [Fact]
+    [TestMethod]
     public void An_osc_payload_keeps_its_non_ascii_characters()
     {
         // The OSC control block is entered only for C0 and C1, so the arm it documents as
@@ -175,6 +176,6 @@ public class ApiLifecycleTests
 
         terminal.Write($"{Esc}]0;café 日本語 — ✓{Esc}\\");
 
-        Assert.Equal("café 日本語 — ✓", title);
+        title.Should().Be("café 日本語 — ✓");
     }
 }

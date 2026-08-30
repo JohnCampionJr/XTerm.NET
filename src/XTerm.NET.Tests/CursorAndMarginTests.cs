@@ -6,6 +6,7 @@ namespace XTerm.Tests;
 /// Cursor motion, margins and tab stops against what xterm does. Each test names the program
 /// behavior that goes wrong when the terminal disagrees.
 /// </summary>
+[TestClass]
 public class CursorAndMarginTests
 {
     private static readonly string Esc = ((char)0x1B).ToString();
@@ -20,7 +21,7 @@ public class CursorAndMarginTests
             .Select(i => string.IsNullOrEmpty(line[i].Content) ? " " : line[i].Content));
     }
 
-    [Fact]
+    [TestMethod]
     public void Cursor_up_stops_at_the_top_margin_when_it_starts_inside()
     {
         // A full-screen editor keeps its status line outside the region; a cursor walking out of
@@ -30,10 +31,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[5;1H");     // inside it
         terminal.Write($"{Esc}[10A");      // further up than the region is tall
 
-        Assert.Equal(2, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void Cursor_down_stops_at_the_bottom_margin_when_it_starts_inside()
     {
         var terminal = NewTerminal();
@@ -41,10 +42,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[5;1H");
         terminal.Write($"{Esc}[10B");
 
-        Assert.Equal(7, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(7);
     }
 
-    [Fact]
+    [TestMethod]
     public void Cursor_up_from_outside_the_region_uses_the_screen_edge()
     {
         var terminal = NewTerminal();
@@ -52,10 +53,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[10;1H");    // below the region
         terminal.Write($"{Esc}[20A");
 
-        Assert.Equal(0, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Backspace_from_a_full_line_lands_on_the_last_column()
     {
         // Printing to the end leaves the cursor one PAST the last column. Counting back from that
@@ -64,44 +65,44 @@ public class CursorAndMarginTests
         terminal.Write("0123456789");      // fills the line, pending wrap
         terminal.Write($"{Esc}[1D");       // CUB 1
 
-        Assert.Equal(8, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(8);
     }
 
-    [Fact]
+    [TestMethod]
     public void With_wrapping_off_the_last_column_is_overwritten_not_dropped()
     {
         var terminal = NewTerminal(cols: 10);
         terminal.Write($"{Esc}[?7l");      // DECAWM off
         terminal.Write("0123456789ABC");
 
-        Assert.Equal("012345678C", Row(terminal, 0, 10));
+        Row(terminal, 0, 10).Should().Be("012345678C");
     }
 
-    [Fact]
+    [TestMethod]
     public void An_explicit_zero_scroll_region_means_the_whole_screen()
     {
         // CSI 0;0r is how a program resets its region. It used to clamp to a single row.
         var terminal = NewTerminal(rows: 10);
         terminal.Write($"{Esc}[0;0r");
 
-        Assert.Equal(0, terminal.Buffer.ScrollTop);
-        Assert.Equal(9, terminal.Buffer.ScrollBottom);
+        terminal.Buffer.ScrollTop.Should().Be(0);
+        terminal.Buffer.ScrollBottom.Should().Be(9);
     }
 
-    [Fact]
+    [TestMethod]
     public void Insert_and_delete_line_move_the_cursor_to_the_left_margin()
     {
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[3;5H");
         terminal.Write($"{Esc}[L");
-        Assert.Equal(0, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(0);
 
         terminal.Write($"{Esc}[3;5H");
         terminal.Write($"{Esc}[M");
-        Assert.Equal(0, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Save_and_restore_cursor_carry_the_charset()
     {
         // ESC ( 0 selects line drawing. A TUI that saves the cursor mid-border and restores it
@@ -113,10 +114,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}8");         // DECRC
         terminal.Write("q");               // 'q' is a horizontal line in the DEC set
 
-        Assert.Equal("\u2500", Row(terminal, 0, 1));
+        Row(terminal, 0, 1).Should().Be("\u2500");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_save_inside_the_alternate_screen_does_not_disturb_the_normal_one()
     {
         // DECSC is per-screen: the rest of the saved state already lives on the buffer, so the
@@ -136,10 +137,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}8");         // the shell restores what IT saved
         terminal.Write("q");
 
-        Assert.Equal("\u2500", Row(terminal, 0, 1));
+        Row(terminal, 0, 1).Should().Be("\u2500");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_program_can_set_and_clear_its_own_tab_stops()
     {
         // `tabs 4` writes stops with HTS. TBC used to acknowledge the request and do nothing.
@@ -148,10 +149,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[1;5H{Esc}H");   // HTS at column 4
         terminal.Write($"{Esc}[1;1H\t");
 
-        Assert.Equal(4, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void Clearing_all_stops_removes_the_defaults_too()
     {
         // The earlier test could not catch TBC doing nothing: its custom stop at column 4 merely
@@ -162,10 +163,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[1;1H" + "\t");
 
         // With no stops at all a tab goes to the last column, not to 8.
-        Assert.Equal(39, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(39);
     }
 
-    [Fact]
+    [TestMethod]
     public void Backward_tab_uses_the_stops_a_program_set()
     {
         // CBT derived its answer arithmetically, so it ignored HTS stops and disagreed with
@@ -176,10 +177,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[1;7H");                  // cursor at column 6
         terminal.Write($"{Esc}[Z");                     // CBT
 
-        Assert.Equal(4, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void Restoring_a_cursor_that_was_pending_a_wrap_still_wraps()
     {
         // The saved position is X == Cols, one past the last column. Restoring it through the
@@ -192,11 +193,11 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}8");          // DECRC
         terminal.Write("X");
 
-        Assert.Equal("9", Row(terminal, 0, 10)[9..]);   // the last cell survived
-        Assert.Equal("X", Row(terminal, 1, 1));         // and X wrapped
+        (Row(terminal, 0, 10)[9..]).Should().Be("9");   // the last cell survived
+        Row(terminal, 1, 1).Should().Be("X");         // and X wrapped
     }
 
-    [Fact]
+    [TestMethod]
     public void Both_tab_motions_agree_on_the_same_screen()
     {
         // C0 HT hardcoded 8 while CHT honoured the option, so the two disagreed.
@@ -206,29 +207,29 @@ public class CursorAndMarginTests
 
         terminal.Write($"{Esc}[1;1H");
         terminal.Write($"{Esc}[1I");       // CHT 1
-        Assert.Equal(afterHt, terminal.Buffer.X);
-        Assert.Equal(4, afterHt);
+        terminal.Buffer.X.Should().Be(afterHt);
+        afterHt.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void Insert_char_from_a_full_line_acts_on_the_last_column()
     {
         var terminal = NewTerminal(cols: 10);
         terminal.Write("0123456789");
         terminal.Write($"{Esc}[@");        // ICH 1
 
-        Assert.Equal(" ", Row(terminal, 0, 10)[9..]);
+        (Row(terminal, 0, 10)[9..]).Should().Be(" ");
     }
 
-    [Fact]
+    [TestMethod]
     public void Hpa_and_vpr_move_the_cursor()
     {
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[5`");       // HPA to column 5
-        Assert.Equal(4, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(4);
 
         terminal.Write($"{Esc}[2e");       // VPR down 2
-        Assert.Equal(2, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(2);
     }
 
     // ------------------------------------------------------------------ pending wrap is a FACT
@@ -241,7 +242,7 @@ public class CursorAndMarginTests
     // from right-moving ones -- rate-dependent only because it needed a print immediately followed
     // by a CUB or DCH in the same stream.
 
-    [Fact]
+    [TestMethod]
     public void Delete_right_after_printing_deletes_at_the_cursor_not_one_left()
     {
         // The 16-byte repro the bug was cornered with: print AB, DCH 1. The cursor sits on the
@@ -249,20 +250,20 @@ public class CursorAndMarginTests
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[5;1HAB{Esc}[1Ptail");
 
-        Assert.Equal("ABtail", Row(terminal, 4, 6));
+        Row(terminal, 4, 6).Should().Be("ABtail");
     }
 
-    [Fact]
+    [TestMethod]
     public void Cursor_back_right_after_printing_counts_from_the_cursor_not_one_left()
     {
         // Print ABCD, CUB 2 -> the cursor is on C; DCH must eat C, not B.
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[5;1HABCD{Esc}[2D{Esc}[1P");
 
-        Assert.Equal("ABD ", Row(terminal, 4, 4));
+        Row(terminal, 4, 4).Should().Be("ABD ");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_wrap_left_pending_on_another_line_does_not_shift_edits_after_a_move()
     {
         // Fill a line to the last column (a REAL pending wrap), address another line, print, edit.
@@ -271,10 +272,10 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[1;14H{new string('X', 7)}");   // fills row 1 to column 20
         terminal.Write($"{Esc}[5;1HAB{Esc}[1Ptail");
 
-        Assert.Equal("ABtail", Row(terminal, 4, 6));
+        Row(terminal, 4, 6).Should().Be("ABtail");
     }
 
-    [Fact]
+    [TestMethod]
     public void Printing_the_last_column_still_wraps_the_next_character()
     {
         // The guard for the fix itself: the flag must still be TRUE at the phantom column, or
@@ -282,10 +283,10 @@ public class CursorAndMarginTests
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[1;1H{new string('X', 20)}Y");
 
-        Assert.Equal("Y", terminal.Buffer.Lines[1]![0].Content);
+        (terminal.Buffer.Lines[1]![0].Content).Should().Be("Y");
     }
 
-    [Fact]
+    [TestMethod]
     public void Insert_at_the_phantom_column_still_acts_on_the_last_column()
     {
         // What SettleForEditing exists for -- an editor that filled a line and inserted must see
@@ -294,7 +295,7 @@ public class CursorAndMarginTests
         terminal.Write($"{Esc}[1;1H{new string('X', 20)}");   // pending wrap at the boundary
         terminal.Write($"{Esc}[1@");
 
-        Assert.Equal(" ", string.IsNullOrEmpty(terminal.Buffer.Lines[0]![19].Content) ? " " : terminal.Buffer.Lines[0]![19].Content);
-        Assert.Equal("X", terminal.Buffer.Lines[0]![18].Content);
+        (string.IsNullOrEmpty(terminal.Buffer.Lines[0]![19].Content) ? " " : terminal.Buffer.Lines[0]![19].Content).Should().Be(" ");
+        (terminal.Buffer.Lines[0]![18].Content).Should().Be("X");
     }
 }

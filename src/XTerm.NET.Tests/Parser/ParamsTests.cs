@@ -2,19 +2,21 @@ using XTerm.Parser;
 
 namespace XTerm.Tests.Parser;
 
+[TestClass]
+
 public class ParamsTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_CreatesEmptyParams()
     {
         // Arrange & Act
         var params_ = new Params();
 
         // Assert
-        Assert.Equal(0, params_.Length);
+        params_.Length.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void AddParam_AddsParameter()
     {
         // Arrange
@@ -24,11 +26,11 @@ public class ParamsTests
         params_.AddParam(10);
 
         // Assert
-        Assert.Equal(1, params_.Length);
-        Assert.Equal(10, params_.GetParam(0));
+        params_.Length.Should().Be(1);
+        params_.GetParam(0).Should().Be(10);
     }
 
-    [Fact]
+    [TestMethod]
     public void AddParam_MultipleParameters_AddsAll()
     {
         // Arrange
@@ -40,13 +42,13 @@ public class ParamsTests
         params_.AddParam(3);
 
         // Assert
-        Assert.Equal(3, params_.Length);
-        Assert.Equal(1, params_.GetParam(0));
-        Assert.Equal(2, params_.GetParam(1));
-        Assert.Equal(3, params_.GetParam(2));
+        params_.Length.Should().Be(3);
+        params_.GetParam(0).Should().Be(1);
+        params_.GetParam(1).Should().Be(2);
+        params_.GetParam(2).Should().Be(3);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetParam_ValidIndex_ReturnsParameter()
     {
         // Arrange
@@ -57,10 +59,10 @@ public class ParamsTests
         var value = params_.GetParam(0);
 
         // Assert
-        Assert.Equal(42, value);
+        value.Should().Be(42);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetParam_InvalidIndex_ReturnsDefault()
     {
         // Arrange
@@ -71,10 +73,10 @@ public class ParamsTests
         var value = params_.GetParam(5, 99);
 
         // Assert
-        Assert.Equal(99, value);
+        value.Should().Be(99);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetParam_NegativeIndex_ReturnsDefault()
     {
         // Arrange
@@ -85,10 +87,10 @@ public class ParamsTests
         var value = params_.GetParam(-1, 50);
 
         // Assert
-        Assert.Equal(50, value);
+        value.Should().Be(50);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetParam_MinusOneValue_ReturnsDefault()
     {
         // Arrange
@@ -99,10 +101,10 @@ public class ParamsTests
         var value = params_.GetParam(0, 100);
 
         // Assert
-        Assert.Equal(100, value);
+        value.Should().Be(100);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetParam_NoDefault_ReturnsZero()
     {
         // Arrange
@@ -112,10 +114,10 @@ public class ParamsTests
         var value = params_.GetParam(0);
 
         // Assert
-        Assert.Equal(0, value);
+        value.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void HasParam_ValidIndex_ReturnsTrue()
     {
         // Arrange
@@ -126,10 +128,10 @@ public class ParamsTests
         var hasParam = params_.HasParam(0);
 
         // Assert
-        Assert.True(hasParam);
+        hasParam.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HasParam_InvalidIndex_ReturnsFalse()
     {
         // Arrange
@@ -140,10 +142,10 @@ public class ParamsTests
         var hasParam = params_.HasParam(5);
 
         // Assert
-        Assert.False(hasParam);
+        hasParam.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void HasParam_MinusOneValue_ReturnsFalse()
     {
         // Arrange
@@ -154,10 +156,10 @@ public class ParamsTests
         var hasParam = params_.HasParam(0);
 
         // Assert
-        Assert.False(hasParam);
+        hasParam.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void HasParam_NegativeIndex_ReturnsFalse()
     {
         // Arrange
@@ -168,10 +170,10 @@ public class ParamsTests
         var hasParam = params_.HasParam(-1);
 
         // Assert
-        Assert.False(hasParam);
+        hasParam.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_ClearsAllParameters()
     {
         // Arrange
@@ -184,10 +186,10 @@ public class ParamsTests
         params_.Reset();
 
         // Assert
-        Assert.Equal(0, params_.Length);
+        params_.Length.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_AllowsReuse()
     {
         // Arrange
@@ -199,11 +201,11 @@ public class ParamsTests
         params_.AddParam(20);
 
         // Assert
-        Assert.Equal(1, params_.Length);
-        Assert.Equal(20, params_.GetParam(0));
+        params_.Length.Should().Be(1);
+        params_.GetParam(0).Should().Be(20);
     }
 
-    [Fact]
+    [TestMethod]
     public void ToArray_ReturnsAllParameters()
     {
         // Arrange
@@ -216,13 +218,13 @@ public class ParamsTests
         var array = params_.ToArray();
 
         // Assert
-        Assert.Equal(3, array.Length);
-        Assert.Equal(1, array[0]);
-        Assert.Equal(2, array[1]);
-        Assert.Equal(3, array[2]);
+        array.Length.Should().Be(3);
+        array[0].Should().Be(1);
+        array[1].Should().Be(2);
+        array[2].Should().Be(3);
     }
 
-    [Fact]
+    [TestMethod]
     public void ToArray_EmptyParams_ReturnsEmptyArray()
     {
         // Arrange
@@ -232,10 +234,10 @@ public class ParamsTests
         var array = params_.ToArray();
 
         // Assert
-        Assert.Empty(array);
+        array.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void Clone_CreatesIndependentCopy()
     {
         // Arrange
@@ -248,18 +250,18 @@ public class ParamsTests
         var clone = params_.Clone();
 
         // Assert
-        Assert.Equal(params_.Length, clone.Length);
-        Assert.Equal(1, clone.GetParam(0));
-        Assert.Equal(2, clone.GetParam(1));
-        Assert.Equal(3, clone.GetParam(2));
+        clone.Length.Should().Be(params_.Length);
+        clone.GetParam(0).Should().Be(1);
+        clone.GetParam(1).Should().Be(2);
+        clone.GetParam(2).Should().Be(3);
 
         // Verify independence
         clone.AddParam(4);
-        Assert.Equal(3, params_.Length);
-        Assert.Equal(4, clone.Length);
+        params_.Length.Should().Be(3);
+        clone.Length.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void AddSubParam_AddsSubParameter()
     {
         // Arrange
@@ -272,7 +274,7 @@ public class ParamsTests
         // Sub-params are internal detail
     }
 
-    [Fact]
+    [TestMethod]
     public void GetSubParams_ReturnsSubParameters()
     {
         // Arrange
@@ -285,11 +287,11 @@ public class ParamsTests
         var subParams = params_.GetSubParams(0);
 
         // Assert
-        Assert.NotNull(subParams);
+        subParams.Should().NotBeNull();
         // Current implementation returns empty list, which is valid
     }
 
-    [Fact]
+    [TestMethod]
     public void GetSubParams_InvalidIndex_ReturnsEmptyList()
     {
         // Arrange
@@ -299,16 +301,16 @@ public class ParamsTests
         var subParams = params_.GetSubParams(10);
 
         // Assert
-        Assert.NotNull(subParams);
-        Assert.Empty(subParams);
+        subParams.Should().NotBeNull();
+        subParams.Should().BeEmpty();
     }
 
-    [Theory]
-    [InlineData(0)]
-    [InlineData(1)]
-    [InlineData(100)]
-    [InlineData(255)]
-    [InlineData(1000)]
+    [TestMethod]
+    [DataRow(0)]
+    [DataRow(1)]
+    [DataRow(100)]
+    [DataRow(255)]
+    [DataRow(1000)]
     public void AddParam_VariousValues_WorksCorrectly(int value)
     {
         // Arrange
@@ -318,10 +320,10 @@ public class ParamsTests
         params_.AddParam(value);
 
         // Assert
-        Assert.Equal(value, params_.GetParam(0));
+        params_.GetParam(0).Should().Be(value);
     }
 
-    [Fact]
+    [TestMethod]
     public void MultipleOperations_WorkCorrectly()
     {
         // Arrange
@@ -344,15 +346,15 @@ public class ParamsTests
         clone.AddParam(40);
 
         // Assert
-        Assert.Equal(1, v1);
-        Assert.Equal(2, v2);
-        Assert.Equal(10, v3);
-        Assert.Equal(3, array.Length);
-        Assert.Equal(3, params_.Length);
-        Assert.Equal(4, clone.Length);
+        v1.Should().Be(1);
+        v2.Should().Be(2);
+        v3.Should().Be(10);
+        array.Length.Should().Be(3);
+        params_.Length.Should().Be(3);
+        clone.Length.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void LargeNumberOfParams_HandlesCorrectly()
     {
         // Arrange
@@ -365,14 +367,14 @@ public class ParamsTests
         }
 
         // Assert
-        Assert.Equal(50, params_.Length);
+        params_.Length.Should().Be(50);
         for (int i = 0; i < 50; i++)
         {
-            Assert.Equal(i, params_.GetParam(i));
+            params_.GetParam(i).Should().Be(i);
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void GetParam_WithDefaultValue_UsesDefaultWhenNeeded()
     {
         // Arrange
@@ -382,13 +384,13 @@ public class ParamsTests
         params_.AddParam(20);
 
         // Act & Assert
-        Assert.Equal(10, params_.GetParam(0, 99));
-        Assert.Equal(99, params_.GetParam(1, 99)); // Should use default
-        Assert.Equal(20, params_.GetParam(2, 99));
-        Assert.Equal(99, params_.GetParam(5, 99)); // Out of range
+        params_.GetParam(0, 99).Should().Be(10);
+        params_.GetParam(1, 99).Should().Be(99); // Should use default
+        params_.GetParam(2, 99).Should().Be(20);
+        params_.GetParam(5, 99).Should().Be(99); // Out of range
     }
 
-    [Fact]
+    [TestMethod]
     public void ZeroParameters_HandlesCorrectly()
     {
         // Arrange
@@ -399,10 +401,10 @@ public class ParamsTests
         var value = params_.GetParam(0, 10);
 
         // Assert
-        Assert.Equal(0, value); // Zero is a valid value, not default
+        value.Should().Be(0); // Zero is a valid value, not default
     }
 
-    [Fact]
+    [TestMethod]
     public void UpdateLastParam_UpdatesParameter()
     {
         // Arrange
@@ -413,10 +415,10 @@ public class ParamsTests
         params_.UpdateLastParam(5);
 
         // Assert
-        Assert.Equal(5, params_.GetParam(0));
+        params_.GetParam(0).Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void UpdateLastParam_BuildsNumberFromDigits()
     {
         // Arrange
@@ -429,6 +431,6 @@ public class ParamsTests
         params_.UpdateLastParam(123); // 123
 
         // Assert
-        Assert.Equal(123, params_.GetParam(0));
+        params_.GetParam(0).Should().Be(123);
     }
 }

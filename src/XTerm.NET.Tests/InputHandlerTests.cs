@@ -7,6 +7,8 @@ using XTerm.Events;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class InputHandlerTests
 {
     private Terminal CreateTerminal(int cols = 80, int rows = 24)
@@ -26,7 +28,7 @@ public class InputHandlerTests
         return $"\u001b[>1;{firmwareVersion};0c";
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_InitializesHandler()
     {
         // Arrange
@@ -36,10 +38,10 @@ public class InputHandlerTests
         var handler = new InputHandler(terminal);
 
         // Assert
-        Assert.NotNull(handler);
+        handler.Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_PrintsCharacterToBuffer()
     {
         // Arrange
@@ -51,11 +53,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal("A", line[0].Content);
+        line.Should().NotBeNull();
+        line[0].Content.Should().Be("A");
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_MultipleCharacters_PrintsSequentially()
     {
         // Arrange
@@ -71,11 +73,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal("Hello", line.TranslateToString(true, 0, 5));
+        line.Should().NotBeNull();
+        line.TranslateToString(true, 0, 5).Should().Be("Hello");
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_DecSpecialGraphics_MapsCornersCorrectly()
     {
         // Arrange
@@ -86,11 +88,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal("\u2518\u2510\u250c\u2514\u2500\u2502j", line.TranslateToString(true));
+        line.Should().NotBeNull();
+        line.TranslateToString(true).Should().Be("\u2518\u2510\u250c\u2514\u2500\u2502j");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorUp_MovesCursor()
     {
         // Arrange
@@ -104,10 +106,10 @@ public class InputHandlerTests
         handler.HandleCsi("A", params_);
 
         // Assert
-        Assert.Equal(5, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorDown_MovesCursor()
     {
         // Arrange
@@ -121,10 +123,10 @@ public class InputHandlerTests
         handler.HandleCsi("B", params_);
 
         // Assert
-        Assert.Equal(8, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(8);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorForward_MovesCursor()
     {
         // Arrange
@@ -138,10 +140,10 @@ public class InputHandlerTests
         handler.HandleCsi("C", params_);
 
         // Assert
-        Assert.Equal(15, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(15);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorForward_ClampsAtRightMarginWithoutWrapping()
     {
         // Arrange
@@ -155,11 +157,11 @@ public class InputHandlerTests
         handler.HandleCsi("C", params_);
 
         // Assert
-        Assert.Equal(9, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(9);
+        terminal.Buffer.Y.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseChars_DoesNotMoveCursor()
     {
         // Arrange
@@ -171,12 +173,12 @@ public class InputHandlerTests
         terminal.Write("\x1B[3X");
 
         // Assert
-        Assert.Equal(2, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
-        Assert.Equal("ab   f", terminal.Buffer.Lines[0]?.TranslateToString(true));
+        terminal.Buffer.X.Should().Be(2);
+        terminal.Buffer.Y.Should().Be(0);
+        (terminal.Buffer.Lines[0]?.TranslateToString(true)).Should().Be("ab   f");
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_CheckMarkWithoutEmojiPresentation_IsSingleWidth()
     {
         // Arrange
@@ -186,13 +188,13 @@ public class InputHandlerTests
         terminal.Write("\u2714X");
 
         // Assert
-        Assert.Equal(2, terminal.Buffer.X);
-        Assert.Equal("\u2714X", terminal.Buffer.Lines[0]?.TranslateToString(true));
-        Assert.Equal(1, terminal.Buffer.Lines[0]?[0].Width);
-        Assert.Equal(1, terminal.Buffer.Lines[0]?[1].Width);
+        terminal.Buffer.X.Should().Be(2);
+        (terminal.Buffer.Lines[0]?.TranslateToString(true)).Should().Be("\u2714X");
+        (terminal.Buffer.Lines[0]?[0].Width).Should().Be(1);
+        (terminal.Buffer.Lines[0]?[1].Width).Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_CheckMarkWithEmojiPresentation_IsDoubleWidth()
     {
         // Arrange
@@ -202,14 +204,14 @@ public class InputHandlerTests
         terminal.Write("\u2714\uFE0FX");
 
         // Assert
-        Assert.Equal(3, terminal.Buffer.X);
-        Assert.Equal("\u2714\uFE0FX", terminal.Buffer.Lines[0]?.TranslateToString(true));
-        Assert.Equal(2, terminal.Buffer.Lines[0]?[0].Width);
-        Assert.Equal(0, terminal.Buffer.Lines[0]?[1].Width);
-        Assert.Equal(1, terminal.Buffer.Lines[0]?[2].Width);
+        terminal.Buffer.X.Should().Be(3);
+        (terminal.Buffer.Lines[0]?.TranslateToString(true)).Should().Be("\u2714\uFE0FX");
+        (terminal.Buffer.Lines[0]?[0].Width).Should().Be(2);
+        (terminal.Buffer.Lines[0]?[1].Width).Should().Be(0);
+        (terminal.Buffer.Lines[0]?[2].Width).Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_ZwjEmojiSequence_OccupiesOneCellPair()
     {
         // Arrange
@@ -220,13 +222,13 @@ public class InputHandlerTests
 
         // Assert — two cells for the cluster, then the next character. Before this fix each component
         // opened its own cell pair, so the cluster claimed four cells and left two of them blank.
-        Assert.Equal(3, terminal.Buffer.X);
-        Assert.Equal(2, terminal.Buffer.Lines[0]?[0].Width);
-        Assert.Equal(0, terminal.Buffer.Lines[0]?[1].Width);
-        Assert.Equal("X", terminal.Buffer.Lines[0]?[2].Content);
+        terminal.Buffer.X.Should().Be(3);
+        (terminal.Buffer.Lines[0]?[0].Width).Should().Be(2);
+        (terminal.Buffer.Lines[0]?[1].Width).Should().Be(0);
+        (terminal.Buffer.Lines[0]?[2].Content).Should().Be("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_ZwjEmojiSequence_KeepsEveryComponentInOneCell()
     {
         // Arrange
@@ -236,10 +238,10 @@ public class InputHandlerTests
         terminal.Write("\U0001F469\u200D\U0001F4BB");
 
         // Assert — the whole cluster is the cell's content, so a renderer can shape it as one glyph.
-        Assert.Equal("\U0001F469\u200D\U0001F4BB", terminal.Buffer.Lines[0]?[0].Content);
+        (terminal.Buffer.Lines[0]?[0].Content).Should().Be("\U0001F469\u200D\U0001F4BB");
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_FamilyEmoji_OccupiesOneCellPair()
     {
         // Arrange
@@ -249,13 +251,13 @@ public class InputHandlerTests
         terminal.Write("\U0001F468\u200D\U0001F469\u200D\U0001F467\u200D\U0001F466X");
 
         // Assert — the worst case: this used to claim eight cells and leave six of them blank.
-        Assert.Equal(3, terminal.Buffer.X);
-        Assert.Equal(2, terminal.Buffer.Lines[0]?[0].Width);
-        Assert.Equal(0, terminal.Buffer.Lines[0]?[1].Width);
-        Assert.Equal("X", terminal.Buffer.Lines[0]?[2].Content);
+        terminal.Buffer.X.Should().Be(3);
+        (terminal.Buffer.Lines[0]?[0].Width).Should().Be(2);
+        (terminal.Buffer.Lines[0]?[1].Width).Should().Be(0);
+        (terminal.Buffer.Lines[0]?[2].Content).Should().Be("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_TwoZwjSequencesInARow_StayInTheirOwnCells()
     {
         // Arrange
@@ -266,12 +268,12 @@ public class InputHandlerTests
 
         // Assert — the continuation is spent by the character that follows the ZWJ; the next cluster
         // starts fresh rather than being swallowed into the first.
-        Assert.Equal(4, terminal.Buffer.X);
-        Assert.Equal("\U0001F469\u200D\U0001F4BB", terminal.Buffer.Lines[0]?[0].Content);
-        Assert.Equal("\U0001F468\u200D\U0001F4BB", terminal.Buffer.Lines[0]?[2].Content);
+        terminal.Buffer.X.Should().Be(4);
+        (terminal.Buffer.Lines[0]?[0].Content).Should().Be("\U0001F469\u200D\U0001F4BB");
+        (terminal.Buffer.Lines[0]?[2].Content).Should().Be("\U0001F468\u200D\U0001F4BB");
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_EmojiAfterCursorMove_DoesNotJoinAcrossTheMove()
     {
         // Arrange
@@ -284,11 +286,11 @@ public class InputHandlerTests
 
         // Assert — the continuation is tied to a POSITION, so moving the cursor drops it rather than
         // joining two characters that have nothing to do with each other.
-        Assert.Equal(2, terminal.Buffer.Lines[0]?[9].Width);
-        Assert.Equal("\U0001F4BB", terminal.Buffer.Lines[0]?[9].Content);
+        (terminal.Buffer.Lines[0]?[9].Width).Should().Be(2);
+        (terminal.Buffer.Lines[0]?[9].Content).Should().Be("\U0001F4BB");
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_DockerComposeNetworkLine_KeepsStatusColumnAfterCheckMark()
     {
         // Arrange
@@ -302,12 +304,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         int statusColumn = prefix.Length + 28;
-        Assert.Equal("Created", line.TranslateToString(false, statusColumn, statusColumn + 7));
+        line.TranslateToString(false, statusColumn, statusColumn + 7).Should().Be("Created");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorBackward_MovesCursor()
     {
         // Arrange
@@ -321,10 +323,10 @@ public class InputHandlerTests
         handler.HandleCsi("D", params_);
 
         // Assert
-        Assert.Equal(15, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(15);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorPosition_SetsCursorPosition()
     {
         // Arrange
@@ -338,11 +340,11 @@ public class InputHandlerTests
         handler.HandleCsi("H", params_);
 
         // Assert
-        Assert.Equal(19, terminal.Buffer.X); // 20 - 1 (1-based to 0-based)
-        Assert.Equal(9, terminal.Buffer.Y);  // 10 - 1 (1-based to 0-based)
+        terminal.Buffer.X.Should().Be(19); // 20 - 1 (1-based to 0-based)
+        terminal.Buffer.Y.Should().Be(9);  // 10 - 1 (1-based to 0-based)
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorPosition_UsesScrollRegionOriginInOriginMode()
     {
         // Arrange
@@ -358,11 +360,11 @@ public class InputHandlerTests
         handler.HandleCsi("H", params_);
 
         // Assert
-        Assert.Equal(19, terminal.Buffer.X);
-        Assert.Equal(6, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(19);
+        terminal.Buffer.Y.Should().Be(6);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorPosition_ClampsLargeOriginModeRowToScrollBottom()
     {
         // Arrange
@@ -378,11 +380,11 @@ public class InputHandlerTests
         handler.HandleCsi("H", params_);
 
         // Assert
-        Assert.Equal(19, terminal.Buffer.X);
-        Assert.Equal(19, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(19);
+        terminal.Buffer.Y.Should().Be(19);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInDisplay_ClearBelow()
     {
         // Arrange
@@ -405,11 +407,11 @@ public class InputHandlerTests
 
         // Assert
         // Lines 0-1 should have content, lines 2+ should be cleared
-        Assert.Equal("X", terminal.Buffer.Lines[0]?[0].Content);
-        Assert.Equal("X", terminal.Buffer.Lines[1]?[0].Content);
+        (terminal.Buffer.Lines[0]?[0].Content).Should().Be("X");
+        (terminal.Buffer.Lines[1]?[0].Content).Should().Be("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInLine_ErasesToRight()
     {
         // Arrange
@@ -431,12 +433,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal("X", line[4].Content);
-        Assert.NotEqual("X", line[5].Content);
+        line.Should().NotBeNull();
+        line[4].Content.Should().Be("X");
+        line[5].Content.Should().NotBe("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrBold_SetsBoldAttribute()
     {
         // Arrange
@@ -451,11 +453,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsBold());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsBold()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrItalic_SetsItalicAttribute()
     {
         // Arrange
@@ -470,11 +472,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsItalic());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsItalic()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrUnderline_SetsUnderlineAttribute()
     {
         // Arrange
@@ -489,11 +491,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsUnderline());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsUnderline()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrForegroundColor_SetsForegroundColor()
     {
         // Arrange
@@ -508,11 +510,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal(1, line[0].Attributes.GetFgColor()); // Color 31 - 30 = 1
+        line.Should().NotBeNull();
+        (line[0].Attributes.GetFgColor()).Should().Be(1); // Color 31 - 30 = 1
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrBackgroundColor_SetsBackgroundColor()
     {
         // Arrange
@@ -527,11 +529,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal(2, line[0].Attributes.GetBgColor()); // Color 42 - 40 = 2
+        line.Should().NotBeNull();
+        (line[0].Attributes.GetBgColor()).Should().Be(2); // Color 42 - 40 = 2
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrReset_ResetsAttributes()
     {
         // Arrange
@@ -553,12 +555,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsBold());
-        Assert.False(line[1].Attributes.IsBold());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsBold()).Should().BeTrue();
+        (line[1].Attributes.IsBold()).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SetScrollRegion_SetsRegion()
     {
         // Arrange
@@ -572,11 +574,11 @@ public class InputHandlerTests
         handler.HandleCsi("r", params_);
 
         // Assert
-        Assert.Equal(4, terminal.Buffer.ScrollTop);    // 5 - 1 (1-based to 0-based)
-        Assert.Equal(19, terminal.Buffer.ScrollBottom); // 20 - 1 (1-based to 0-based)
+        terminal.Buffer.ScrollTop.Should().Be(4);    // 5 - 1 (1-based to 0-based)
+        terminal.Buffer.ScrollBottom.Should().Be(19); // 20 - 1 (1-based to 0-based)
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SetScrollRegion_MovesCursorHome()
     {
         // Arrange
@@ -591,11 +593,11 @@ public class InputHandlerTests
         handler.HandleCsi("r", params_);
 
         // Assert
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SetScrollRegion_MovesCursorToTopMarginInOriginMode()
     {
         // Arrange
@@ -611,11 +613,11 @@ public class InputHandlerTests
         handler.HandleCsi("r", params_);
 
         // Assert
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(4, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleEsc_Index_MovesDownOrScrolls()
     {
         // Arrange
@@ -628,10 +630,10 @@ public class InputHandlerTests
         handler.HandleEsc("D", "");
 
         // Assert
-        Assert.Equal(initialY + 1, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(initialY + 1);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleEsc_ReverseIndex_MovesUpOrScrolls()
     {
         // Arrange
@@ -644,10 +646,10 @@ public class InputHandlerTests
         handler.HandleEsc("M", "");
 
         // Assert
-        Assert.Equal(initialY - 1, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(initialY - 1);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleEsc_NextLine_MovesDownAndToStart()
     {
         // Arrange
@@ -659,11 +661,11 @@ public class InputHandlerTests
         handler.HandleEsc("E", "");
 
         // Assert
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(6, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(6);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleOsc_SetTitle_SetsTerminalTitle()
     {
         // Arrange
@@ -674,10 +676,10 @@ public class InputHandlerTests
         handler.HandleOsc("0;Test Title");
 
         // Assert
-        Assert.Equal("Test Title", terminal.Title);
+        terminal.Title.Should().Be("Test Title");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleOsc_SetWindowTitle_SetsTerminalTitle()
     {
         // Arrange
@@ -688,10 +690,10 @@ public class InputHandlerTests
         handler.HandleOsc("2;Window Title");
 
         // Assert
-        Assert.Equal("Window Title", terminal.Title);
+        terminal.Title.Should().Be("Window Title");
     }
 
-    [Fact]
+    [TestMethod]
     public void SetBuffer_UpdatesBuffer()
     {
         // Arrange
@@ -704,10 +706,10 @@ public class InputHandlerTests
         handler.Print("X");
 
         // Assert
-        Assert.Equal("X", newBuffer.Lines[0]?[0].Content);
+        (newBuffer.Lines[0]?[0].Content).Should().Be("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_InsertMode_InsertsCharacter()
     {
         // Arrange
@@ -730,11 +732,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         // Character should be inserted, not overwritten
     }
 
-    [Fact]
+    [TestMethod]
     public void Print_AtEndOfLine_WrapsToNextLine()
     {
         // Arrange
@@ -751,11 +753,11 @@ public class InputHandlerTests
         handler.Print("Y"); // Should wrap
 
         // Assert
-        Assert.Equal(1, terminal.Buffer.Y); // Moved to next line
-        Assert.Equal("Y", terminal.Buffer.Lines[1]?[0].Content);
+        terminal.Buffer.Y.Should().Be(1); // Moved to next line
+        (terminal.Buffer.Lines[1]?[0].Content).Should().Be("Y");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_InsertLines_InsertsBlankLines()
     {
         // Arrange
@@ -772,7 +774,7 @@ public class InputHandlerTests
         // Verification would require checking buffer state
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DeleteLines_DeletesLines()
     {
         // Arrange
@@ -789,7 +791,7 @@ public class InputHandlerTests
         // Verification would require checking buffer state
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_MultipleAttributes_AppliesAll()
     {
         // Arrange
@@ -807,15 +809,15 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         var attrs = line[0].Attributes;
-        Assert.True(attrs.IsBold());
-        Assert.True(attrs.IsItalic());
-        Assert.True(attrs.IsUnderline());
-        Assert.Equal(1, attrs.GetFgColor());
+        attrs.IsBold().Should().BeTrue();
+        attrs.IsItalic().Should().BeTrue();
+        attrs.IsUnderline().Should().BeTrue();
+        attrs.GetFgColor().Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DECSCUSR_SetsCursorStyle()
     {
         // Arrange
@@ -828,19 +830,19 @@ public class InputHandlerTests
         handler.HandleCsi(" q", paramsUnderlineBlink);
 
         // Assert
-        Assert.Equal(CursorStyle.Underline, terminal.Options.CursorStyle);
-        Assert.True(terminal.Options.CursorBlink);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Underline);
+        terminal.Options.CursorBlink.Should().BeTrue();
 
         // Act - Steady block
         var paramsBlockSteady = new Params();
         paramsBlockSteady.AddParam(2);
         handler.HandleCsi(" q", paramsBlockSteady);
 
-        Assert.Equal(CursorStyle.Block, terminal.Options.CursorStyle);
-        Assert.False(terminal.Options.CursorBlink);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Block);
+        terminal.Options.CursorBlink.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SelectCursorStyle_BlinkingBlock_Defaults()
     {
         var terminal = CreateTerminal();
@@ -850,11 +852,11 @@ public class InputHandlerTests
 
         handler.HandleCsi(" q", params_);
 
-        Assert.Equal(CursorStyle.Block, terminal.Options.CursorStyle);
-        Assert.True(terminal.Options.CursorBlink);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Block);
+        terminal.Options.CursorBlink.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SelectCursorStyle_SteadyBar_RaisesEvent()
     {
         // Arrange
@@ -870,16 +872,16 @@ public class InputHandlerTests
         handler.HandleCsi(" q", params_);
 
         // Assert
-        Assert.Equal(CursorStyle.Bar, terminal.Options.CursorStyle);
-        Assert.False(terminal.Options.CursorBlink);
-        Assert.NotNull(received);
-        Assert.Equal(CursorStyle.Bar, received!.Style);
-        Assert.False(received.Blink);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Bar);
+        terminal.Options.CursorBlink.Should().BeFalse();
+        received.Should().NotBeNull();
+        (received!.Style).Should().Be(CursorStyle.Bar);
+        received.Blink.Should().BeFalse();
     }
 
     #region DeviceStatusReport Tests
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_OperatingStatus_ReportsOk()
     {
         // Arrange
@@ -895,10 +897,10 @@ public class InputHandlerTests
         handler.HandleCsi("n", params_);
 
         // Assert - Should respond with CSI 0 n (OK)
-        Assert.Equal("\u001b[0n", receivedData);
+        receivedData.Should().Be("\u001b[0n");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_CursorPositionReport_ReportsPosition()
     {
         // Arrange
@@ -915,10 +917,10 @@ public class InputHandlerTests
         handler.HandleCsi("n", params_);
 
         // Assert - Should respond with CSI row ; col R (1-based)
-        Assert.Equal("\u001b[6;11R", receivedData); // row 6, col 11 (1-based)
+        receivedData.Should().Be("\u001b[6;11R"); // row 6, col 11 (1-based)
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_CursorPositionReport_AtOrigin()
     {
         // Arrange
@@ -935,10 +937,10 @@ public class InputHandlerTests
         handler.HandleCsi("n", params_);
 
         // Assert - Should respond with CSI 1 ; 1 R
-        Assert.Equal("\u001b[1;1R", receivedData);
+        receivedData.Should().Be("\u001b[1;1R");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_CursorPositionReport_WithOriginMode()
     {
         // Arrange
@@ -964,10 +966,10 @@ public class InputHandlerTests
         // Assert - Row should be adjusted for scroll region
         // Row 10 - ScrollTop 4 = 6, then +1 for 1-based = 7
         // Col 5 + 1 = 6
-        Assert.Equal("\u001b[7;6R", receivedData);
+        receivedData.Should().Be("\u001b[7;6R");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_Private_ExtendedCursorPositionReport()
     {
         // Arrange
@@ -984,10 +986,10 @@ public class InputHandlerTests
         handler.HandleCsi("?n", params_);
 
         // Assert - Should respond with CSI ? row ; col R (1-based)
-        Assert.Equal("\u001b[?9;16R", receivedData); // row 9, col 16 (1-based)
+        receivedData.Should().Be("\u001b[?9;16R"); // row 9, col 16 (1-based)
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_Private_PrinterStatus()
     {
         // Arrange
@@ -1003,10 +1005,10 @@ public class InputHandlerTests
         handler.HandleCsi("?n", params_);
 
         // Assert - Should respond with CSI ? 13 n (no printer)
-        Assert.Equal("\u001b[?13n", receivedData);
+        receivedData.Should().Be("\u001b[?13n");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_Private_UdkStatus()
     {
         // Arrange
@@ -1022,10 +1024,10 @@ public class InputHandlerTests
         handler.HandleCsi("?n", params_);
 
         // Assert - Should respond with CSI ? 21 n (UDK locked)
-        Assert.Equal("\u001b[?21n", receivedData);
+        receivedData.Should().Be("\u001b[?21n");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_Private_KeyboardStatus()
     {
         // Arrange
@@ -1041,10 +1043,10 @@ public class InputHandlerTests
         handler.HandleCsi("?n", params_);
 
         // Assert - Should respond with CSI ? 27 ; 1 ; 0 ; 0 n (keyboard ready)
-        Assert.Equal("\u001b[?27;1;0;0n", receivedData);
+        receivedData.Should().Be("\u001b[?27;1;0;0n");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_UnknownReport_DoesNotRespond()
     {
         // Arrange
@@ -1060,10 +1062,10 @@ public class InputHandlerTests
         handler.HandleCsi("n", params_);
 
         // Assert - Should not send any response
-        Assert.Null(receivedData);
+        receivedData.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DSR_Private_UnknownReport_DoesNotRespond()
     {
         // Arrange
@@ -1079,14 +1081,14 @@ public class InputHandlerTests
         handler.HandleCsi("?n", params_);
 
         // Assert - Should not send any response
-        Assert.Null(receivedData);
+        receivedData.Should().BeNull();
     }
 
     #endregion
 
     #region DeviceAttributes Tests
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DA_Primary_ReportsDeviceAttributes()
     {
         // Arrange
@@ -1105,10 +1107,10 @@ public class InputHandlerTests
         // in this repository actually implements. Attribute 4 is how libsixel-based programs decide
         // whether to send a picture at all, so dropping it from this reply silently turns every
         // image back into text art.
-        Assert.Equal("\u001b[?62;4;22c", receivedData);
+        receivedData.Should().Be("\u001b[?62;4;22c");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DA_Primary_OmitsSixelWhenDisabled()
     {
         // Arrange
@@ -1125,10 +1127,10 @@ public class InputHandlerTests
         handler.HandleCsi("c", params_);
 
         // Assert - claiming Sixel while it is switched off would send pictures we then drop
-        Assert.Equal("\u001b[?62;22c", receivedData);
+        receivedData.Should().Be("\u001b[?62;22c");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DA_Secondary_ReportsTerminalId()
     {
         // Arrange
@@ -1145,12 +1147,12 @@ public class InputHandlerTests
 
         // Assert - CSI > 1 ; package-version ; 0 c. Terminal type 1 is a VT220, so it agrees with
         // the 62 the primary reply sends; the old 0 said VT100 and contradicted it.
-        Assert.Equal(ExpectedSecondaryDeviceAttributes(), receivedData);
+        receivedData.Should().Be(ExpectedSecondaryDeviceAttributes());
     }
 
-    [Theory]
-    [InlineData("c")]
-    [InlineData(">c")]
+    [TestMethod]
+    [DataRow("c")]
+    [DataRow(">c")]
     public void HandleCsi_DA_IgnoresNonZeroParameter(string identifier)
     {
         // Arrange
@@ -1167,10 +1169,10 @@ public class InputHandlerTests
 
         // Assert - a DA with a non-zero parameter is a reply, not a request. Two of these hooked
         // up to each other answer each other forever.
-        Assert.Null(receivedData);
+        receivedData.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DA_Tertiary_IsNotAnswered()
     {
         // Arrange
@@ -1188,10 +1190,10 @@ public class InputHandlerTests
         // Assert - there is no unit ID to report, and terminals without DECRPTUI stay quiet.
         // Answering a question nobody asked is worse than silence: the program would read a DA
         // reply where it expected DECRPTUI, while still waiting for the reply it did ask for.
-        Assert.Null(receivedData);
+        receivedData.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DA_PrivateMarker_IsNotAnsweredWithTheSecondaryReply()
     {
         // Arrange
@@ -1208,14 +1210,14 @@ public class InputHandlerTests
 
         // Assert - it used to be answered with the secondary reply, because the handler dispatched
         // on the coarse isPrivate flag, which "?" sets just as ">" does
-        Assert.Null(receivedData);
+        receivedData.Should().BeNull();
     }
 
     #endregion
 
     #region Additional CSI Command Tests
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorNextLine_MovesCursorDownAndToColumn1()
     {
         // Arrange
@@ -1229,11 +1231,11 @@ public class InputHandlerTests
         handler.HandleCsi("E", params_);
 
         // Assert
-        Assert.Equal(0, terminal.Buffer.X); // Column should be 0
-        Assert.Equal(8, terminal.Buffer.Y); // Row 5 + 3 = 8
+        terminal.Buffer.X.Should().Be(0); // Column should be 0
+        terminal.Buffer.Y.Should().Be(8); // Row 5 + 3 = 8
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorPreviousLine_MovesCursorUpAndToColumn1()
     {
         // Arrange
@@ -1247,11 +1249,11 @@ public class InputHandlerTests
         handler.HandleCsi("F", params_);
 
         // Assert
-        Assert.Equal(0, terminal.Buffer.X); // Column should be 0
-        Assert.Equal(6, terminal.Buffer.Y); // Row 10 - 4 = 6
+        terminal.Buffer.X.Should().Be(0); // Column should be 0
+        terminal.Buffer.Y.Should().Be(6); // Row 10 - 4 = 6
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorCharAbsolute_MovesToColumn()
     {
         // Arrange
@@ -1265,11 +1267,11 @@ public class InputHandlerTests
         handler.HandleCsi("G", params_);
 
         // Assert
-        Assert.Equal(24, terminal.Buffer.X); // 25 - 1 = 24 (0-based)
-        Assert.Equal(10, terminal.Buffer.Y); // Row should be unchanged
+        terminal.Buffer.X.Should().Be(24); // 25 - 1 = 24 (0-based)
+        terminal.Buffer.Y.Should().Be(10); // Row should be unchanged
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorForwardTab_MovesToNextTabStop()
     {
         // Arrange
@@ -1283,10 +1285,10 @@ public class InputHandlerTests
         handler.HandleCsi("I", params_);
 
         // Assert - Default tab width is 8, so from position 5, next tab stop is 8
-        Assert.Equal(8, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(8);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorForwardTab_MultipleTabStops()
     {
         // Arrange
@@ -1300,10 +1302,10 @@ public class InputHandlerTests
         handler.HandleCsi("I", params_);
 
         // Assert - 3 tab stops from 0: 8, 16, 24
-        Assert.Equal(24, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(24);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DeleteChars_DeletesCharacters()
     {
         // Arrange
@@ -1326,14 +1328,14 @@ public class InputHandlerTests
 
         // Assert - Characters should be shifted left
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal("A", line[0].Content);
-        Assert.Equal("B", line[1].Content);
-        Assert.Equal("C", line[2].Content);
-        Assert.Equal("F", line[3].Content); // D and E were deleted, F moved here
+        line.Should().NotBeNull();
+        line[0].Content.Should().Be("A");
+        line[1].Content.Should().Be("B");
+        line[2].Content.Should().Be("C");
+        line[3].Content.Should().Be("F"); // D and E were deleted, F moved here
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_ScrollUp_ScrollsBufferUp()
     {
         // Arrange
@@ -1357,11 +1359,11 @@ public class InputHandlerTests
         // Viewport line 0 should now contain what was on viewport line 2
         // Access viewport using YBase offset
         var viewportLine0 = terminal.Buffer.Lines[terminal.Buffer.YBase];
-        Assert.NotNull(viewportLine0);
-        Assert.Equal("C", viewportLine0[0].Content);
+        viewportLine0.Should().NotBeNull();
+        viewportLine0[0].Content.Should().Be("C");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_ScrollDown_ScrollsBufferDown()
     {
         // Arrange
@@ -1383,12 +1385,12 @@ public class InputHandlerTests
 
         // Assert - Content should have scrolled down, new blank lines at top
         var line2 = terminal.Buffer.Lines[2];
-        Assert.NotNull(line2);
+        line2.Should().NotBeNull();
         // Line 2 now contains what was on line 0
-        Assert.Equal("A", line2[0].Content);
+        line2[0].Content.Should().Be("A");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseChars_ErasesCharactersAtCursor()
     {
         // Arrange
@@ -1411,16 +1413,16 @@ public class InputHandlerTests
 
         // Assert - Characters at positions 3-6 should be erased (spaces)
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal("X", line[2].Content);
-        Assert.Equal(" ", line[3].Content);
-        Assert.Equal(" ", line[4].Content);
-        Assert.Equal(" ", line[5].Content);
-        Assert.Equal(" ", line[6].Content);
-        Assert.Equal("X", line[7].Content);
+        line.Should().NotBeNull();
+        line[2].Content.Should().Be("X");
+        line[3].Content.Should().Be(" ");
+        line[4].Content.Should().Be(" ");
+        line[5].Content.Should().Be(" ");
+        line[6].Content.Should().Be(" ");
+        line[7].Content.Should().Be("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorBackwardTab_MovesToPreviousTabStop()
     {
         // Arrange
@@ -1434,10 +1436,10 @@ public class InputHandlerTests
         handler.HandleCsi("Z", params_);
 
         // Assert - From position 20, previous tab stop is 16
-        Assert.Equal(16, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(16);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_CursorBackwardTab_MultipleTabStops()
     {
         // Arrange
@@ -1452,10 +1454,10 @@ public class InputHandlerTests
 
         // Assert - From position 25: first back to 24, then to 16
         // Tab stops at 0, 8, 16, 24, so from 25 going back 2 stops: 24 -> 16
-        Assert.Equal(16, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(16);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_LinePositionAbsolute_MovesToRow()
     {
         // Arrange
@@ -1469,11 +1471,11 @@ public class InputHandlerTests
         handler.HandleCsi("d", params_);
 
         // Assert
-        Assert.Equal(15, terminal.Buffer.X); // Column should be unchanged
-        Assert.Equal(11, terminal.Buffer.Y); // 12 - 1 = 11 (0-based)
+        terminal.Buffer.X.Should().Be(15); // Column should be unchanged
+        terminal.Buffer.Y.Should().Be(11); // 12 - 1 = 11 (0-based)
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_LinePositionAbsolute_UsesScrollRegionOriginInOriginMode()
     {
         // Arrange
@@ -1489,11 +1491,11 @@ public class InputHandlerTests
         handler.HandleCsi("d", params_);
 
         // Assert
-        Assert.Equal(15, terminal.Buffer.X);
-        Assert.Equal(6, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(15);
+        terminal.Buffer.Y.Should().Be(6);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SaveRestoreCursorAnsi_SavesAndRestoresPosition()
     {
         // Arrange
@@ -1506,18 +1508,18 @@ public class InputHandlerTests
 
         // Move cursor elsewhere
         terminal.Buffer.SetCursor(30, 15);
-        Assert.Equal(30, terminal.Buffer.X);
-        Assert.Equal(15, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(30);
+        terminal.Buffer.Y.Should().Be(15);
 
         // Act - Restore cursor
         handler.HandleCsi("u", new Params());
 
         // Assert - Cursor should be back to saved position
-        Assert.Equal(10, terminal.Buffer.X);
-        Assert.Equal(5, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(10);
+        terminal.Buffer.Y.Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInDisplay_ClearAbove()
     {
         // Arrange
@@ -1539,13 +1541,13 @@ public class InputHandlerTests
         handler.HandleCsi("J", params_);
 
         // Assert - Lines 0-2 should be cleared, lines 3-4 should have content
-        Assert.NotEqual("X", terminal.Buffer.Lines[0]?[0].Content);
-        Assert.NotEqual("X", terminal.Buffer.Lines[1]?[0].Content);
-        Assert.NotEqual("X", terminal.Buffer.Lines[2]?[0].Content);
-        Assert.Equal("X", terminal.Buffer.Lines[4]?[0].Content);
+        (terminal.Buffer.Lines[0]?[0].Content).Should().NotBe("X");
+        (terminal.Buffer.Lines[1]?[0].Content).Should().NotBe("X");
+        (terminal.Buffer.Lines[2]?[0].Content).Should().NotBe("X");
+        (terminal.Buffer.Lines[4]?[0].Content).Should().Be("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInDisplay_ClearAll()
     {
         // Arrange
@@ -1569,7 +1571,7 @@ public class InputHandlerTests
         // Assert - All visible lines should be cleared
         for (int i = 0; i < 5; i++)
         {
-            Assert.NotEqual("X", terminal.Buffer.Lines[i]?[0].Content);
+            (terminal.Buffer.Lines[i]?[0].Content).Should().NotBe("X");
         }
     }
 
@@ -1592,7 +1594,7 @@ public class InputHandlerTests
     /// the opposite of what it asks for. Downstream that surfaced as `cls` in cmd.exe leaving the history
     /// reachable with the mouse wheel, unlike conhost and Windows Terminal.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInDisplay_EraseScrollback_DiscardsHistory()
     {
         // Arrange - write enough to push lines above the visible screen
@@ -1602,7 +1604,7 @@ public class InputHandlerTests
             terminal.Write($"line {i}\r\n");
         }
 
-        Assert.True(terminal.Buffer.YBase > 0, "test needs scrollback to exist before erasing it");
+        (terminal.Buffer.YBase > 0).Should().BeTrue("test needs scrollback to exist before erasing it");
         var lengthBefore = terminal.Buffer.Length;
         var handler = new InputHandler(terminal);
 
@@ -1613,17 +1615,16 @@ public class InputHandlerTests
         handler.HandleCsi("J", params_);
 
         // Assert - the history is gone, not merely blank
-        Assert.Equal(0, terminal.Buffer.YBase);
-        Assert.Equal(0, terminal.Buffer.ViewportY);
-        Assert.True(terminal.Buffer.Length < lengthBefore,
-            $"the scrollback should have been discarded: was {lengthBefore}, now {terminal.Buffer.Length}");
+        terminal.Buffer.YBase.Should().Be(0);
+        terminal.Buffer.ViewportY.Should().Be(0);
+        (terminal.Buffer.Length < lengthBefore).Should().BeTrue($"the scrollback should have been discarded: was {lengthBefore}, now {terminal.Buffer.Length}");
     }
 
     /// <summary>
     /// And it leaves the visible screen alone — the two modes are complements, not variations. cmd.exe's
     /// `cls` relies on that: it clears the screen itself, line by line, then sends CSI 3 J for the rest.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInDisplay_EraseScrollback_KeepsTheVisibleScreen()
     {
         // Arrange
@@ -1642,7 +1643,7 @@ public class InputHandlerTests
         handler.HandleCsi("J", params_);
 
         // Assert
-        Assert.True(BufferContains(terminal, "KEEPME"), "erasing the scrollback must not erase the screen");
+        BufferContains(terminal, "KEEPME").Should().BeTrue("erasing the scrollback must not erase the screen");
     }
 
     /// <summary>
@@ -1650,7 +1651,7 @@ public class InputHandlerTests
     /// so trimming from the start without moving them leaves the visible screen pointing at an offset that
     /// no longer exists, and the next write runs off the end.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInDisplay_EraseScrollback_LeavesTheBufferWritable()
     {
         // Arrange
@@ -1669,18 +1670,18 @@ public class InputHandlerTests
         var exception = Record.Exception(() => terminal.Write("AFTERWARDS\r\n"));
 
         // Assert
-        Assert.Null(exception);
-        Assert.True(BufferContains(terminal, "AFTERWARDS"), "text written after the erase should render");
+        exception.Should().BeNull();
+        BufferContains(terminal, "AFTERWARDS").Should().BeTrue("text written after the erase should render");
     }
 
     /// <summary>Erasing a scrollback that does not exist yet is a no-op, not a crash.</summary>
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInDisplay_EraseScrollback_WithNoScrollback_IsHarmless()
     {
         // Arrange
         var terminal = CreateTerminal(rows: 24);
         terminal.Write("only one line");
-        Assert.Equal(0, terminal.Buffer.YBase);
+        terminal.Buffer.YBase.Should().Be(0);
 
         var handler = new InputHandler(terminal);
         var params_ = new Params();
@@ -1690,12 +1691,12 @@ public class InputHandlerTests
         var exception = Record.Exception(() => handler.HandleCsi("J", params_));
 
         // Assert
-        Assert.Null(exception);
-        Assert.Equal(0, terminal.Buffer.YBase);
-        Assert.True(BufferContains(terminal, "only one line"), "the screen is untouched");
+        exception.Should().BeNull();
+        terminal.Buffer.YBase.Should().Be(0);
+        BufferContains(terminal, "only one line").Should().BeTrue("the screen is untouched");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInLine_ErasesToLeft()
     {
         // Arrange
@@ -1717,13 +1718,13 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.NotEqual("X", line[0].Content);
-        Assert.NotEqual("X", line[5].Content); // Cursor position included
-        Assert.Equal("X", line[6].Content); // Right of cursor preserved
+        line.Should().NotBeNull();
+        line[0].Content.Should().NotBe("X");
+        line[5].Content.Should().NotBe("X"); // Cursor position included
+        line[6].Content.Should().Be("X"); // Right of cursor preserved
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_EraseInLine_ErasesEntireLine()
     {
         // Arrange
@@ -1745,10 +1746,10 @@ public class InputHandlerTests
 
         // Assert - Entire line should be cleared
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         for (int i = 0; i < 10; i++)
         {
-            Assert.NotEqual("X", line[i].Content);
+            line[i].Content.Should().NotBe("X");
         }
     }
 
@@ -1756,7 +1757,7 @@ public class InputHandlerTests
 
     #region Additional CSI Command Tests
     
-    [Fact]
+    [TestMethod]
     public void HandleCsi_InsertChars_InsertsBlankCharacters()
     {
         // Arrange
@@ -1779,21 +1780,21 @@ public class InputHandlerTests
 
         // Assert - Characters should be shifted right
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal("A", line[0].Content);
-        Assert.Equal("B", line[1].Content);
-        Assert.Equal("C", line[2].Content);
+        line.Should().NotBeNull();
+        line[0].Content.Should().Be("A");
+        line[1].Content.Should().Be("B");
+        line[2].Content.Should().Be("C");
         // Positions 3 and 4 should now be blank
-        Assert.Equal(" ", line[3].Content);
-        Assert.Equal(" ", line[4].Content);
-        Assert.Equal("D", line[5].Content); // D shifted from position 3 to 5
+        line[3].Content.Should().Be(" ");
+        line[4].Content.Should().Be(" ");
+        line[5].Content.Should().Be("D"); // D shifted from position 3 to 5
     }
 
     #endregion
 
     #region Extended SGR Attribute Tests
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrDim_SetsDimAttribute()
     {
         // Arrange
@@ -1808,11 +1809,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsDim());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsDim()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrBlink_SetsBlinkAttribute()
     {
         // Arrange
@@ -1827,11 +1828,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsBlink());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsBlink()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrInverse_SetsInverseAttribute()
     {
         // Arrange
@@ -1846,11 +1847,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsInverse());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsInverse()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrHidden_SetsHiddenAttribute()
     {
         // Arrange
@@ -1865,11 +1866,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsInvisible());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsInvisible()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrStrikethrough_SetsStrikethroughAttribute()
     {
         // Arrange
@@ -1884,11 +1885,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsStrikethrough());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsStrikethrough()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_Sgr256ColorForeground_SetsForegroundColor()
     {
         // Arrange
@@ -1905,11 +1906,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal(196, line[0].Attributes.GetFgColor());
+        line.Should().NotBeNull();
+        (line[0].Attributes.GetFgColor()).Should().Be(196);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_Sgr256ColorBackground_SetsBackgroundColor()
     {
         // Arrange
@@ -1926,11 +1927,11 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal(21, line[0].Attributes.GetBgColor());
+        line.Should().NotBeNull();
+        (line[0].Attributes.GetBgColor()).Should().Be(21);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrTrueColorForeground_SetsForegroundRGB()
     {
         // Arrange
@@ -1949,12 +1950,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         // TrueColor mode is stored in the color mode bits
-        Assert.True(line[0].Attributes.GetFgColorMode() > 0);
+        (line[0].Attributes.GetFgColorMode() > 0).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrTrueColorBackground_SetsBackgroundRGB()
     {
         // Arrange
@@ -1973,12 +1974,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         // TrueColor mode is stored in the color mode bits
-        Assert.True(line[0].Attributes.GetBgColorMode() > 0);
+        (line[0].Attributes.GetBgColorMode() > 0).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrBrightForegroundColors_SetsCorrectColor()
     {
         // Arrange
@@ -1993,12 +1994,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         // Bright colors are 90-97, mapped to color indices 8-15
-        Assert.Equal(9, line[0].Attributes.GetFgColor()); // 91 - 82 = 9 (bright red)
+        (line[0].Attributes.GetFgColor()).Should().Be(9); // 91 - 82 = 9 (bright red)
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrBrightBackgroundColors_SetsCorrectColor()
     {
         // Arrange
@@ -2013,12 +2014,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         // Bright background colors are 100-107, mapped to color indices 8-15
-        Assert.Equal(10, line[0].Attributes.GetBgColor()); // 102 - 92 = 10 (bright green)
+        (line[0].Attributes.GetBgColor()).Should().Be(10); // 102 - 92 = 10 (bright green)
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrResetBold_ResetsBoldOnly()
     {
         // Arrange
@@ -2042,14 +2043,14 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsBold());    // "B" was printed with bold
-        Assert.True(line[0].Attributes.IsItalic()); // "B" also has italic
-        Assert.False(line[1].Attributes.IsBold());   // "N" was printed after reset - NOT bold
-        Assert.True(line[1].Attributes.IsItalic()); // Italic should remain
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsBold()).Should().BeTrue();    // "B" was printed with bold
+        (line[0].Attributes.IsItalic()).Should().BeTrue(); // "B" also has italic
+        (line[1].Attributes.IsBold()).Should().BeFalse();   // "N" was printed after reset - NOT bold
+        (line[1].Attributes.IsItalic()).Should().BeTrue(); // Italic should remain
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrResetItalic_ResetsItalicOnly()
     {
         // Arrange
@@ -2073,12 +2074,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsItalic());
-        Assert.False(line[1].Attributes.IsItalic());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsItalic()).Should().BeTrue();
+        (line[1].Attributes.IsItalic()).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrResetUnderline_ResetsUnderlineOnly()
     {
         // Arrange
@@ -2100,12 +2101,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsUnderline());
-        Assert.False(line[1].Attributes.IsUnderline());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsUnderline()).Should().BeTrue();
+        (line[1].Attributes.IsUnderline()).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrDefaultForeground_ResetsForegroundColor()
     {
         // Arrange
@@ -2128,12 +2129,12 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal(1, line[0].Attributes.GetFgColor()); // Red
-        Assert.Equal(256, line[1].Attributes.GetFgColor()); // Default foreground is 256
+        line.Should().NotBeNull();
+        (line[0].Attributes.GetFgColor()).Should().Be(1); // Red
+        (line[1].Attributes.GetFgColor()).Should().Be(256); // Default foreground is 256
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_SgrDefaultBackground_ResetsBackgroundColor()
     {
         // Arrange
@@ -2156,16 +2157,16 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.Equal(2, line[0].Attributes.GetBgColor()); // Green
-        Assert.Equal(257, line[1].Attributes.GetBgColor()); // Default background is 257
+        line.Should().NotBeNull();
+        (line[0].Attributes.GetBgColor()).Should().Be(2); // Green
+        (line[1].Attributes.GetBgColor()).Should().Be(257); // Default background is 257
     }
 
     #endregion
 
     #region ESC Sequence Tests
 
-    [Fact]
+    [TestMethod]
     public void HandleEsc_SaveCursor_SavesCursorPosition()
     {
         // Arrange
@@ -2178,18 +2179,18 @@ public class InputHandlerTests
 
         // Move cursor elsewhere
         terminal.Buffer.SetCursor(30, 20);
-        Assert.Equal(30, terminal.Buffer.X);
-        Assert.Equal(20, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(30);
+        terminal.Buffer.Y.Should().Be(20);
 
         // Act - Restore Cursor
         handler.HandleEsc("8", "");
 
         // Assert
-        Assert.Equal(15, terminal.Buffer.X);
-        Assert.Equal(10, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(15);
+        terminal.Buffer.Y.Should().Be(10);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleEsc_RestoreCursor_WithoutSave_MovesToOrigin()
     {
         // Arrange
@@ -2201,11 +2202,11 @@ public class InputHandlerTests
         handler.HandleEsc("8", "");
 
         // Assert - Should move to origin or default position
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleEsc_RIS_ResetsTerminal()
     {
         // Arrange
@@ -2219,17 +2220,17 @@ public class InputHandlerTests
         handler.HandleEsc("c", "");
 
         // Assert
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
-        Assert.False(terminal.InsertMode);
-        Assert.False(terminal.OriginMode);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(0);
+        terminal.InsertMode.Should().BeFalse();
+        terminal.OriginMode.Should().BeFalse();
     }
 
     #endregion
 
     #region C0 Control Character Tests
 
-    [Fact]
+    [TestMethod]
     public void Terminal_FormFeed_TreatedAsLineFeed()
     {
         // Arrange
@@ -2241,10 +2242,10 @@ public class InputHandlerTests
         terminal.Write("\x0C");
 
         // Assert
-        Assert.Equal(initialY + 1, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(initialY + 1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Terminal_VerticalTab_TreatedAsLineFeed()
     {
         // Arrange
@@ -2256,13 +2257,13 @@ public class InputHandlerTests
         terminal.Write("\x0B");
 
         // Assert
-        Assert.Equal(initialY + 1, terminal.Buffer.Y);
+        terminal.Buffer.Y.Should().Be(initialY + 1);
     }
 
     #endregion
     #region DeleteChars BCE Tests
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DeleteChars_FillsVacatedCellsWithSpaces()
     {
         // Arrange
@@ -2285,24 +2286,24 @@ public class InputHandlerTests
 
         // Assert - Characters should be shifted left
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         
         // Positions 0-4 should be unchanged
         for (int i = 0; i < 5; i++)
         {
-            Assert.Equal("X", line[i].Content);
+            line[i].Content.Should().Be("X");
         }
         
         // Position 5 should now have what was at position 8
-        Assert.Equal("X", line[5].Content);
+        line[5].Content.Should().Be("X");
         
         // The last 3 cells (17, 18, 19) should now be spaces (vacated by shift)
-        Assert.Equal(" ", line[17].Content);
-        Assert.Equal(" ", line[18].Content);
-        Assert.Equal(" ", line[19].Content);
+        line[17].Content.Should().Be(" ");
+        line[18].Content.Should().Be(" ");
+        line[19].Content.Should().Be(" ");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DeleteChars_BCE_VacatedCellsUseCurrentAttributes()
     {
         // Arrange - This tests the BCE (Background Color Erase) behavior
@@ -2332,20 +2333,20 @@ public class InputHandlerTests
 
         // Assert - The vacated cells should have the blue background
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         
         // The last 3 cells should be spaces with the current (blue) background
-        Assert.Equal(" ", line[17].Content);
-        Assert.Equal(" ", line[18].Content);
-        Assert.Equal(" ", line[19].Content);
+        line[17].Content.Should().Be(" ");
+        line[18].Content.Should().Be(" ");
+        line[19].Content.Should().Be(" ");
         
         // And they should have the blue background (color index 4)
-        Assert.Equal(4, line[17].Attributes.GetBgColor());
-        Assert.Equal(4, line[18].Attributes.GetBgColor());
-        Assert.Equal(4, line[19].Attributes.GetBgColor());
+        (line[17].Attributes.GetBgColor()).Should().Be(4);
+        (line[18].Attributes.GetBgColor()).Should().Be(4);
+        (line[19].Attributes.GetBgColor()).Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DeleteChars_AtEndOfLine_StillClearsCorrectly()
     {
         // Arrange
@@ -2368,17 +2369,17 @@ public class InputHandlerTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         
         // Position 17 should now have what was at 19
-        Assert.Equal("T", line[17].Content); // 'T' was at position 19
+        line[17].Content.Should().Be("T"); // 'T' was at position 19
         
         // Positions 18 and 19 should be spaces
-        Assert.Equal(" ", line[18].Content);
-        Assert.Equal(" ", line[19].Content);
+        line[18].Content.Should().Be(" ");
+        line[19].Content.Should().Be(" ");
     }
 
-    [Fact]
+    [TestMethod]
     public void HandleCsi_DeleteChars_MoreThanRemaining_ClearsToEndOfLine()
     {
         // Arrange
@@ -2401,18 +2402,18 @@ public class InputHandlerTests
 
         // Assert - All cells from cursor to end should be cleared
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
+        line.Should().NotBeNull();
         
         // Positions 0-14 should be unchanged
         for (int i = 0; i < 15; i++)
         {
-            Assert.Equal("X", line[i].Content);
+            line[i].Content.Should().Be("X");
         }
         
         // Positions 15-19 should be spaces
         for (int i = 15; i < 20; i++)
         {
-            Assert.Equal(" ", line[i].Content);
+            line[i].Content.Should().Be(" ");
         }
     }
 
@@ -2443,122 +2444,122 @@ public class InputHandlerTests
     private static string RequestSgr(Terminal terminal)
     {
         var reply = Capture(terminal, "\x1bP$qm\x1b\\");
-        Assert.StartsWith("\x1bP1$r", reply);
-        Assert.EndsWith("m\x1b\\", reply);
+        reply.Should().StartWith("\x1bP1$r");
+        reply.Should().EndWith("m\x1b\\");
         return reply["\x1bP1$r".Length..^"m\x1b\\".Length];
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_DefaultAttributes_ReturnsReset()
     {
         var terminal = CreateTerminal();
         var reply = Capture(terminal, "\x1bP$qm\x1b\\");
-        Assert.Equal("\x1bP1$r0m\x1b\\", reply);
+        reply.Should().Be("\x1bP1$r0m\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_TruecolorForeground_ReturnsRgb()
     {
         var terminal = CreateTerminal();
         terminal.Write("\x1b[38;2;1;2;3m");
-        Assert.Equal("38;2;1;2;3", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("38;2;1;2;3");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_TruecolorForeground_SubParams_ReturnsRgb()
     {
         var terminal = CreateTerminal();
         // The colon form, with the empty colour-space slot programs conventionally leave blank.
         terminal.Write("\x1b[38:2::1:2:3m");
-        Assert.Equal("38;2;1;2;3", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("38;2;1;2;3");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_TruecolorForeground_SubParamsWithoutColorSpace_ReturnsRgb()
     {
         var terminal = CreateTerminal();
         // The shorter colon form, without the colour-space slot at all.
         terminal.Write("\x1b[38:2:1:2:3m");
-        Assert.Equal("38;2;1;2;3", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("38;2;1;2;3");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_TruecolorBackground_ReturnsRgb()
     {
         var terminal = CreateTerminal();
         terminal.Write("\x1b[48;2;10;20;30m");
-        Assert.Equal("48;2;10;20;30", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("48;2;10;20;30");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_TruecolorBackground_SubParams_ReturnsRgb()
     {
         var terminal = CreateTerminal();
         terminal.Write("\x1b[48:2::10:20:30m");
-        Assert.Equal("48;2;10;20;30", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("48;2;10;20;30");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_TruecolorForegroundAndBackground_ReportsBothInOrder()
     {
         var terminal = CreateTerminal();
         terminal.Write("\x1b[38;2;1;2;3;48;2;10;20;30m");
-        Assert.Equal("38;2;1;2;3;48;2;10;20;30", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("38;2;1;2;3;48;2;10;20;30");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_256ColorForeground_Returns256Code()
     {
         var terminal = CreateTerminal();
         terminal.Write("\x1b[38;5;200m");
-        Assert.Equal("38;5;200", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("38;5;200");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_256ColorForeground_SubParams_Returns256Code()
     {
         var terminal = CreateTerminal();
         terminal.Write("\x1b[38:5:200m");
-        Assert.Equal("38;5;200", RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be("38;5;200");
     }
 
-    [Theory]
-    [InlineData("\x1b[31m", "31")]          // ANSI foreground
-    [InlineData("\x1b[91m", "91")]          // bright foreground
-    [InlineData("\x1b[44m", "44")]          // ANSI background
-    [InlineData("\x1b[104m", "104")]        // bright background
-    [InlineData("\x1b[38;5;9m", "91")]      // palette 9 is the bright red the 16 already name
-    [InlineData("\x1b[39;49m", "0")]        // back to the defaults, which are left out
+    [TestMethod]
+    [DataRow("\x1b[31m", "31")]          // ANSI foreground
+    [DataRow("\x1b[91m", "91")]          // bright foreground
+    [DataRow("\x1b[44m", "44")]          // ANSI background
+    [DataRow("\x1b[104m", "104")]        // bright background
+    [DataRow("\x1b[38;5;9m", "91")]      // palette 9 is the bright red the 16 already name
+    [DataRow("\x1b[39;49m", "0")]        // back to the defaults, which are left out
     public void Decrqss_Colors_ReportsTheShortestFormThatParsesBack(string sgr, string expected)
     {
         var terminal = CreateTerminal();
         terminal.Write(sgr);
-        Assert.Equal(expected, RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be(expected);
     }
 
-    [Theory]
-    [InlineData("\x1b[1m", "1")]            // bold
-    [InlineData("\x1b[2m", "2")]            // dim
-    [InlineData("\x1b[3m", "3")]            // italic
-    [InlineData("\x1b[4m", "4")]            // underline
-    [InlineData("\x1b[21m", "21")]          // double underline
-    [InlineData("\x1b[4:3m", "4:3")]        // curly underline
-    [InlineData("\x1b[4:4m", "4:4")]        // dotted underline
-    [InlineData("\x1b[4:5m", "4:5")]        // dashed underline
-    [InlineData("\x1b[5m", "5")]            // blink
-    [InlineData("\x1b[7m", "7")]            // inverse
-    [InlineData("\x1b[8m", "8")]            // invisible
-    [InlineData("\x1b[9m", "9")]            // strikethrough
-    [InlineData("\x1b[1;3;4;7m", "1;3;4;7")]
-    [InlineData("\x1b[1m\x1b[22m", "0")]    // set then cleared reads as the reset
+    [TestMethod]
+    [DataRow("\x1b[1m", "1")]            // bold
+    [DataRow("\x1b[2m", "2")]            // dim
+    [DataRow("\x1b[3m", "3")]            // italic
+    [DataRow("\x1b[4m", "4")]            // underline
+    [DataRow("\x1b[21m", "21")]          // double underline
+    [DataRow("\x1b[4:3m", "4:3")]        // curly underline
+    [DataRow("\x1b[4:4m", "4:4")]        // dotted underline
+    [DataRow("\x1b[4:5m", "4:5")]        // dashed underline
+    [DataRow("\x1b[5m", "5")]            // blink
+    [DataRow("\x1b[7m", "7")]            // inverse
+    [DataRow("\x1b[8m", "8")]            // invisible
+    [DataRow("\x1b[9m", "9")]            // strikethrough
+    [DataRow("\x1b[1;3;4;7m", "1;3;4;7")]
+    [DataRow("\x1b[1m\x1b[22m", "0")]    // set then cleared reads as the reset
     public void Decrqss_Attributes_ReportsWhatIsOn(string sgr, string expected)
     {
         var terminal = CreateTerminal();
         terminal.Write(sgr);
-        Assert.Equal(expected, RequestSgr(terminal));
+        RequestSgr(terminal).Should().Be(expected);
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_Sgr_RoundTripsThroughItsOwnReply()
     {
         // The reply is only useful if replaying it lands on the same attributes it described.
@@ -2571,34 +2572,34 @@ public class InputHandlerTests
         var replayed = CreateTerminal();
         replayed.Write($"\x1b[{reported}m");
 
-        Assert.Equal(reported, RequestSgr(replayed));
+        RequestSgr(replayed).Should().Be(reported);
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_ScrollRegion_ReturnsMargins()
     {
         var terminal = CreateTerminal(80, 24);
         terminal.Write("\x1b[5;20r"); // set scroll region rows 5-20
         var reply = Capture(terminal, "\x1bP$qr\x1b\\");
-        Assert.Equal("\x1bP1$r5;20r\x1b\\", reply);
+        reply.Should().Be("\x1bP1$r5;20r\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_DefaultScrollRegion_ReturnsFullScreen()
     {
         var terminal = CreateTerminal(80, 24);
         var reply = Capture(terminal, "\x1bP$qr\x1b\\");
-        Assert.Equal("\x1bP1$r1;24r\x1b\\", reply);
+        reply.Should().Be("\x1bP1$r1;24r\x1b\\");
     }
 
-    [Theory]
-    [InlineData("", "2")]                   // TerminalOptions starts on a block that does not blink
-    [InlineData("\x1b[1 q", "1")]
-    [InlineData("\x1b[2 q", "2")]
-    [InlineData("\x1b[3 q", "3")]
-    [InlineData("\x1b[4 q", "4")]
-    [InlineData("\x1b[5 q", "5")]
-    [InlineData("\x1b[6 q", "6")]
+    [TestMethod]
+    [DataRow("", "2")]                   // TerminalOptions starts on a block that does not blink
+    [DataRow("\x1b[1 q", "1")]
+    [DataRow("\x1b[2 q", "2")]
+    [DataRow("\x1b[3 q", "3")]
+    [DataRow("\x1b[4 q", "4")]
+    [DataRow("\x1b[5 q", "5")]
+    [DataRow("\x1b[6 q", "6")]
     public void Decrqss_CursorStyle_ReturnsCode(string decscusr, string expected)
     {
         var terminal = CreateTerminal();
@@ -2606,67 +2607,67 @@ public class InputHandlerTests
             terminal.Write(decscusr);
 
         var reply = Capture(terminal, "\x1bP$q q\x1b\\");
-        Assert.Equal($"\x1bP1$r{expected} q\x1b\\", reply);
+        reply.Should().Be($"\x1bP1$r{expected} q\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_ConformanceLevel_ReturnsVt220()
     {
         var terminal = CreateTerminal();
         var reply = Capture(terminal, "\x1bP$q\"p\x1b\\");
-        Assert.Equal("\x1bP1$r62;1\"p\x1b\\", reply);
+        reply.Should().Be("\x1bP1$r62;1\"p\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_ProtectionAttribute_ReturnsUnprotected()
     {
         var terminal = CreateTerminal();
         var reply = Capture(terminal, "\x1bP$q\"q\x1b\\");
-        Assert.Equal("\x1bP1$r0\"q\x1b\\", reply);
+        reply.Should().Be("\x1bP1$r0\"q\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_UnknownSetting_ReturnsDeny()
     {
         var terminal = CreateTerminal();
         var reply = Capture(terminal, "\x1bP$qXYZ\x1b\\");
-        Assert.Equal("\x1bP0$r\x1b\\", reply);
+        reply.Should().Be("\x1bP0$r\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_EmptyRequest_ReturnsDeny()
     {
         var terminal = CreateTerminal();
         var reply = Capture(terminal, "\x1bP$q\x1b\\");
-        Assert.Equal("\x1bP0$r\x1b\\", reply);
+        reply.Should().Be("\x1bP0$r\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_OversizedPayload_IsRefusedWithoutBuffering()
     {
         var terminal = CreateTerminal();
         var reply = Capture(terminal, "\x1bP$qm" + new string('x', 100_000) + "\x1b\\");
-        Assert.Equal("\x1bP0$r\x1b\\", reply);
+        reply.Should().Be("\x1bP0$r\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_AbandonedSequence_NoReply()
     {
         var terminal = CreateTerminal();
         // Send DCS $ q m but terminate with CAN instead of ST — should produce no reply
         var reply = Capture(terminal, "\x1bP$qm\x18");
-        Assert.Equal("", reply);
+        reply.Should().Be("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_SecondRequest_DoesNotSeeTheFirstPayload()
     {
         var terminal = CreateTerminal();
-        Assert.Equal("\x1bP1$r1;24r\x1b\\", Capture(terminal, "\x1bP$qr\x1b\\"));
-        Assert.Equal("\x1bP1$r0m\x1b\\", Capture(terminal, "\x1bP$qm\x1b\\"));
+        Capture(terminal, "\x1bP$qr\x1b\\").Should().Be("\x1bP1$r1;24r\x1b\\");
+        Capture(terminal, "\x1bP$qm\x1b\\").Should().Be("\x1bP1$r0m\x1b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decrqss_AfterAnUnrelatedDcs_StillAnswers()
     {
         // DECRQSS shares the DCS hook with every other DCS sequence, so an intervening one must
@@ -2674,13 +2675,13 @@ public class InputHandlerTests
         var terminal = CreateTerminal();
         terminal.Write("\x1bP0;1|17/ab\x1b\\"); // DECUDK, which this terminal does not implement
 
-        Assert.Equal("\x1bP1$r0m\x1b\\", Capture(terminal, "\x1bP$qm\x1b\\"));
+        Capture(terminal, "\x1bP$qm\x1b\\").Should().Be("\x1bP1$r0m\x1b\\");
     }
 
     #endregion
 
 
-    [Fact]
+    [TestMethod]
     public void Ich_MidLine_ShiftsTheTailInsteadOfReplicatingOneCell()
     {
         // The bug as a user met it: type "echo testing", arrow left three times, type a letter.
@@ -2694,10 +2695,10 @@ public class InputHandlerTests
 
         var line = terminal.Buffer.Lines[0]!;
         var text = string.Concat(Enumerable.Range(0, 8).Select(i => line[i].Content));
-        Assert.Equal("abcXdef", text.TrimEnd('\0', ' '));
+        text.TrimEnd('\0', ' ').Should().Be("abcXdef");
     }
 
-    [Fact]
+    [TestMethod]
     public void InsertMode_MidLine_ShiftsTheTailToo()
     {
         // IRM (CSI 4 h) takes the other shifting path through Print; same memmove rule applies.
@@ -2707,6 +2708,6 @@ public class InputHandlerTests
 
         var line = terminal.Buffer.Lines[0]!;
         var text = string.Concat(Enumerable.Range(0, 8).Select(i => line[i].Content));
-        Assert.Equal("abcXdef", text.TrimEnd('\0', ' '));
+        text.TrimEnd('\0', ' ').Should().Be("abcXdef");
     }
 }

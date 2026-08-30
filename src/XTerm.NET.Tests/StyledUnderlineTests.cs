@@ -14,6 +14,7 @@ namespace XTerm.Tests;
 /// already existed — the sub-parameters were being read and then dropped, so a program asking for a
 /// curly underline got a straight one.
 /// </remarks>
+[TestClass]
 public class StyledUnderlineTests
 {
     private const string Esc = "\u001b";
@@ -23,34 +24,34 @@ public class StyledUnderlineTests
     private static BufferCell FirstCell(Terminal terminal)
         => terminal.Buffer.Lines[terminal.Buffer.YBase]![0];
 
-    [Theory]
-    [InlineData("4", UnderlineStyle.Single)]
-    [InlineData("4:0", UnderlineStyle.None)]
-    [InlineData("4:1", UnderlineStyle.Single)]
-    [InlineData("4:2", UnderlineStyle.Double)]
-    [InlineData("4:3", UnderlineStyle.Curly)]
-    [InlineData("4:4", UnderlineStyle.Dotted)]
-    [InlineData("4:5", UnderlineStyle.Dashed)]
-    [InlineData("21", UnderlineStyle.Double)]
+    [TestMethod]
+    [DataRow("4", UnderlineStyle.Single)]
+    [DataRow("4:0", UnderlineStyle.None)]
+    [DataRow("4:1", UnderlineStyle.Single)]
+    [DataRow("4:2", UnderlineStyle.Double)]
+    [DataRow("4:3", UnderlineStyle.Curly)]
+    [DataRow("4:4", UnderlineStyle.Dotted)]
+    [DataRow("4:5", UnderlineStyle.Dashed)]
+    [DataRow("21", UnderlineStyle.Double)]
     public void Sgr_selects_the_underline_style(string sgr, UnderlineStyle expected)
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[{sgr}mx");
 
-        Assert.Equal(expected, FirstCell(terminal).Attributes.GetUnderlineStyle());
+        FirstCell(terminal).Attributes.GetUnderlineStyle().Should().Be(expected);
     }
 
     /// <summary>
     /// A style nobody has defined is still an underline. Drawing a plain one is closer to what the
     /// program asked for than drawing nothing at all.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_unknown_style_still_underlines()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[4:9mx");
 
-        Assert.Equal(UnderlineStyle.Single, FirstCell(terminal).Attributes.GetUnderlineStyle());
+        FirstCell(terminal).Attributes.GetUnderlineStyle().Should().Be(UnderlineStyle.Single);
     }
 
     /// <summary>
@@ -58,84 +59,84 @@ public class StyledUnderlineTests
     /// Keeping a separate flag beside the style is how a cell ends up underlined by one and not
     /// the other.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void IsUnderline_follows_the_style()
     {
         var terminal = Fresh();
 
         terminal.Write($"{Esc}[4:3mx");
-        Assert.True(FirstCell(terminal).Attributes.IsUnderline());
+        FirstCell(terminal).Attributes.IsUnderline().Should().BeTrue();
 
         terminal.Write($"{Esc}[24m{Esc}[1;1Hy");
-        Assert.False(FirstCell(terminal).Attributes.IsUnderline());
-        Assert.Equal(UnderlineStyle.None, FirstCell(terminal).Attributes.GetUnderlineStyle());
+        FirstCell(terminal).Attributes.IsUnderline().Should().BeFalse();
+        FirstCell(terminal).Attributes.GetUnderlineStyle().Should().Be(UnderlineStyle.None);
     }
 
     // ---- colour ---------------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Sgr58_sets_a_truecolor_underline_as_subparameters()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[4:3;58:2::255:0:0mx");
 
         var attr = FirstCell(terminal).Attributes;
-        Assert.True(attr.TryGetUnderlineColor(out var color, out var mode));
-        Assert.Equal((255 << 16) | (0 << 8) | 0, color);
-        Assert.Equal(1, mode);
-        Assert.Equal(UnderlineStyle.Curly, attr.GetUnderlineStyle());
+        attr.TryGetUnderlineColor(out var color, out var mode).Should().BeTrue();
+        color.Should().Be((255 << 16) | (0 << 8) | 0);
+        mode.Should().Be(1);
+        attr.GetUnderlineStyle().Should().Be(UnderlineStyle.Curly);
     }
 
     /// <summary>
     /// Both spellings are in use, and a terminal that takes only one looks broken to half its
     /// callers.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Sgr58_also_accepts_separate_parameters()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[58;2;0;128;255mx");
 
-        Assert.True(FirstCell(terminal).Attributes.TryGetUnderlineColor(out var color, out var mode));
-        Assert.Equal((0 << 16) | (128 << 8) | 255, color);
-        Assert.Equal(1, mode);
+        FirstCell(terminal).Attributes.TryGetUnderlineColor(out var color, out var mode).Should().BeTrue();
+        color.Should().Be((0 << 16) | (128 << 8) | 255);
+        mode.Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Sgr58_accepts_an_indexed_colour()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[58:5:196mx");
 
-        Assert.True(FirstCell(terminal).Attributes.TryGetUnderlineColor(out var color, out var mode));
-        Assert.Equal(196, color);
-        Assert.Equal(0, mode);
+        FirstCell(terminal).Attributes.TryGetUnderlineColor(out var color, out var mode).Should().BeTrue();
+        color.Should().Be(196);
+        mode.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Sgr59_puts_the_underline_back_to_the_foreground()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[58:2::255:0:0m{Esc}[59mx");
 
-        Assert.False(FirstCell(terminal).Attributes.TryGetUnderlineColor(out _, out _));
+        FirstCell(terminal).Attributes.TryGetUnderlineColor(out _, out _).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_reset_clears_the_style_and_the_colour()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[4:3;58:2::255:0:0m{Esc}[0mx");
 
         var attr = FirstCell(terminal).Attributes;
-        Assert.Equal(UnderlineStyle.None, attr.GetUnderlineStyle());
-        Assert.False(attr.TryGetUnderlineColor(out _, out _));
+        attr.GetUnderlineStyle().Should().Be(UnderlineStyle.None);
+        attr.TryGetUnderlineColor(out _, out _).Should().BeFalse();
     }
 
     /// <summary>
     /// The same colour used twice is one entry, which is what keeps twenty bits of id enough.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_same_colour_interns_once()
     {
         var terminal = Fresh();
@@ -146,8 +147,8 @@ public class StyledUnderlineTests
         terminal.Write($"{Esc}[0m{Esc}[58:2::10:20:30m{Esc}[1;1Hy");
         var second = FirstCell(terminal).Attributes.GetUnderlineColorId();
 
-        Assert.Equal(first, second);
-        Assert.NotEqual(0, first);
+        second.Should().Be(first);
+        first.Should().NotBe(0);
     }
 
     // ---- an abandoned sequence must not poison the next one --------------------------------------
@@ -168,24 +169,24 @@ public class StyledUnderlineTests
         return AttrAt(terminal).GetFgColor();
     }
 
-    [Theory]
-    [InlineData("\u001b[4:3")]            // ESC begins the next sequence and abandons this one
-    [InlineData("\u001b[4:3\u0018")]      // CAN
-    [InlineData("\u001b[4:3\u001a")]      // SUB
-    [InlineData("\u001b[4:3\u001bc")]     // RIS
+    [TestMethod]
+    [DataRow("\u001b[4:3")]            // ESC begins the next sequence and abandons this one
+    [DataRow("\u001b[4:3\u0018")]      // CAN
+    [DataRow("\u001b[4:3\u001a")]      // SUB
+    [DataRow("\u001b[4:3\u001bc")]     // RIS
     public void An_abandoned_sequence_does_not_swallow_the_next_one(string abandoned)
     {
         var terminal = Fresh();
         terminal.Write(abandoned);
         terminal.Write($"{Esc}[31mx");
 
-        Assert.Equal(RedForeground(), AttrAt(terminal).GetFgColor());
+        AttrAt(terminal).GetFgColor().Should().Be(RedForeground());
     }
 
     /// <summary>
     /// Not only SGR: a lost first parameter homes the cursor instead of moving it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_abandoned_sequence_does_not_swallow_a_cursor_move()
     {
         var terminal = Fresh();
@@ -193,7 +194,7 @@ public class StyledUnderlineTests
         terminal.Write($"{Esc}[2;5H");
         terminal.Write("z");
 
-        Assert.Equal("z", terminal.Buffer.Lines[terminal.Buffer.YBase + 1]![4].Content);
+        (terminal.Buffer.Lines[terminal.Buffer.YBase + 1]![4].Content).Should().Be("z");
     }
 
     // ---- the reason this is stored as an id ------------------------------------------------------
@@ -206,27 +207,27 @@ public class StyledUnderlineTests
     /// AttributeData grows every cell in the buffer — the thing measured as costing most on fills.
     /// So the cell carries an interned id, and this asserts the cost of the feature is zero.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void The_cell_did_not_grow()
     {
-        Assert.Equal(12, Unsafe.SizeOf<AttributeData>());
-        Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<AttributeData>());
+        (Unsafe.SizeOf<AttributeData>()).Should().Be(12);
+        (RuntimeHelpers.IsReferenceOrContainsReferences<AttributeData>()).Should().BeFalse();
     }
 
     /// <summary>
     /// Style and colour live in the same int as the boolean attributes and must not disturb them.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_style_and_colour_do_not_disturb_the_other_attributes()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}[1;3;4:3;58:2::255:0:0;9mx");
 
         var attr = FirstCell(terminal).Attributes;
-        Assert.True(attr.IsBold());
-        Assert.True(attr.IsItalic());
-        Assert.True(attr.IsStrikethrough());
-        Assert.Equal(UnderlineStyle.Curly, attr.GetUnderlineStyle());
-        Assert.True(attr.TryGetUnderlineColor(out _, out _));
+        attr.IsBold().Should().BeTrue();
+        attr.IsItalic().Should().BeTrue();
+        attr.IsStrikethrough().Should().BeTrue();
+        attr.GetUnderlineStyle().Should().Be(UnderlineStyle.Curly);
+        attr.TryGetUnderlineColor(out _, out _).Should().BeTrue();
     }
 }

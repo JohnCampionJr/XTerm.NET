@@ -12,6 +12,7 @@ namespace XTerm.Tests;
 /// <para>Every test here drives the whole stack through <see cref="Terminal.Write(string)"/>,
 /// because the parser is what builds the identifier and the bug lived in what it built.</para>
 /// </summary>
+[TestClass]
 public class PrivateCsiDispatchTests
 {
     private const char Esc = (char)0x1b;
@@ -35,7 +36,7 @@ public class PrivateCsiDispatchTests
     /// XTMODKEYS. Kitty, neovim and anything else negotiating modifyOtherKeys sends this on
     /// startup; it used to arrive as SGR 4 ; 2 and underline and dim everything printed after it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void XtModkeys_does_not_apply_its_arguments_as_SGR()
     {
         var terminal = Fresh();
@@ -43,8 +44,8 @@ public class PrivateCsiDispatchTests
         terminal.Write($"{Esc}[>4;2mA");
 
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.False(line[0].Attributes.IsUnderline());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsUnderline()).Should().BeFalse();
     }
 
     /// <summary>
@@ -53,10 +54,10 @@ public class PrivateCsiDispatchTests
     /// reach the Kitty handler, which does not touch the cursor -- and neither does the pop
     /// ("CSI &lt; u"), whose marker was never stripped.
     /// </summary>
-    [Theory]
-    [InlineData(">1u")]
-    [InlineData("?u")]
-    [InlineData("<u")]
+    [TestMethod]
+    [DataRow(">1u")]
+    [DataRow("?u")]
+    [DataRow("<u")]
     public void Kitty_keyboard_sequences_do_not_restore_the_cursor(string sequence)
     {
         var terminal = Fresh();
@@ -66,8 +67,8 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[{sequence}");
 
-        Assert.Equal(30, terminal.Buffer.X);
-        Assert.Equal(15, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(30);
+        terminal.Buffer.Y.Should().Be(15);
     }
 
     /// <summary>
@@ -75,7 +76,7 @@ public class PrivateCsiDispatchTests
     /// later "CSI u" restored the position the application happened to be at when it saved its
     /// modes rather than the one it saved on purpose.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void XtSave_does_not_overwrite_the_saved_cursor()
     {
         var terminal = Fresh();
@@ -87,15 +88,15 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[u");
 
-        Assert.Equal(10, terminal.Buffer.X);
-        Assert.Equal(5, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(10);
+        terminal.Buffer.Y.Should().Be(5);
     }
 
     /// <summary>
     /// XTRESTORE restores DEC private modes. It used to be read as SET SCROLLING REGION, which
     /// takes the mode number as a row, throws the region away and homes the cursor.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void XtRestore_does_not_reset_the_scroll_region_or_move_the_cursor()
     {
         var terminal = Fresh();
@@ -104,16 +105,16 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[?1049r");
 
-        Assert.Equal(2, terminal.Buffer.ScrollTop);
-        Assert.Equal(9, terminal.Buffer.ScrollBottom);
-        Assert.Equal(5, terminal.Buffer.Y);
+        terminal.Buffer.ScrollTop.Should().Be(2);
+        terminal.Buffer.ScrollBottom.Should().Be(9);
+        terminal.Buffer.Y.Should().Be(5);
     }
 
     /// <summary>
     /// XTVERSION. It shares its final character with DECSCUSR, so asking the terminal what it is
     /// used to change the shape of the cursor.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void XtVersion_does_not_change_the_cursor_style()
     {
         var terminal = Fresh();
@@ -121,8 +122,8 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[>0q");
 
-        Assert.Equal(CursorStyle.Block, terminal.Options.CursorStyle);
-        Assert.False(terminal.Options.CursorBlink);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Block);
+        terminal.Options.CursorBlink.Should().BeFalse();
     }
 
     /// <summary>
@@ -131,7 +132,7 @@ public class PrivateCsiDispatchTests
     /// to be mapped to it as well, so an application clearing its LEDs on startup got a blinking
     /// cursor it never asked for. Nothing here implements DECLL; it is ignored.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Decll_does_not_change_the_cursor_style()
     {
         var (terminal, replies) = Listening();
@@ -139,22 +140,22 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[0q"); // DECLL 0 -- clear all LEDs
 
-        Assert.Equal(CursorStyle.Block, terminal.Options.CursorStyle);
-        Assert.False(terminal.Options.CursorBlink);
-        Assert.Empty(replies);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Block);
+        terminal.Options.CursorBlink.Should().BeFalse();
+        replies.Should().BeEmpty();
 
         // The form that carries the SP intermediate is still DECSCUSR, so the guard above is
         // testing the intermediate and not a cursor style that stopped working.
         terminal.Write($"{Esc}[5 q");
-        Assert.Equal(CursorStyle.Bar, terminal.Options.CursorStyle);
-        Assert.True(terminal.Options.CursorBlink);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Bar);
+        terminal.Options.CursorBlink.Should().BeTrue();
     }
 
     /// <summary>
     /// XTSMTITLE sets how window titles are reported. Read as XTWINOPS, "CSI &gt; 2 t" minimised
     /// the window instead.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void XtSmTitle_does_not_perform_a_window_operation()
     {
         var terminal = Fresh();
@@ -163,16 +164,16 @@ public class PrivateCsiDispatchTests
         terminal.WindowMinimized += (_, _) => minimized++;
 
         terminal.Write($"{Esc}[>2t");
-        Assert.Equal(0, minimized);
+        minimized.Should().Be(0);
 
         // The non-private form is still XTWINOPS, so the guard above is testing the marker and not
         // a window operation that stopped working.
         terminal.Write($"{Esc}[2t");
-        Assert.Equal(1, minimized);
+        minimized.Should().Be(1);
     }
 
     /// <summary>An unrecognised private sequence is ignored, not partially applied.</summary>
-    [Fact]
+    [TestMethod]
     public void An_unknown_private_sequence_leaves_the_screen_alone()
     {
         var (terminal, replies) = Listening();
@@ -181,27 +182,27 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[?42q"); // CSI ? 42 q -- nothing maps it
 
-        Assert.Equal(before, (terminal.Buffer.X, terminal.Buffer.Y, terminal.GetLine(0)));
-        Assert.Empty(replies);
+        (terminal.Buffer.X, terminal.Buffer.Y, terminal.GetLine(0)).Should().Be(before);
+        replies.Should().BeEmpty();
     }
 
     // ---------------------------------------------------------------------------------------
     // The private sequences that ARE implemented still reach their handlers.
     // ---------------------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void DecSet_and_DecRst_still_toggle_a_private_mode()
     {
         var terminal = Fresh();
 
         terminal.Write($"{Esc}[?25l");
-        Assert.False(terminal.CursorVisible);
+        terminal.CursorVisible.Should().BeFalse();
 
         terminal.Write($"{Esc}[?25h");
-        Assert.True(terminal.CursorVisible);
+        terminal.CursorVisible.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Decsed_still_erases_the_display()
     {
         var terminal = Fresh();
@@ -209,10 +210,10 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[?2J");
 
-        Assert.Equal("", terminal.GetLine(0).TrimEnd());
+        terminal.GetLine(0).TrimEnd().Should().Be("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Decsel_still_erases_the_line()
     {
         var terminal = Fresh();
@@ -221,10 +222,10 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[?0K");
 
-        Assert.Equal("", terminal.GetLine(0).TrimEnd());
+        terminal.GetLine(0).TrimEnd().Should().Be("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Secondary_device_attributes_still_answers()
     {
         var (terminal, replies) = Listening();
@@ -234,12 +235,12 @@ public class PrivateCsiDispatchTests
         // What the reply says is the DA handler's business and is asserted in InputHandlerTests.
         // All this test cares about is that ">c" still reaches it once the marker is no longer
         // stripped, so it checks only that the answer is shaped like a secondary DA.
-        var reply = Assert.Single(replies);
-        Assert.StartsWith($"{Esc}[>", reply);
-        Assert.EndsWith("c", reply);
+        var reply = replies.Should().ContainSingle().Which;
+        reply.Should().StartWith($"{Esc}[>");
+        reply.Should().EndWith("c");
     }
 
-    [Fact]
+    [TestMethod]
     public void Dec_device_status_report_still_answers()
     {
         var (terminal, replies) = Listening();
@@ -247,31 +248,31 @@ public class PrivateCsiDispatchTests
 
         terminal.Write($"{Esc}[?6n");
 
-        Assert.Equal($"{Esc}[?6;11R", Assert.Single(replies));
+        replies.Should().ContainSingle().Which.Should().Be($"{Esc}[?6;11R");
     }
 
-    [Fact]
+    [TestMethod]
     public void Private_decrqm_still_answers()
     {
         var (terminal, replies) = Listening();
 
         terminal.Write($"{Esc}[?2026$p");
 
-        Assert.Equal($"{Esc}[?2026;2$y", Assert.Single(replies));
+        replies.Should().ContainSingle().Which.Should().Be($"{Esc}[?2026;2$y");
     }
 
-    [Fact]
+    [TestMethod]
     public void Xtsmgraphics_still_answers_and_scroll_up_still_scrolls()
     {
         var (terminal, replies) = Listening(cols: 40, rows: 6);
         terminal.Write("top line\r\nsecond line");
 
         terminal.Write($"{Esc}[?1;1;0S");
-        Assert.Single(replies);
-        Assert.Equal("top line", terminal.GetLine(terminal.Buffer.YBase).TrimEnd());
+        replies.Should().ContainSingle();
+        terminal.GetLine(terminal.Buffer.YBase).TrimEnd().Should().Be("top line");
 
         // The same final character without the marker is still SCROLL UP.
         terminal.Write($"{Esc}[1S");
-        Assert.Equal("second line", terminal.GetLine(terminal.Buffer.YBase).TrimEnd());
+        terminal.GetLine(terminal.Buffer.YBase).TrimEnd().Should().Be("second line");
     }
 }

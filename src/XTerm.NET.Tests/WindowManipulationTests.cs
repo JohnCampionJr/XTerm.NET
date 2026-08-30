@@ -5,6 +5,8 @@ using XTerm.Common;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class WindowManipulationTests
 {
     private Terminal CreateTerminal(WindowOptions? windowOptions = null)
@@ -18,7 +20,7 @@ public class WindowManipulationTests
         return new Terminal(options);
     }
 
-    [Fact]
+    [TestMethod]
     public void Terminal_InitializesWindowEvents()
     {
         // Arrange & Act
@@ -40,17 +42,17 @@ public class WindowManipulationTests
         terminal.WindowInfoRequested += (sender, e) => { };
 
         // Verify terminal is properly initialized
-        Assert.NotNull(terminal);
-        Assert.NotNull(terminal.Options);
-        Assert.NotNull(terminal.Options.WindowOptions);
+        terminal.Should().NotBeNull();
+        terminal.Options.Should().NotBeNull();
+        terminal.Options.WindowOptions.Should().NotBeNull();
         
         // Events should not have fired yet
-        Assert.False(moveEventFired);
-        Assert.False(resizeEventFired);
-        Assert.False(minimizeEventFired);
+        moveEventFired.Should().BeFalse();
+        resizeEventFired.Should().BeFalse();
+        minimizeEventFired.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_MoveWindow_FiresOnWindowMove()
     {
         // Arrange
@@ -70,12 +72,12 @@ public class WindowManipulationTests
         terminal.Write("\x1b[3;100;200t"); // CSI 3 ; 100 ; 200 t
 
         // Assert
-        Assert.True(moveEventFired);
-        Assert.Equal(100, capturedX);
-        Assert.Equal(200, capturedY);
+        moveEventFired.Should().BeTrue();
+        capturedX.Should().Be(100);
+        capturedY.Should().Be(200);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_MoveWindow_DoesNotFireWhenPermissionDenied()
     {
         // Arrange
@@ -89,10 +91,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[3;100;200t");
 
         // Assert
-        Assert.False(moveEventFired);
+        moveEventFired.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_ResizeWindow_FiresOnWindowResize()
     {
         // Arrange
@@ -112,12 +114,12 @@ public class WindowManipulationTests
         terminal.Write("\x1b[4;600;800t"); // CSI 4 ; 600 ; 800 t
 
         // Assert
-        Assert.True(resizeEventFired);
-        Assert.Equal(800, capturedWidth);
-        Assert.Equal(600, capturedHeight);
+        resizeEventFired.Should().BeTrue();
+        capturedWidth.Should().Be(800);
+        capturedHeight.Should().Be(600);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_MinimizeWindow_FiresOnWindowMinimize()
     {
         // Arrange
@@ -131,10 +133,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[2t"); // CSI 2 t
 
         // Assert
-        Assert.True(eventFired);
+        eventFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_MaximizeWindow_FiresOnWindowMaximize()
     {
         // Arrange
@@ -148,10 +150,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[9;1t"); // CSI 9 ; 1 t
 
         // Assert
-        Assert.True(eventFired);
+        eventFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_RestoreWindow_FiresOnWindowRestore()
     {
         // Arrange
@@ -165,10 +167,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[1t"); // CSI 1 t
 
         // Assert
-        Assert.True(eventFired);
+        eventFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_RestoreFromMaximize_FiresOnWindowRestore()
     {
         // Arrange
@@ -182,10 +184,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[9;0t"); // CSI 9 ; 0 t
 
         // Assert
-        Assert.True(eventFired);
+        eventFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_RaiseWindow_FiresOnWindowRaise()
     {
         // Arrange
@@ -199,10 +201,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[5t"); // CSI 5 t
 
         // Assert
-        Assert.True(eventFired);
+        eventFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_LowerWindow_FiresOnWindowLower()
     {
         // Arrange
@@ -216,10 +218,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[6t"); // CSI 6 t
 
         // Assert
-        Assert.True(eventFired);
+        eventFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_RefreshWindow_FiresOnWindowRefresh()
     {
         // Arrange
@@ -233,10 +235,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[7t"); // CSI 7 t
 
         // Assert
-        Assert.True(eventFired);
+        eventFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_FullscreenToggle_FiresOnWindowFullscreen()
     {
         // Arrange
@@ -252,10 +254,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[10;2t"); // Toggle fullscreen
 
         // Assert
-        Assert.Equal(3, eventCount);
+        eventCount.Should().Be(3);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryWindowState_FiresOnWindowInfoRequest()
     {
         // Arrange
@@ -274,11 +276,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[11t"); // CSI 11 t
 
         // Assert
-        Assert.True(requestReceived);
-        Assert.Equal(WindowInfoRequest.State, capturedRequest);
+        requestReceived.Should().BeTrue();
+        capturedRequest.Should().Be(WindowInfoRequest.State);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryWindowPosition_FiresOnWindowInfoRequest()
     {
         // Arrange
@@ -297,11 +299,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[13t"); // CSI 13 t
 
         // Assert
-        Assert.True(requestReceived);
-        Assert.Equal(WindowInfoRequest.Position, capturedRequest);
+        requestReceived.Should().BeTrue();
+        capturedRequest.Should().Be(WindowInfoRequest.Position);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryWindowSizePixels_FiresOnWindowInfoRequest()
     {
         // Arrange
@@ -320,11 +322,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[14t"); // CSI 14 t
 
         // Assert
-        Assert.True(requestReceived);
-        Assert.Equal(WindowInfoRequest.SizePixels, capturedRequest);
+        requestReceived.Should().BeTrue();
+        capturedRequest.Should().Be(WindowInfoRequest.SizePixels);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryScreenSizePixels_FiresOnWindowInfoRequest()
     {
         // Arrange
@@ -341,10 +343,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[15t"); // CSI 15 t
 
         // Assert
-        Assert.True(requestReceived);
+        requestReceived.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryCellSizePixels_FiresOnWindowInfoRequest()
     {
         // Arrange
@@ -361,10 +363,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[16t"); // CSI 16 t
 
         // Assert
-        Assert.True(requestReceived);
+        requestReceived.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryTextAreaSize_RespondsWithSize()
     {
         // Arrange
@@ -383,13 +385,13 @@ public class WindowManipulationTests
         terminal.Write("\x1b[18t"); // CSI 18 t
 
         // Assert
-        Assert.True(responseReceived);
-        Assert.Contains($"{terminal.Rows}", capturedResponse);
-        Assert.Contains($"{terminal.Cols}", capturedResponse);
-        Assert.Contains("\u001b[8;", capturedResponse);
+        responseReceived.Should().BeTrue();
+        capturedResponse.Should().Contain($"{terminal.Rows}");
+        capturedResponse.Should().Contain($"{terminal.Cols}");
+        capturedResponse.Should().Contain("\u001b[8;");
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryWindowTitle_SendsDirectResponse()
     {
         // Arrange - Window title query (21t) sends direct response using terminal's Title
@@ -410,12 +412,12 @@ public class WindowManipulationTests
         terminal.Write("\x1b[21t"); // CSI 21 t
 
         // Assert
-        Assert.True(responseReceived);
-        Assert.Contains("Test Title", capturedResponse);
-        Assert.Equal("\u001b]lTest Title\u0007", capturedResponse);
+        responseReceived.Should().BeTrue();
+        capturedResponse.Should().Contain("Test Title");
+        capturedResponse.Should().Be("\u001b]lTest Title\u0007");
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_QueryIconTitle_FiresOnWindowInfoRequest()
     {
         // Arrange
@@ -432,10 +434,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[20t"); // CSI 20 t
 
         // Assert
-        Assert.True(requestReceived);
+        requestReceived.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_ResizeTextArea_ResizesTerminal()
     {
         // Arrange
@@ -448,11 +450,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[8;30;100t"); // CSI 8 ; 30 ; 100 t (resize to 30 rows, 100 cols)
 
         // Assert
-        Assert.Equal(100, terminal.Cols);
-        Assert.Equal(30, terminal.Rows);
+        terminal.Cols.Should().Be(100);
+        terminal.Rows.Should().Be(30);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_ResizeTextArea_DoesNotResizeWhenPermissionDenied()
     {
         // Arrange
@@ -465,11 +467,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[8;30;100t");
 
         // Assert
-        Assert.Equal(initialCols, terminal.Cols);
-        Assert.Equal(initialRows, terminal.Rows);
+        terminal.Cols.Should().Be(initialCols);
+        terminal.Rows.Should().Be(initialRows);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_MultipleOperations_AllFireCorrectly()
     {
         // Arrange
@@ -500,13 +502,13 @@ public class WindowManipulationTests
         terminal.Write("\x1b[3;30;40t");  // Move again
 
         // Assert
-        Assert.Equal(2, moveCount);
-        Assert.Equal(1, minimizeCount);
-        Assert.Equal(1, maximizeCount);
-        Assert.Equal(1, raiseCount);
+        moveCount.Should().Be(2);
+        minimizeCount.Should().Be(1);
+        maximizeCount.Should().Be(1);
+        raiseCount.Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_InvalidOperation_DoesNotCrash()
     {
         // Arrange
@@ -527,11 +529,11 @@ public class WindowManipulationTests
         var exception = Record.Exception(() => terminal.Write("\x1b[999t"));
 
         // Assert
-        Assert.Null(exception);
-        Assert.False(anyEventFired); // No valid event should fire for invalid operation
+        exception.Should().BeNull();
+        anyEventFired.Should().BeFalse(); // No valid event should fire for invalid operation
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_MissingParameters_DoesNotCrash()
     {
         // Arrange
@@ -551,16 +553,16 @@ public class WindowManipulationTests
         var exception = Record.Exception(() => terminal.Write("\x1b[3t"));
 
         // Assert
-        Assert.Null(exception);
+        exception.Should().BeNull();
         // If event fires, parameters should default to 0
         if (eventFired)
         {
-            Assert.Equal(0, capturedX);
-            Assert.Equal(0, capturedY);
+            capturedX.Should().Be(0);
+            capturedY.Should().Be(0);
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void Dispose_ClearsWindowEvents()
     {
         // Arrange
@@ -576,32 +578,32 @@ public class WindowManipulationTests
         terminal.Write("\x1b[2t"); // Try to trigger minimize
 
         // Assert
-        Assert.Equal(0, eventCount); // Event should not fire after dispose
+        eventCount.Should().Be(0); // Event should not fire after dispose
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_AllEnumValues_AreDefined()
     {
         // Assert - Verify all expected enum values exist and have distinct values
         var allValues = Enum.GetValues<WindowInfoRequest>();
         
-        Assert.Contains(WindowInfoRequest.Position, allValues);
-        Assert.Contains(WindowInfoRequest.SizePixels, allValues);
-        Assert.Contains(WindowInfoRequest.SizeCharacters, allValues);
-        Assert.Contains(WindowInfoRequest.ScreenSizePixels, allValues);
-        Assert.Contains(WindowInfoRequest.CellSizePixels, allValues);
-        Assert.Contains(WindowInfoRequest.Title, allValues);
-        Assert.Contains(WindowInfoRequest.IconTitle, allValues);
-        Assert.Contains(WindowInfoRequest.State, allValues);
+        allValues.Should().Contain(WindowInfoRequest.Position);
+        allValues.Should().Contain(WindowInfoRequest.SizePixels);
+        allValues.Should().Contain(WindowInfoRequest.SizeCharacters);
+        allValues.Should().Contain(WindowInfoRequest.ScreenSizePixels);
+        allValues.Should().Contain(WindowInfoRequest.CellSizePixels);
+        allValues.Should().Contain(WindowInfoRequest.Title);
+        allValues.Should().Contain(WindowInfoRequest.IconTitle);
+        allValues.Should().Contain(WindowInfoRequest.State);
 
         // Verify all values are unique
         var uniqueValues = allValues.Distinct().ToList();
-        Assert.Equal(allValues.Length, uniqueValues.Count);
+        uniqueValues.Count.Should().Be(allValues.Length);
     }
 
     // ===== New Request/Response Tests =====
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_StateQuery_SendsResponseWhenHandled()
     {
         // Arrange
@@ -627,11 +629,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[11t"); // CSI 11 t - Query window state
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[1t", capturedResponse); // 1 = not iconified
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[1t"); // 1 = not iconified
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_StateQuery_SendsIconifiedResponseWhenMinimized()
     {
         // Arrange
@@ -657,11 +659,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[11t");
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[2t", capturedResponse); // 2 = iconified
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[2t"); // 2 = iconified
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_StateQuery_NoResponseWhenNotHandled()
     {
         // Arrange
@@ -683,10 +685,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[11t");
 
         // Assert
-        Assert.Null(capturedResponse); // No response when not handled
+        capturedResponse.Should().BeNull(); // No response when not handled
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_PositionQuery_SendsPositionResponse()
     {
         // Arrange
@@ -713,11 +715,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[13t"); // CSI 13 t - Query window position
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[3;100;200t", capturedResponse);
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[3;100;200t");
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_SizePixelsQuery_SendsSizeResponse()
     {
         // Arrange
@@ -744,11 +746,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[14t"); // CSI 14 t - Query window size in pixels
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[4;600;800t", capturedResponse); // Format: CSI 4 ; height ; width t
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[4;600;800t"); // Format: CSI 4 ; height ; width t
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_ScreenSizePixelsQuery_SendsScreenSizeResponse()
     {
         // Arrange
@@ -775,11 +777,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[15t"); // CSI 15 t - Query screen size in pixels
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[5;1080;1920t", capturedResponse); // Format: CSI 5 ; height ; width t
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[5;1080;1920t"); // Format: CSI 5 ; height ; width t
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_CellSizePixelsQuery_SendsCellSizeResponse()
     {
         // Arrange
@@ -806,11 +808,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[16t"); // CSI 16 t - Query cell size in pixels
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[6;16;8t", capturedResponse); // Format: CSI 6 ; height ; width t
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[6;16;8t"); // Format: CSI 6 ; height ; width t
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_IconTitleQuery_SendsTitleResponse()
     {
         // Arrange
@@ -836,11 +838,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[20t"); // CSI 20 t - Query icon title
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b]LMy Icon Title\u0007", capturedResponse); // Format: OSC L title BEL
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b]LMy Icon Title\u0007"); // Format: OSC L title BEL
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_IconTitleQuery_NoResponseWhenTitleIsNull()
     {
         // Arrange
@@ -866,10 +868,10 @@ public class WindowManipulationTests
         terminal.Write("\x1b[20t");
 
         // Assert
-        Assert.Null(capturedResponse); // No response when title is null
+        capturedResponse.Should().BeNull(); // No response when title is null
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_TextAreaSizeQuery_SendsDirectResponse()
     {
         // Arrange - Text area size (18t) responds directly without event handler
@@ -892,11 +894,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[18t"); // CSI 18 t - Query text area size in characters
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[8;40;120t", capturedResponse); // Format: CSI 8 ; rows ; cols t
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[8;40;120t"); // Format: CSI 8 ; rows ; cols t
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_ScreenSizeCharsQuery_SendsDirectResponse()
     {
         // Arrange - Screen size in chars (19t) responds directly
@@ -919,11 +921,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[19t"); // CSI 19 t - Query screen size in characters
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b[9;24;80t", capturedResponse); // Format: CSI 9 ; rows ; cols t
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b[9;24;80t"); // Format: CSI 9 ; rows ; cols t
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_TitleQuery_SendsDirectResponseFromTerminalTitle()
     {
         // Arrange - Window title (21t) uses terminal's current title
@@ -941,11 +943,11 @@ public class WindowManipulationTests
         terminal.Write("\x1b[21t"); // CSI 21 t - Query window title
 
         // Assert
-        Assert.NotNull(capturedResponse);
-        Assert.Equal("\u001b]lTerminal Window Title\u0007", capturedResponse); // Format: OSC l title BEL
+        capturedResponse.Should().NotBeNull();
+        capturedResponse.Should().Be("\u001b]lTerminal Window Title\u0007"); // Format: OSC l title BEL
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_EventArgsPropertiesInitializeCorrectly()
     {
         // Arrange
@@ -962,20 +964,20 @@ public class WindowManipulationTests
         terminal.Write("\x1b[13t");
 
         // Assert
-        Assert.NotNull(capturedArgs);
-        Assert.Equal(WindowInfoRequest.Position, capturedArgs.Request);
-        Assert.False(capturedArgs.Handled); // Default is false
-        Assert.Equal(0, capturedArgs.X); // Default is 0
-        Assert.Equal(0, capturedArgs.Y);
-        Assert.Equal(0, capturedArgs.WidthPixels);
-        Assert.Equal(0, capturedArgs.HeightPixels);
-        Assert.Equal(0, capturedArgs.CellWidth);
-        Assert.Equal(0, capturedArgs.CellHeight);
-        Assert.Null(capturedArgs.Title);
-        Assert.False(capturedArgs.IsIconified);
+        capturedArgs.Should().NotBeNull();
+        capturedArgs.Request.Should().Be(WindowInfoRequest.Position);
+        capturedArgs.Handled.Should().BeFalse(); // Default is false
+        capturedArgs.X.Should().Be(0); // Default is 0
+        capturedArgs.Y.Should().Be(0);
+        capturedArgs.WidthPixels.Should().Be(0);
+        capturedArgs.HeightPixels.Should().Be(0);
+        capturedArgs.CellWidth.Should().Be(0);
+        capturedArgs.CellHeight.Should().Be(0);
+        capturedArgs.Title.Should().BeNull();
+        capturedArgs.IsIconified.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowInfoRequest_MultipleQueries_EachHandledIndependently()
     {
         // Arrange
@@ -1018,13 +1020,13 @@ public class WindowManipulationTests
         terminal.Write("\x1b[14t"); // Size
 
         // Assert
-        Assert.Equal(3, responses.Count);
-        Assert.Equal("\u001b[1t", responses[0]); // Not iconified
-        Assert.Equal("\u001b[3;50;75t", responses[1]); // Position
-        Assert.Equal("\u001b[4;480;640t", responses[2]); // Size
+        responses.Count.Should().Be(3);
+        responses[0].Should().Be("\u001b[1t"); // Not iconified
+        responses[1].Should().Be("\u001b[3;50;75t"); // Position
+        responses[2].Should().Be("\u001b[4;480;640t"); // Size
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowManipulation_PermissionsRespected_ForAllOperations()
     {
         // Arrange
@@ -1056,6 +1058,6 @@ public class WindowManipulationTests
         terminal.Write("\x1b[11t");        // Query state
 
         // Assert - No events should fire because all permissions are false
-        Assert.Equal(0, eventCount);
+        eventCount.Should().Be(0);
     }
 }

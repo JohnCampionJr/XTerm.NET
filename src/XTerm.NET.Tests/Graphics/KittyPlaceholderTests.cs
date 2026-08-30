@@ -16,6 +16,7 @@ namespace XTerm.Tests.Graphics;
 /// id. That is what lets a client write tiles in any order rather than as a rectangle in reading
 /// order.</para>
 /// </summary>
+[TestClass]
 public class KittyPlaceholderTests
 {
     private const string Esc = "\u001b";
@@ -56,7 +57,7 @@ public class KittyPlaceholderTests
     private static XTerm.Buffer.BufferCell Cell(Terminal terminal, int col, int row)
         => terminal.Buffer.Lines[terminal.Buffer.YBase + row]![col];
 
-    [Fact]
+    [TestMethod]
     public void A_placeholder_cell_shows_the_image_its_colour_names()
     {
         var terminal = WithStoredImage(5);
@@ -64,16 +65,16 @@ public class KittyPlaceholderTests
         terminal.Write(SelectImageId(5) + Placeholder);
 
         var tile = ImageAssertions.TileAt(terminal, 0, 0);
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.Equal(0, tile!.Value.Col);
-        Assert.Equal(0, tile!.Value.Row);
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        (tile!.Value.Col).Should().Be(0);
+        (tile!.Value.Row).Should().Be(0);
     }
 
     /// <summary>
     /// A run of them is a rectangle, and each cell works out its tile from where it sits. Written in
     /// reading order, which is how every client that uses placeholders emits them.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_run_of_placeholders_maps_to_consecutive_tiles()
     {
         var terminal = WithStoredImage(5);
@@ -87,9 +88,8 @@ public class KittyPlaceholderTests
         {
             for (int col = 0; col < 2; col++)
             {
-                Assert.True(ImageAssertions.IsImageAt(terminal, col, row),
-                            $"cell ({col},{row}) holds no picture");
-                Assert.Equal((col, row), ImageAssertions.TileAt(terminal, col, row));
+                ImageAssertions.IsImageAt(terminal, col, row).Should().BeTrue($"cell ({col},{row}) holds no picture");
+                ImageAssertions.TileAt(terminal, col, row).Should().Be((col, row));
             }
         }
     }
@@ -104,7 +104,7 @@ public class KittyPlaceholderTests
     /// as a visible character -- so the second picture simply did not appear. It is the ordinary
     /// case: a client showing one image in two places, or redrawing a thumbnail further down.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void The_same_image_shown_lower_down_starts_a_new_rectangle()
     {
         var terminal = WithStoredImage(5);
@@ -115,13 +115,13 @@ public class KittyPlaceholderTests
 
         terminal.Write($"{Esc}[6;1H" + Placeholder + Placeholder);
 
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 5), "the second rectangle drew nothing");
-        Assert.Equal((0, 0), ImageAssertions.TileAt(terminal, 0, 5));
-        Assert.Equal((1, 0), ImageAssertions.TileAt(terminal, 1, 5));
+        ImageAssertions.IsImageAt(terminal, 0, 5).Should().BeTrue("the second rectangle drew nothing");
+        ImageAssertions.TileAt(terminal, 0, 5).Should().Be((0, 0));
+        ImageAssertions.TileAt(terminal, 1, 5).Should().Be((1, 0));
     }
 
     /// <summary>The same, sideways: a second copy along the row is also its own rectangle.</summary>
-    [Fact]
+    [TestMethod]
     public void The_same_image_shown_further_along_the_row_starts_a_new_rectangle()
     {
         var terminal = WithStoredImage(5);
@@ -129,49 +129,49 @@ public class KittyPlaceholderTests
         terminal.Write(SelectImageId(5) + Placeholder + Placeholder);
         terminal.Write($"{Esc}[1;5H" + Placeholder + Placeholder);
 
-        Assert.True(ImageAssertions.IsImageAt(terminal, 4, 0), "the second rectangle drew nothing");
-        Assert.Equal((0, 0), ImageAssertions.TileAt(terminal, 4, 0));
-        Assert.Equal((1, 0), ImageAssertions.TileAt(terminal, 5, 0));
+        ImageAssertions.IsImageAt(terminal, 4, 0).Should().BeTrue("the second rectangle drew nothing");
+        ImageAssertions.TileAt(terminal, 4, 0).Should().Be((0, 0));
+        ImageAssertions.TileAt(terminal, 5, 0).Should().Be((1, 0));
     }
 
     /// <summary>All the cells of one run show the same picture, so a host uploads it once.</summary>
-    [Fact]
+    [TestMethod]
     public void Every_cell_of_a_run_shares_one_image()
     {
         var terminal = WithStoredImage(5);
 
         terminal.Write(SelectImageId(5) + Placeholder + Placeholder);
 
-        Assert.Same(ImageAssertions.ImageAt(terminal, 0, 0), ImageAssertions.ImageAt(terminal, 1, 0));
+        ImageAssertions.ImageAt(terminal, 1, 0).Should().BeSameAs(ImageAssertions.ImageAt(terminal, 0, 0));
     }
 
     /// <summary>
     /// An id nothing was transmitted under cannot resolve, so the character stays text rather than
     /// silently becoming a blank.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_unknown_id_prints_as_an_ordinary_character()
     {
         var terminal = WithStoredImage(5);
 
         terminal.Write(SelectImageId(999) + Placeholder);
 
-        Assert.False(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.Equal(Placeholder, Cell(terminal, 0, 0).Content);
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeFalse();
+        (Cell(terminal, 0, 0).Content).Should().Be(Placeholder);
     }
 
     /// <summary>
     /// A palette index is a colour, not an id. Only a direct colour carries one, so an ordinary
     /// coloured placeholder does not accidentally summon image number three.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_palette_colour_is_not_read_as_an_id()
     {
         var terminal = WithStoredImage(3);
 
         terminal.Write($"{Esc}[31m" + Placeholder);   // SGR 31, palette red
 
-        Assert.False(ImageAssertions.IsImageAt(terminal, 0, 0));
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeFalse();
     }
 
     // ---- explicit tiles, stated with combining marks ----------------------------------------------
@@ -186,19 +186,19 @@ public class KittyPlaceholderTests
     /// </remarks>
     private static readonly string[] Mark = { "\u0305", "\u030d", "\u030e", "\u0310", "\u0312" };
 
-    [Fact]
+    [TestMethod]
     public void The_marks_used_here_match_the_shipped_table()
     {
         for (int i = 0; i < Mark.Length; i++)
         {
-            Assert.True(XTerm.Graphics.PlaceholderDiacritics.TryGetValue(
-                char.ConvertToUtf32(Mark[i], 0), out var value));
-            Assert.Equal(i, value);
+            XTerm.Graphics.PlaceholderDiacritics.TryGetValue(
+                char.ConvertToUtf32(Mark[i], 0), out var value).Should().BeTrue();
+            value.Should().Be(i);
         }
     }
 
     /// <summary>A mark after the placeholder states the tile row outright.</summary>
-    [Fact]
+    [TestMethod]
     public void A_row_mark_states_the_tile_row()
     {
         var terminal = WithStoredImage(5);
@@ -206,16 +206,16 @@ public class KittyPlaceholderTests
         terminal.Write(SelectImageId(5) + Placeholder + Mark[1]);
 
         var tile = ImageAssertions.TileAt(terminal, 0, 0);
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.Equal(1, tile!.Value.Row);
-        Assert.Equal(0, tile!.Value.Col);
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        (tile!.Value.Row).Should().Be(1);
+        (tile!.Value.Col).Should().Be(0);
     }
 
     /// <summary>
     /// Row then column, which is the order the protocol fixes. This is the case position alone
     /// cannot express: one cell showing a tile from elsewhere in the picture.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_row_and_column_pair_states_the_tile_outright()
     {
         var terminal = WithStoredImage(5);
@@ -223,15 +223,15 @@ public class KittyPlaceholderTests
         terminal.Write(SelectImageId(5) + Placeholder + Mark[1] + Mark[1]);
 
         var tile = ImageAssertions.TileAt(terminal, 0, 0);
-        Assert.Equal(1, tile!.Value.Row);
-        Assert.Equal(1, tile!.Value.Col);
+        (tile!.Value.Row).Should().Be(1);
+        (tile!.Value.Col).Should().Be(1);
     }
 
     /// <summary>
     /// Marks override the inferred position rather than adding to it, so a client can write tiles in
     /// any order it likes.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Explicit_tiles_beat_the_inferred_position()
     {
         var terminal = WithStoredImage(5);
@@ -240,21 +240,21 @@ public class KittyPlaceholderTests
         terminal.Write(SelectImageId(5) + Placeholder + Placeholder + Mark[1] + Mark[0]);
 
         var tile = ImageAssertions.TileAt(terminal, 1, 0);
-        Assert.Equal(1, tile!.Value.Row);
-        Assert.Equal(0, tile!.Value.Col);
+        (tile!.Value.Row).Should().Be(1);
+        (tile!.Value.Col).Should().Be(0);
     }
 
     /// <summary>The marks are consumed, not drawn: nothing lands in the cell after the placeholder.</summary>
-    [Fact]
+    [TestMethod]
     public void Marks_do_not_print_as_characters_of_their_own()
     {
         var terminal = WithStoredImage(5);
 
         terminal.Write(SelectImageId(5) + Placeholder + Mark[1] + Mark[1]);
 
-        Assert.False(ImageAssertions.IsImageAt(terminal, 1, 0));
-        Assert.Equal(" ", Cell(terminal, 1, 0).Content);
-        Assert.Equal(1, terminal.Buffer.X);
+        ImageAssertions.IsImageAt(terminal, 1, 0).Should().BeFalse();
+        (Cell(terminal, 1, 0).Content).Should().Be(" ");
+        terminal.Buffer.X.Should().Be(1);
     }
 
     /// <summary>
@@ -267,7 +267,7 @@ public class KittyPlaceholderTests
     /// so it does not advance the cursor; what matters is that it neither changes the tile nor gets
     /// appended to the image cell as text.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void A_mark_outside_the_table_is_not_read_as_a_tile()
     {
         var terminal = WithStoredImage(5);
@@ -275,17 +275,17 @@ public class KittyPlaceholderTests
         terminal.Write(SelectImageId(5) + Placeholder + "\u0301");
 
         var tile = ImageAssertions.TileAt(terminal, 0, 0);
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.Equal(0, tile!.Value.Row);
-        Assert.Equal(0, tile!.Value.Col);
-        Assert.Equal(" ", terminal.Buffer.Lines[terminal.Buffer.YBase]![0].Content);
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        (tile!.Value.Row).Should().Be(0);
+        (tile!.Value.Col).Should().Be(0);
+        (terminal.Buffer.Lines[terminal.Buffer.YBase]![0].Content).Should().Be(" ");
     }
 
     /// <summary>
     /// An explicit tile outside the picture is a client error. The cell keeps what it had rather
     /// than blanking, because the input comes from another process.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_out_of_range_tile_leaves_the_cell_alone()
     {
         var terminal = WithStoredImage(5);
@@ -293,8 +293,8 @@ public class KittyPlaceholderTests
         terminal.Write(SelectImageId(5) + Placeholder + Mark[4]);   // row 4 of a two-row picture
 
         var tile = ImageAssertions.TileAt(terminal, 0, 0);
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.Equal(0, tile!.Value.Row);
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        (tile!.Value.Row).Should().Be(0);
     }
 
     /// <summary>
@@ -303,18 +303,17 @@ public class KittyPlaceholderTests
     /// row-wide run would have to be split and rebuilt each time -- but they share a serial, which
     /// is what makes them one picture.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Every_cell_of_a_run_shares_one_placement()
     {
         var terminal = WithStoredImage(5);
 
         terminal.Write(SelectImageId(5) + Placeholder + Placeholder);
 
-        Assert.Equal(ImageAssertions.PlacementAt(terminal, 0, 0)!.Value.Serial,
-                     ImageAssertions.PlacementAt(terminal, 1, 0)!.Value.Serial);
+        (ImageAssertions.PlacementAt(terminal, 1, 0)!.Value.Serial).Should().Be(ImageAssertions.PlacementAt(terminal, 0, 0)!.Value.Serial);
     }
 
-    [Fact]
+    [TestMethod]
     public void Placeholders_do_nothing_when_kitty_is_switched_off()
     {
         var terminal = new Terminal(new TerminalOptions
@@ -328,11 +327,11 @@ public class KittyPlaceholderTests
 
         terminal.Write(SelectImageId(5) + Placeholder);
 
-        Assert.False(ImageAssertions.IsImageAt(terminal, 0, 0));
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeFalse();
     }
 
     /// <summary>Placeholder cells are cells, so everything that happens to text happens to them.</summary>
-    [Fact]
+    [TestMethod]
     public void A_placeholder_picture_is_an_overlay_rather_than_content()
     {
         var terminal = WithStoredImage(5);
@@ -342,13 +341,13 @@ public class KittyPlaceholderTests
 
         // The character lands and the picture stays: a placeholder places a Kitty run, and a Kitty
         // run is an overlay rather than content.
-        Assert.Equal("X", Cell(terminal, 0, 0).Content);
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.True(ImageAssertions.IsImageAt(terminal, 1, 0));
+        (Cell(terminal, 0, 0).Content).Should().Be("X");
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        ImageAssertions.IsImageAt(terminal, 1, 0).Should().BeTrue();
 
         // Erasing takes both.
         terminal.Write($"{Esc}[2J");
-        Assert.False(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.False(ImageAssertions.IsImageAt(terminal, 1, 0));
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeFalse();
+        ImageAssertions.IsImageAt(terminal, 1, 0).Should().BeFalse();
     }
 }

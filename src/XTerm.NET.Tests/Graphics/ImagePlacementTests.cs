@@ -12,6 +12,7 @@ namespace XTerm.Tests.Graphics;
 /// short; Stretched divides the source across the cell box it was told to fill. Folding them
 /// together would quietly resample every Sixel image, which is what the first test here guards.</para>
 /// </summary>
+[TestClass]
 public class ImagePlacementTests
 {
     private const int CellWidth = 14;
@@ -32,14 +33,14 @@ public class ImagePlacementTests
     /// which needs 83 columns. 83 times 14 is 1162, so the source does NOT divide evenly into the
     /// cells it occupies — precisely the case where a proportional division would disagree.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void A_natural_placement_lays_tiles_exactly_where_the_image_does()
     {
         var image = Image(1160, 870);
         var placement = ImagePlacement.Natural(image);
 
-        Assert.Equal(image.Cols, placement.Cols);
-        Assert.Equal(image.Rows, placement.Rows);
+        placement.Cols.Should().Be(image.Cols);
+        placement.Rows.Should().Be(image.Rows);
 
         for (int row = 0; row < image.Rows; row++)
         {
@@ -48,9 +49,8 @@ public class ImagePlacementTests
                 var onImage = image.TryGetTileSource(col, row, out var ix, out var iy, out var iw, out var ih);
                 var onPlacement = placement.TryGetTileSource(col, row, out var px, out var py, out var pw, out var ph);
 
-                Assert.Equal(onImage, onPlacement);
-                Assert.True((ix, iy, iw, ih) == (px, py, pw, ph),
-                    $"tile ({col},{row}) moved: image gave ({ix},{iy},{iw},{ih}), placement gave ({px},{py},{pw},{ph})");
+                onPlacement.Should().Be(onImage);
+                ((ix, iy, iw, ih) == (px, py, pw, ph)).Should().BeTrue($"tile ({col},{row}) moved: image gave ({ix},{iy},{iw},{ih}), placement gave ({px},{py},{pw},{ph})");
             }
         }
     }
@@ -59,7 +59,7 @@ public class ImagePlacementTests
     /// And the two modes really do disagree, which is why both exist. Documented here so nobody
     /// simplifies one into the other.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_two_scalings_disagree_on_an_image_that_does_not_divide_evenly()
     {
         var image = Image(1160, 870);
@@ -70,46 +70,46 @@ public class ImagePlacementTests
         natural.TryGetTileSource(0, 0, out _, out _, out var naturalWidth, out _);
         stretched.TryGetTileSource(0, 0, out _, out _, out var stretchedWidth, out _);
 
-        Assert.Equal(14, naturalWidth);
-        Assert.Equal(13, stretchedWidth);
+        naturalWidth.Should().Be(14);
+        stretchedWidth.Should().Be(13);
     }
 
     // ---- natural ------------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void A_natural_edge_tile_reports_only_the_pixels_it_covers()
     {
         // Seven pixels wide over 14-pixel cells: one column holding half a cell.
         var placement = ImagePlacement.Natural(Image(7, 15));
 
-        Assert.Equal(1, placement.Cols);
-        Assert.True(placement.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h));
-        Assert.Equal((0, 0, 7, 15), (x, y, w, h));
+        placement.Cols.Should().Be(1);
+        placement.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h).Should().BeTrue();
+        (x, y, w, h).Should().Be((0, 0, 7, 15));
 
         placement.GetTileCoverage(w, h, out var cellsWide, out var cellsHigh);
-        Assert.Equal(0.5, cellsWide);
-        Assert.Equal(1.0, cellsHigh);
+        cellsWide.Should().Be(0.5);
+        cellsHigh.Should().Be(1.0);
     }
 
     // ---- stretched ----------------------------------------------------------------------------
 
     /// <summary>What `c=` and `r=` mean: fill the box asked for, whatever the source size.</summary>
-    [Fact]
+    [TestMethod]
     public void A_stretched_placement_fills_the_cell_box_it_was_given()
     {
         // 40x40 into 4 columns by 2 rows, which is what chafa asks for.
         var image = Image(40, 40);
         var placement = new ImagePlacement(image, 0, 0, 0, 40, 40, 4, 2, ImageScaling.Stretched);
 
-        Assert.True(placement.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h));
-        Assert.Equal((0, 0, 10, 20), (x, y, w, h));
+        placement.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h).Should().BeTrue();
+        (x, y, w, h).Should().Be((0, 0, 10, 20));
 
-        Assert.True(placement.TryGetTileSource(3, 1, out x, out y, out w, out h));
-        Assert.Equal((30, 20, 10, 20), (x, y, w, h));
+        placement.TryGetTileSource(3, 1, out x, out y, out w, out h).Should().BeTrue();
+        (x, y, w, h).Should().Be((30, 20, 10, 20));
     }
 
     /// <summary>Every tile fills its cell, so the destination is never scaled down.</summary>
-    [Fact]
+    [TestMethod]
     public void A_stretched_tile_always_covers_a_whole_cell()
     {
         var placement = new ImagePlacement(Image(41, 41), 0, 0, 0, 41, 41, 4, 2, ImageScaling.Stretched);
@@ -117,15 +117,15 @@ public class ImagePlacementTests
         placement.TryGetTileSource(3, 1, out _, out _, out var w, out var h);
         placement.GetTileCoverage(w, h, out var cellsWide, out var cellsHigh);
 
-        Assert.Equal(1.0, cellsWide);
-        Assert.Equal(1.0, cellsHigh);
+        cellsWide.Should().Be(1.0);
+        cellsHigh.Should().Be(1.0);
     }
 
     /// <summary>
     /// Tiles must abut exactly. Rounding each tile's own width independently would leave a seam of
     /// dropped pixels, or overlap and draw a column twice.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Stretched_tiles_meet_without_a_seam_or_an_overlap()
     {
         // 41 does not divide by 4, so the rounding has somewhere to go wrong.
@@ -135,71 +135,71 @@ public class ImagePlacementTests
         for (int col = 0; col < placement.Cols; col++)
         {
             placement.TryGetTileSource(col, 0, out var x, out _, out var w, out _);
-            Assert.True(x == nextX, $"column {col} starts at {x}, but the one before it ended at {nextX}");
+            ((x == nextX)).Should().BeTrue($"column {col} starts at {x}, but the one before it ended at {nextX}");
             nextX = x + w;
         }
-        Assert.Equal(41, nextX);
+        nextX.Should().Be(41);
 
         int nextY = 0;
         for (int row = 0; row < placement.Rows; row++)
         {
             placement.TryGetTileSource(0, row, out _, out var y, out _, out var h);
-            Assert.True(y == nextY, $"row {row} starts at {y}, but the one before it ended at {nextY}");
+            ((y == nextY)).Should().BeTrue($"row {row} starts at {y}, but the one before it ended at {nextY}");
             nextY = y + h;
         }
-        Assert.Equal(41, nextY);
+        nextY.Should().Be(41);
     }
 
     // ---- cropping -----------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void A_crop_offsets_every_tile()
     {
         var placement = new ImagePlacement(Image(100, 100), 0, 20, 30, 40, 60, 2, 3, ImageScaling.Stretched);
 
-        Assert.True(placement.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h));
-        Assert.Equal((20, 30, 20, 20), (x, y, w, h));
+        placement.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h).Should().BeTrue();
+        (x, y, w, h).Should().Be((20, 30, 20, 20));
 
-        Assert.True(placement.TryGetTileSource(1, 2, out x, out y, out w, out h));
-        Assert.Equal((40, 70, 20, 20), (x, y, w, h));
+        placement.TryGetTileSource(1, 2, out x, out y, out w, out h).Should().BeTrue();
+        (x, y, w, h).Should().Be((40, 70, 20, 20));
     }
 
     /// <summary>
     /// The crop arrives from another process. A rectangle that runs off the edge is clamped to what
     /// exists rather than refused — a picture slightly smaller than asked for beats no picture.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_crop_running_off_the_edge_is_clamped()
     {
         var placement = new ImagePlacement(Image(100, 100), 0, 80, 80, 500, 500, 2, 2, ImageScaling.Stretched);
 
-        Assert.Equal(20, placement.SourceWidth);
-        Assert.Equal(20, placement.SourceHeight);
+        placement.SourceWidth.Should().Be(20);
+        placement.SourceHeight.Should().Be(20);
 
-        Assert.True(placement.TryGetTileSource(1, 1, out var x, out var y, out var w, out var h));
-        Assert.Equal((90, 90, 10, 10), (x, y, w, h));
+        placement.TryGetTileSource(1, 1, out var x, out var y, out var w, out var h).Should().BeTrue();
+        (x, y, w, h).Should().Be((90, 90, 10, 10));
     }
 
     // ---- bounds -------------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void A_tile_outside_the_placement_is_refused()
     {
         var placement = new ImagePlacement(Image(40, 40), 0, 0, 0, 40, 40, 4, 2, ImageScaling.Stretched);
 
-        Assert.False(placement.TryGetTileSource(4, 0, out _, out _, out _, out _));
-        Assert.False(placement.TryGetTileSource(0, 2, out _, out _, out _, out _));
-        Assert.False(placement.TryGetTileSource(-1, 0, out _, out _, out _, out _));
+        placement.TryGetTileSource(4, 0, out _, out _, out _, out _).Should().BeFalse();
+        placement.TryGetTileSource(0, 2, out _, out _, out _, out _).Should().BeFalse();
+        placement.TryGetTileSource(-1, 0, out _, out _, out _, out _).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_placement_covering_no_cells_is_refused()
     {
         var image = Image(40, 40);
 
-        Assert.Throws<ArgumentOutOfRangeException>(
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(
             () => new ImagePlacement(image, 0, 0, 0, 40, 40, 0, 2, ImageScaling.Stretched));
-        Assert.Throws<ArgumentOutOfRangeException>(
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(
             () => new ImagePlacement(image, 0, 0, 0, 40, 0, 4, 2, ImageScaling.Stretched));
     }
 
@@ -207,17 +207,17 @@ public class ImagePlacementTests
     /// Two placements of one picture share its pixels, so a host keys its texture on the image and
     /// gets one upload for both.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Two_placements_of_one_image_share_its_pixels()
     {
         var image = Image(40, 40);
         var first = ImagePlacement.Natural(image);
         var second = new ImagePlacement(image, 7, 0, 0, 20, 20, 2, 1, ImageScaling.Stretched);
 
-        Assert.Same(image, first.Image);
-        Assert.Same(image, second.Image);
-        Assert.NotSame(first, second);
-        Assert.Equal(7, second.Id);
+        first.Image.Should().BeSameAs(image);
+        second.Image.Should().BeSameAs(image);
+        second.Should().NotBeSameAs(first);
+        second.Id.Should().Be(7);
     }
 
     // ---- pixel offsets within the first cell ------------------------------------------------------
@@ -233,59 +233,59 @@ public class ImagePlacementTests
                cols: 2, rows: 2, ImageScaling.Natural, zIndex: 0,
                offsetX: offsetX, offsetY: offsetY);
 
-    [Fact]
+    [TestMethod]
     public void An_offset_does_not_add_columns_or_rows()
     {
         var placement = Shifted(4, 5);
 
-        Assert.Equal(2, placement.Cols);
-        Assert.Equal(2, placement.Rows);
+        placement.Cols.Should().Be(2);
+        placement.Rows.Should().Be(2);
     }
 
     /// <summary>
     /// The leading tile starts partway into its cell and shows correspondingly fewer pixels. This is
     /// the case the older size-only call cannot express, which is why the layout call exists.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_first_tile_starts_at_the_offset_and_is_shorter_for_it()
     {
         var placement = Shifted(4, 5);
 
-        Assert.True(placement.TryGetTileLayout(0, 0, out var x, out var y, out var w, out var h,
-                                               out var offX, out var offY, out var wide, out var high));
+        placement.TryGetTileLayout(0, 0, out var x, out var y, out var w, out var h,
+                                               out var offX, out var offY, out var wide, out var high).Should().BeTrue();
 
-        Assert.Equal(0, x);
-        Assert.Equal(0, y);
-        Assert.Equal(10, w);                       // 14 - 4
-        Assert.Equal(10, h);                       // 15 - 5
-        Assert.Equal(4 / 14.0, offX, 6);
-        Assert.Equal(5 / 15.0, offY, 6);
-        Assert.Equal(10 / 14.0, wide, 6);
-        Assert.Equal(10 / 15.0, high, 6);
+        x.Should().Be(0);
+        y.Should().Be(0);
+        w.Should().Be(10);                       // 14 - 4
+        h.Should().Be(10);                       // 15 - 5
+        offX.Should().BeApproximately(4 / 14.0, Math.Pow(10, -6));
+        offY.Should().BeApproximately(5 / 15.0, Math.Pow(10, -6));
+        wide.Should().BeApproximately(10 / 14.0, Math.Pow(10, -6));
+        high.Should().BeApproximately(10 / 15.0, Math.Pow(10, -6));
     }
 
     /// <summary>
     /// The tile after it fills its cell from the left, continuing from where the first stopped --
     /// no gap and no repeated pixels at the join.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Later_tiles_continue_from_the_first_without_a_seam()
     {
         var placement = Shifted(4, 0);
 
-        Assert.True(placement.TryGetTileLayout(0, 0, out _, out _, out var firstWidth, out _,
-                                               out _, out _, out _, out _));
-        Assert.True(placement.TryGetTileLayout(1, 0, out var x, out _, out var w, out _,
-                                               out var offX, out _, out var wide, out _));
+        placement.TryGetTileLayout(0, 0, out _, out _, out var firstWidth, out _,
+                                               out _, out _, out _, out _).Should().BeTrue();
+        placement.TryGetTileLayout(1, 0, out var x, out _, out var w, out _,
+                                               out var offX, out _, out var wide, out _).Should().BeTrue();
 
-        Assert.Equal(firstWidth, x);               // starts exactly where the first ended
-        Assert.Equal(0, offX);                     // and at the left edge of its own cell
-        Assert.Equal(14, w);
-        Assert.Equal(1.0, wide, 6);
+        x.Should().Be(firstWidth);               // starts exactly where the first ended
+        offX.Should().Be(0);                     // and at the left edge of its own cell
+        w.Should().Be(14);
+        wide.Should().BeApproximately(1.0, Math.Pow(10, -6));
     }
 
     /// <summary>What runs past the last cell of the box is clipped, not wrapped or shrunk to fit.</summary>
-    [Fact]
+    [TestMethod]
     public void Pixels_pushed_past_the_last_cell_are_clipped()
     {
         var placement = Shifted(4, 0);
@@ -293,13 +293,13 @@ public class ImagePlacementTests
         var total = 0;
         for (int col = 0; col < placement.Cols; col++)
         {
-            Assert.True(placement.TryGetTileLayout(col, 0, out _, out _, out var w, out _,
-                                                   out _, out _, out _, out _));
+            placement.TryGetTileLayout(col, 0, out _, out _, out var w, out _,
+                                                   out _, out _, out _, out _).Should().BeTrue();
             total += w;
         }
 
         // Two cells hold 28 pixels; four of them went to the offset, so four of the picture are lost.
-        Assert.Equal(24, total);
+        total.Should().Be(24);
     }
 
     /// <summary>
@@ -307,19 +307,19 @@ public class ImagePlacementTests
     /// refused -- it arrives from another process, and shifting the picture entirely out of its own
     /// first cell is not a meaningful request to honour.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_offset_of_a_whole_cell_or_more_is_clamped()
     {
-        Assert.Equal(CellWidth - 1, Shifted(CellWidth, 0).OffsetX);
-        Assert.Equal(CellHeight - 1, Shifted(0, CellHeight * 3).OffsetY);
-        Assert.Equal(0, Shifted(-5, 0).OffsetX);
+        (Shifted(CellWidth, 0).OffsetX).Should().Be(CellWidth - 1);
+        (Shifted(0, CellHeight * 3).OffsetY).Should().Be(CellHeight - 1);
+        (Shifted(-5, 0).OffsetX).Should().Be(0);
     }
 
     /// <summary>
     /// With no offset the layout call must agree with the older source-only one, tile for tile, in
     /// both scalings. They are the same arithmetic and must not drift apart.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Without_an_offset_the_layout_matches_the_source_call()
     {
         var natural = ImagePlacement.Natural(Image(1160, 870));
@@ -335,11 +335,10 @@ public class ImagePlacementTests
                     var byLayout = placement.TryGetTileLayout(col, row, out var lx, out var ly, out var lw, out var lh,
                                                               out var offX, out var offY, out _, out _);
 
-                    Assert.Equal(bySource, byLayout);
-                    Assert.True((sx, sy, sw, sh) == (lx, ly, lw, lh),
-                        $"tile ({col},{row}) disagrees: source ({sx},{sy},{sw},{sh}) vs layout ({lx},{ly},{lw},{lh})");
-                    Assert.Equal(0, offX);
-                    Assert.Equal(0, offY);
+                    byLayout.Should().Be(bySource);
+                    ((sx, sy, sw, sh) == (lx, ly, lw, lh)).Should().BeTrue($"tile ({col},{row}) disagrees: source ({sx},{sy},{sw},{sh}) vs layout ({lx},{ly},{lw},{lh})");
+                    offX.Should().Be(0);
+                    offY.Should().Be(0);
                 }
             }
         }

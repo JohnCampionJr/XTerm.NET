@@ -14,9 +14,10 @@ namespace XTerm.Tests.Buffer;
 /// continuation row at index 0 with an unwrapped row beneath, which is what the scrollback leaves
 /// behind once the row being continued is trimmed away.
 /// </remarks>
+[TestClass]
 public class ReflowEmptyGroupTests
 {
-    [Fact]
+    [TestMethod]
     public void Shrink_WithBlankWrappedRowAtTop_DoesNotThrow()
     {
         // Twelve spaces at six columns wrap, so the tail row is both blank and wrapped. Two more
@@ -28,14 +29,14 @@ public class ReflowEmptyGroupTests
         terminal.Write("\r\nx");
         terminal.Write("\r\ny");
 
-        Assert.True(terminal.Buffer.Lines[0]!.IsWrapped, "precondition: the top row is a continuation");
-        Assert.Equal(0, terminal.Buffer.Lines[0]!.GetTrimmedLength());
-        Assert.False(terminal.Buffer.Lines[1]!.IsWrapped, "precondition: the row beneath starts fresh");
+        (terminal.Buffer.Lines[0]!.IsWrapped).Should().BeTrue("precondition: the top row is a continuation");
+        (terminal.Buffer.Lines[0]!.GetTrimmedLength()).Should().Be(0);
+        (terminal.Buffer.Lines[1]!.IsWrapped).Should().BeFalse("precondition: the row beneath starts fresh");
 
-        Assert.Null(Record.Exception(() => terminal.Resize(4, 2)));
+        Record.Exception(() => terminal.Resize(4, 2)).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Shrink_WithBlankWrappedRowAtTop_KeepsTheRemainingContent()
     {
         // Not throwing is not enough: the rows that DO have content still have to survive.
@@ -53,11 +54,11 @@ public class ReflowEmptyGroupTests
             text.Add(terminal.Buffer.Lines[i]!.TranslateToString(trimRight: true));
         }
 
-        Assert.Contains("x", text);
-        Assert.Contains("y", text);
+        text.Should().Contain("x");
+        text.Should().Contain("y");
     }
 
-    [Fact]
+    [TestMethod]
     public void Shrink_WithBlankWrappedRowAtTop_DoesNotThrow_ConstructedDirectly()
     {
         // The same shape built by hand, so the regression stays pinned even if the terminal-level
@@ -67,6 +68,6 @@ public class ReflowEmptyGroupTests
         buffer.SetCursorRaw(0, 5);
         buffer.Lines[0]!.IsWrapped = true;
 
-        Assert.Null(Record.Exception(() => buffer.Resize(4, 10)));
+        Record.Exception(() => buffer.Resize(4, 10)).Should().BeNull();
     }
 }

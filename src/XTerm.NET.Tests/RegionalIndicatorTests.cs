@@ -11,6 +11,7 @@ namespace XTerm.Tests;
 /// not render oddly, it vanished from the buffer entirely and took the column alignment of the rest of the
 /// line with it.</para>
 /// </summary>
+[TestClass]
 public class RegionalIndicatorTests
 {
     private const string RegionalU = "\U0001F1FA";
@@ -27,21 +28,21 @@ public class RegionalIndicatorTests
     }
 
     /// <summary>The reported bug: a flag and everything after it on the line.</summary>
-    [Fact]
+    [TestMethod]
     public void A_flag_is_one_double_width_cell_and_does_not_eat_what_follows()
     {
         var terminal = Write(FlagUs + "XXX");
         var line = terminal.Buffer.Lines[0]!;
 
-        Assert.Equal(FlagUs, line[0].Content);
-        Assert.Equal(2, line[0].Width);
-        Assert.Equal(0, line[1].Width);
+        line[0].Content.Should().Be(FlagUs);
+        line[0].Width.Should().Be(2);
+        line[1].Width.Should().Be(0);
 
         // The whole point. These used to land at 0, 1, 2, on top of the flag.
-        Assert.Equal("X", line[2].Content);
-        Assert.Equal("X", line[3].Content);
-        Assert.Equal("X", line[4].Content);
-        Assert.Equal(5, terminal.Buffer.X);
+        line[2].Content.Should().Be("X");
+        line[3].Content.Should().Be("X");
+        line[4].Content.Should().Be("X");
+        terminal.Buffer.X.Should().Be(5);
     }
 
     /// <summary>
@@ -53,55 +54,55 @@ public class RegionalIndicatorTests
     /// One column was the wrong answer and it showed: ucs-detect's standalone-indicator test expects two,
     /// and scored zero against a terminal that said one.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void A_lone_indicator_is_two_columns_wide()
     {
         var terminal = Write(RegionalU + "X");
         var line = terminal.Buffer.Lines[0]!;
 
-        Assert.Equal(RegionalU, line[0].Content);
-        Assert.Equal(2, line[0].Width);
-        Assert.Equal(0, line[1].Width);
-        Assert.Equal("X", line[2].Content);
-        Assert.Equal(3, terminal.Buffer.X);
+        line[0].Content.Should().Be(RegionalU);
+        line[0].Width.Should().Be(2);
+        line[1].Width.Should().Be(0);
+        line[2].Content.Should().Be("X");
+        terminal.Buffer.X.Should().Be(3);
     }
 
     /// <summary>
     /// Indicators pair from the left and do not accumulate, so a third starts a new pair rather than
     /// joining the flag beside it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_third_indicator_starts_a_new_pair()
     {
         var terminal = Write(RegionalU + RegionalS + RegionalG);
         var line = terminal.Buffer.Lines[0]!;
 
-        Assert.Equal(FlagUs, line[0].Content);
-        Assert.Equal(2, line[0].Width);
-        Assert.Equal(RegionalG, line[2].Content);
-        Assert.Equal(2, line[2].Width);
-        Assert.Equal(4, terminal.Buffer.X);
+        line[0].Content.Should().Be(FlagUs);
+        line[0].Width.Should().Be(2);
+        line[2].Content.Should().Be(RegionalG);
+        line[2].Width.Should().Be(2);
+        terminal.Buffer.X.Should().Be(4);
     }
 
     /// <summary>And a fourth completes that second pair.</summary>
-    [Fact]
+    [TestMethod]
     public void Four_indicators_are_two_flags()
     {
         var terminal = Write(RegionalG + RegionalB + RegionalU + RegionalS);
         var line = terminal.Buffer.Lines[0]!;
 
-        Assert.Equal(RegionalG + RegionalB, line[0].Content);
-        Assert.Equal(2, line[0].Width);
-        Assert.Equal(FlagUs, line[2].Content);
-        Assert.Equal(2, line[2].Width);
-        Assert.Equal(4, terminal.Buffer.X);
+        line[0].Content.Should().Be(RegionalG + RegionalB);
+        line[0].Width.Should().Be(2);
+        line[2].Content.Should().Be(FlagUs);
+        line[2].Width.Should().Be(2);
+        terminal.Buffer.X.Should().Be(4);
     }
 
     /// <summary>
     /// The halves arriving in separate writes is the normal case, not the exotic one: a pty hands over
     /// whatever the read returned, so the boundary falls mid-flag whenever it happens to.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_halves_pair_across_separate_writes()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 20, Rows = 5 });
@@ -109,16 +110,16 @@ public class RegionalIndicatorTests
         terminal.Write(RegionalS);
 
         var line = terminal.Buffer.Lines[0]!;
-        Assert.Equal(FlagUs, line[0].Content);
-        Assert.Equal(2, line[0].Width);
-        Assert.Equal(2, terminal.Buffer.X);
+        line[0].Content.Should().Be(FlagUs);
+        line[0].Width.Should().Be(2);
+        terminal.Buffer.X.Should().Be(2);
     }
 
     /// <summary>
     /// Anything that moves the cursor between them leaves two separate characters. They are only a flag
     /// because they were adjacent, and a cursor address means they are not.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Indicators_separated_by_a_cursor_move_do_not_pair()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 20, Rows = 5 });
@@ -127,14 +128,14 @@ public class RegionalIndicatorTests
         terminal.Write(RegionalS);
 
         var line = terminal.Buffer.Lines[0]!;
-        Assert.Equal(RegionalU, line[0].Content);
-        Assert.Equal(2, line[0].Width);
-        Assert.Equal(RegionalS, line[9].Content);
-        Assert.Equal(2, line[9].Width);
+        line[0].Content.Should().Be(RegionalU);
+        line[0].Width.Should().Be(2);
+        line[9].Content.Should().Be(RegionalS);
+        line[9].Width.Should().Be(2);
     }
 
     /// <summary>Nor across a newline, for the same reason.</summary>
-    [Fact]
+    [TestMethod]
     public void Indicators_separated_by_a_newline_do_not_pair()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 20, Rows = 5 });
@@ -142,8 +143,8 @@ public class RegionalIndicatorTests
         terminal.Write("\r\n");
         terminal.Write(RegionalS);
 
-        Assert.Equal(RegionalU, terminal.Buffer.Lines[0]![0].Content);
-        Assert.Equal(RegionalS, terminal.Buffer.Lines[1]![0].Content);
+        (terminal.Buffer.Lines[0]![0].Content).Should().Be(RegionalU);
+        (terminal.Buffer.Lines[1]![0].Content).Should().Be(RegionalS);
     }
 
 }

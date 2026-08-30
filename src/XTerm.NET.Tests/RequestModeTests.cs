@@ -14,6 +14,7 @@ namespace XTerm.Tests;
 /// implemented is the same loss by a slower route. These tests pin both halves: every mode the
 /// terminal tracks answers truthfully, and the ones it does not track stay quiet rather than guess.
 /// </remarks>
+[TestClass]
 public class RequestModeTests
 {
     private static Terminal Fresh() => new(new TerminalOptions { Cols = 20, Rows = 5 });
@@ -41,7 +42,9 @@ public class RequestModeTests
     private static string AnsiReport(int mode, bool set) => Esc.Csi($"{mode};{(set ? 1 : 2)}$y");
 
     /// <summary>Every private mode DECRQM answers for, as an application would name it.</summary>
-    public static TheoryData<int> ReportedModes() => new()
+    public static IEnumerable<object[]> ReportedModes() => ReportedModeValues().Select(m => new object[] { m });
+
+    private static int[] ReportedModeValues() => new[]
     {
         (int)TerminalMode.AppCursorKeys,
         (int)TerminalMode.ReverseVideo,
@@ -78,8 +81,8 @@ public class RequestModeTests
     /// against every reported mode, because the failure this guards against is a single wrong entry
     /// in the lookup — one mode reading another mode's flag looks right until you ask about it.
     /// </summary>
-    [Theory]
-    [MemberData(nameof(ReportedModes))]
+    [TestMethod]
+    [DynamicData(nameof(ReportedModes))]
     public void Reports_each_mode_as_set_after_setting_it_and_reset_after_resetting_it(int mode)
     {
         var terminal = Fresh();
@@ -91,22 +94,22 @@ public class RequestModeTests
         terminal.Write(Reset(mode));
         terminal.Write(Query(mode));
 
-        Assert.Equal(new[] { Report(mode, true), Report(mode, false) }, replies);
+        replies.Should().Equal(new[] { Report(mode, true), Report(mode, false) });
     }
 
     /// <summary>
     /// A mode nobody has touched still gets an answer — "supported, and currently off" is a
     /// different reply from silence, and it is the one that tells an application to go ahead.
     /// </summary>
-    [Theory]
-    [InlineData(1)]     // application cursor keys
-    [InlineData(5)]     // reverse video
-    [InlineData(6)]     // origin
-    [InlineData(1000)]  // VT200 mouse
-    [InlineData(1006)]  // SGR mouse encoding
-    [InlineData(1049)]  // alternate buffer
-    [InlineData(2004)]  // bracketed paste
-    [InlineData(2026)]  // synchronized output
+    [TestMethod]
+    [DataRow(1)]     // application cursor keys
+    [DataRow(5)]     // reverse video
+    [DataRow(6)]     // origin
+    [DataRow(1000)]  // VT200 mouse
+    [DataRow(1006)]  // SGR mouse encoding
+    [DataRow(1049)]  // alternate buffer
+    [DataRow(2004)]  // bracketed paste
+    [DataRow(2026)]  // synchronized output
     public void Reports_an_untouched_mode_as_reset(int mode)
     {
         var terminal = Fresh();
@@ -114,10 +117,10 @@ public class RequestModeTests
 
         terminal.Write(Query(mode));
 
-        Assert.Equal(new[] { Report(mode, false) }, replies);
+        replies.Should().Equal(new[] { Report(mode, false) });
     }
 
-    [Fact]
+    [TestMethod]
     public void Reports_grapheme_clustering_as_permanently_set()
     {
         var terminal = Fresh();
@@ -129,7 +132,7 @@ public class RequestModeTests
         terminal.Write(Set(mode));
         terminal.Write(Query(mode));
 
-        Assert.Equal(new[] { PermanentReport(mode), PermanentReport(mode) }, replies);
+        replies.Should().Equal(new[] { PermanentReport(mode), PermanentReport(mode) });
     }
 
     /// <summary>
@@ -137,10 +140,10 @@ public class RequestModeTests
     /// would turn wraparound on that was already on, show a cursor it meant to leave alone, and
     /// switch Sixel colour registers to shared when they were already private.
     /// </summary>
-    [Theory]
-    [InlineData(7)]     // wraparound
-    [InlineData(25)]    // cursor visible
-    [InlineData(1070)]  // private Sixel colour registers
+    [TestMethod]
+    [DataRow(7)]     // wraparound
+    [DataRow(25)]    // cursor visible
+    [DataRow(1070)]  // private Sixel colour registers
     public void Reports_a_mode_that_starts_on_as_set(int mode)
     {
         var terminal = Fresh();
@@ -148,7 +151,7 @@ public class RequestModeTests
 
         terminal.Write(Query(mode));
 
-        Assert.Equal(new[] { Report(mode, true) }, replies);
+        replies.Should().Equal(new[] { Report(mode, true) });
     }
 
     /// <summary>
@@ -156,7 +159,7 @@ public class RequestModeTests
     /// to any-event reporting has to see the mode it left go reset, or it will believe both are
     /// live and misread the reports it gets.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_only_the_mouse_tracking_level_currently_selected()
     {
         var terminal = Fresh();
@@ -167,22 +170,20 @@ public class RequestModeTests
         terminal.Write(Query(1003));
         terminal.Write(Query(9));
 
-        Assert.Equal(
-            new[] { Report(1002, true), Report(1003, false), Report(9, false) },
-            replies);
+        replies.Should().Equal(new[] { Report(1002, true), Report(1003, false), Report(9, false) });
 
         replies.Clear();
         terminal.Write(Set(1003));
         terminal.Write(Query(1002));
         terminal.Write(Query(1003));
 
-        Assert.Equal(new[] { Report(1002, false), Report(1003, true) }, replies);
+        replies.Should().Equal(new[] { Report(1002, false), Report(1003, true) });
     }
 
     /// <summary>
     /// The encoding is a selection too, chosen independently of the tracking level.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_only_the_mouse_encoding_currently_selected()
     {
         var terminal = Fresh();
@@ -193,9 +194,7 @@ public class RequestModeTests
         terminal.Write(Query(1005));
         terminal.Write(Query(1015));
 
-        Assert.Equal(
-            new[] { Report(1006, true), Report(1005, false), Report(1015, false) },
-            replies);
+        replies.Should().Equal(new[] { Report(1006, true), Report(1005, false), Report(1015, false) });
     }
 
     /// <summary>
@@ -203,7 +202,7 @@ public class RequestModeTests
     /// in and out; there is one buffer, so they read alike. An application that entered with 1049
     /// and asks about 47 is asking "am I on the alternate screen", and the answer is yes.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_the_alternate_buffer_alike_for_all_three_modes_that_switch_it()
     {
         var terminal = Fresh();
@@ -214,9 +213,7 @@ public class RequestModeTests
         terminal.Write(Query(1047));
         terminal.Write(Query(1049));
 
-        Assert.Equal(
-            new[] { Report(47, true), Report(1047, true), Report(1049, true) },
-            replies);
+        replies.Should().Equal(new[] { Report(47, true), Report(1047, true), Report(1049, true) });
     }
 
     /// <summary>
@@ -224,14 +221,14 @@ public class RequestModeTests
     /// DECSET and change nothing, so there is nothing to read back; replying "reset" to a mode an
     /// application has just set would be a guess, and a wrong one.
     /// </summary>
-    [Theory]
-    [InlineData(4)]      // smooth scroll (DECSCLM), accepted and ignored
-    [InlineData(8)]      // auto repeat, always on and not stored
-    [InlineData(42)]     // national replacement character set
-    [InlineData(1035)]   // NumLock modifiers
-    [InlineData(1001)]   // highlight mouse tracking, not implemented
-    [InlineData(1016)]   // pixel-position mouse, not implemented
-    [InlineData(64738)]  // not a mode at all
+    [TestMethod]
+    [DataRow(4)]      // smooth scroll (DECSCLM), accepted and ignored
+    [DataRow(8)]      // auto repeat, always on and not stored
+    [DataRow(42)]     // national replacement character set
+    [DataRow(1035)]   // NumLock modifiers
+    [DataRow(1001)]   // highlight mouse tracking, not implemented
+    [DataRow(1016)]   // pixel-position mouse, not implemented
+    [DataRow(64738)]  // not a mode at all
     public void Says_nothing_about_modes_it_keeps_no_state_for(int mode)
     {
         var terminal = Fresh();
@@ -239,7 +236,7 @@ public class RequestModeTests
 
         terminal.Write(Query(mode));
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 
     /// <summary>
@@ -249,7 +246,7 @@ public class RequestModeTests
     /// grounds that any reply would be a private-mode report — it would not, and the mode is
     /// tracked, so the silence was a supported feature reported as unsupported.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_ansi_insert_mode()
     {
         var terminal = Fresh();
@@ -261,9 +258,7 @@ public class RequestModeTests
         terminal.Write(Esc.Csi("4l"));
         terminal.Write(Esc.Csi("4$p"));
 
-        Assert.Equal(
-            new[] { AnsiReport(4, false), AnsiReport(4, true), AnsiReport(4, false) },
-            replies);
+        replies.Should().Equal(new[] { AnsiReport(4, false), AnsiReport(4, true), AnsiReport(4, false) });
     }
 
     /// <summary>
@@ -271,10 +266,10 @@ public class RequestModeTests
     /// mode. LNM is the one an application is most likely to ask about; nothing here reads or writes
     /// it, so a "reset" reply would be a guess.
     /// </summary>
-    [Theory]
-    [InlineData(2)]   // keyboard action mode (KAM), not implemented
-    [InlineData(12)]  // send/receive (SRM), not implemented
-    [InlineData(20)]  // automatic newline (LNM), not implemented
+    [TestMethod]
+    [DataRow(2)]   // keyboard action mode (KAM), not implemented
+    [DataRow(12)]  // send/receive (SRM), not implemented
+    [DataRow(20)]  // automatic newline (LNM), not implemented
     public void Says_nothing_about_ansi_modes_it_keeps_no_state_for(int mode)
     {
         var terminal = Fresh();
@@ -282,7 +277,7 @@ public class RequestModeTests
 
         terminal.Write(Esc.Csi($"{mode}$p"));
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 
     /// <summary>
@@ -293,7 +288,7 @@ public class RequestModeTests
     /// The generated sequences are asserted next to the reports because a report agreeing with a
     /// stale flag is the whole bug: the query alone looked right.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Reports_mouse_and_focus_modes_as_reset_after_ris()
     {
         var terminal = Fresh();
@@ -308,26 +303,22 @@ public class RequestModeTests
         terminal.Write(Query((int)TerminalMode.MouseReportSgr));
         terminal.Write(Query((int)TerminalMode.SendFocusEvents));
 
-        Assert.Equal(
-            new[]
+        replies.Should().Equal(new[]
             {
                 Report((int)TerminalMode.MouseReportButtonEvent, false),
                 Report((int)TerminalMode.MouseReportSgr, false),
                 Report((int)TerminalMode.SendFocusEvents, false),
-            },
-            replies);
+            });
 
-        Assert.Equal(string.Empty, terminal.GenerateFocusEvent(true));
-        Assert.Equal(
-            string.Empty,
-            terminal.GenerateMouseEvent(MouseButton.Left, 0, 0, MouseEventType.Down));
+        terminal.GenerateFocusEvent(true).Should().Be(string.Empty);
+        terminal.GenerateMouseEvent(MouseButton.Left, 0, 0, MouseEventType.Down).Should().Be(string.Empty);
     }
 
     /// <summary>
     /// A missing parameter defaults to mode 0, which is not a mode. Answering for it would send an
     /// application a report it never asked for.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Says_nothing_when_no_mode_is_named()
     {
         var terminal = Fresh();
@@ -335,6 +326,6 @@ public class RequestModeTests
 
         terminal.Write(Esc.Csi("?$p"));
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 }

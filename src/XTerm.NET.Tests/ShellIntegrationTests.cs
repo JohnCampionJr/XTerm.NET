@@ -9,6 +9,7 @@ namespace XTerm.Tests;
 /// Covers OSC 133 (FinalTerm/FTCS shell integration marks) and OSC 9 (the ConEmu extensions:
 /// working directory, progress, notification).
 /// </summary>
+[TestClass]
 public class ShellIntegrationTests
 {
     private Terminal CreateTerminal(int cols = 80, int rows = 24)
@@ -19,7 +20,7 @@ public class ShellIntegrationTests
 
     // ---- OSC 133 -----------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void ShellIntegrationState_IsNullBeforeAnyMark()
     {
         // Null is the third state and the reason this property is nullable: a shell with no
@@ -27,15 +28,15 @@ public class ShellIntegrationTests
         // to PromptStart would assert the shell is idle on no evidence at all.
         var terminal = CreateTerminal();
 
-        Assert.Null(terminal.ShellIntegrationState);
-        Assert.Null(terminal.LastCommandExitCode);
+        terminal.ShellIntegrationState.Should().BeNull();
+        terminal.LastCommandExitCode.Should().BeNull();
     }
 
-    [Theory]
-    [InlineData("A", ShellIntegrationMark.PromptStart)]
-    [InlineData("B", ShellIntegrationMark.CommandStart)]
-    [InlineData("C", ShellIntegrationMark.CommandExecuted)]
-    [InlineData("D", ShellIntegrationMark.CommandFinished)]
+    [TestMethod]
+    [DataRow("A", ShellIntegrationMark.PromptStart)]
+    [DataRow("B", ShellIntegrationMark.CommandStart)]
+    [DataRow("C", ShellIntegrationMark.CommandExecuted)]
+    [DataRow("D", ShellIntegrationMark.CommandFinished)]
     public void Osc133_RecordsEachMark(string letter, ShellIntegrationMark expected)
     {
         var terminal = CreateTerminal();
@@ -44,12 +45,12 @@ public class ShellIntegrationTests
 
         terminal.Write($"\x1B]133;{letter}\x07");
 
-        Assert.Equal(expected, terminal.ShellIntegrationState);
-        Assert.NotNull(received);
-        Assert.Equal(expected, received!.Mark);
+        terminal.ShellIntegrationState.Should().Be(expected);
+        received.Should().NotBeNull();
+        (received!.Mark).Should().Be(expected);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_TracksAFullPromptCommandCycle()
     {
         // The sequence a caller actually depends on: at B the shell is waiting for input, at C
@@ -60,26 +61,24 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]133;A\x07");
         terminal.Write("\x1B]133;B\x07");
-        Assert.Equal(ShellIntegrationMark.CommandStart, terminal.ShellIntegrationState);
+        terminal.ShellIntegrationState.Should().Be(ShellIntegrationMark.CommandStart);
 
         terminal.Write("\x1B]133;C\x07");
-        Assert.Equal(ShellIntegrationMark.CommandExecuted, terminal.ShellIntegrationState);
+        terminal.ShellIntegrationState.Should().Be(ShellIntegrationMark.CommandExecuted);
 
         terminal.Write("\x1B]133;D;0\x07");
-        Assert.Equal(ShellIntegrationMark.CommandFinished, terminal.ShellIntegrationState);
+        terminal.ShellIntegrationState.Should().Be(ShellIntegrationMark.CommandFinished);
 
-        Assert.Equal(
-            new[]
+        marks.Should().Equal(new[]
             {
                 ShellIntegrationMark.PromptStart,
                 ShellIntegrationMark.CommandStart,
                 ShellIntegrationMark.CommandExecuted,
                 ShellIntegrationMark.CommandFinished,
-            },
-            marks);
+            });
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_CapturesExitCode()
     {
         var terminal = CreateTerminal();
@@ -88,11 +87,11 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]133;D;127\x07");
 
-        Assert.Equal(127, terminal.LastCommandExitCode);
-        Assert.Equal(127, received!.ExitCode);
+        terminal.LastCommandExitCode.Should().Be(127);
+        (received!.ExitCode).Should().Be(127);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_CapturesNegativeExitCode()
     {
         // Microsoft's own pwsh snippet returns -1 for a PowerShell-native error.
@@ -100,10 +99,10 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]133;D;-1\x07");
 
-        Assert.Equal(-1, terminal.LastCommandExitCode);
+        terminal.LastCommandExitCode.Should().Be(-1);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_LeavesExitCodeNull_WhenTheShellOmitsIt()
     {
         // cmd.exe cannot read the previous command's status from its prompt, so a bare D is normal
@@ -115,24 +114,24 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]133;D\x07");
 
-        Assert.Equal(ShellIntegrationMark.CommandFinished, terminal.ShellIntegrationState);
-        Assert.Null(terminal.LastCommandExitCode);
-        Assert.Null(received!.ExitCode);
+        terminal.ShellIntegrationState.Should().Be(ShellIntegrationMark.CommandFinished);
+        terminal.LastCommandExitCode.Should().BeNull();
+        (received!.ExitCode).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_ClearsAStaleExitCode_WhenTheNextCommandReportsNone()
     {
         var terminal = CreateTerminal();
 
         terminal.Write("\x1B]133;D;3\x07");
-        Assert.Equal(3, terminal.LastCommandExitCode);
+        terminal.LastCommandExitCode.Should().Be(3);
 
         terminal.Write("\x1B]133;D\x07");
-        Assert.Null(terminal.LastCommandExitCode);
+        terminal.LastCommandExitCode.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_ReportsNoExitCode_OnMarksThatCannotCarryOne()
     {
         var terminal = CreateTerminal();
@@ -141,10 +140,10 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]133;A\x07");
 
-        Assert.Null(received!.ExitCode);
+        (received!.ExitCode).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_AcceptsStringTerminator()
     {
         // The bash and cmd snippets in Microsoft's docs terminate with ST, not BEL.
@@ -152,11 +151,11 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]133;D;0\x1B\\");
 
-        Assert.Equal(ShellIntegrationMark.CommandFinished, terminal.ShellIntegrationState);
-        Assert.Equal(0, terminal.LastCommandExitCode);
+        terminal.ShellIntegrationState.Should().Be(ShellIntegrationMark.CommandFinished);
+        terminal.LastCommandExitCode.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_IgnoresUnknownMark_WithoutDisturbingState()
     {
         var terminal = CreateTerminal();
@@ -164,22 +163,22 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]133;Z\x07");
 
-        Assert.Equal(ShellIntegrationMark.PromptStart, terminal.ShellIntegrationState);
+        terminal.ShellIntegrationState.Should().Be(ShellIntegrationMark.PromptStart);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc133_IgnoresEmptyPayload()
     {
         var terminal = CreateTerminal();
 
         terminal.Write("\x1B]133\x07");
 
-        Assert.Null(terminal.ShellIntegrationState);
+        terminal.ShellIntegrationState.Should().BeNull();
     }
 
     // ---- OSC 9 ; 9 : working directory -------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Osc9Cwd_SetsCurrentDirectory()
     {
         // Microsoft's documented Windows prompts emit 9;9 rather than OSC 7, so a terminal reading
@@ -190,11 +189,11 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]9;9;C:\\Users\\me\x07");
 
-        Assert.Equal("C:\\Users\\me", terminal.CurrentDirectory);
-        Assert.Equal("C:\\Users\\me", reported);
+        terminal.CurrentDirectory.Should().Be("C:\\Users\\me");
+        reported.Should().Be("C:\\Users\\me");
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Cwd_StripsSurroundingQuotes()
     {
         // The pwsh snippet in Microsoft's docs emits the path already quoted.
@@ -202,10 +201,10 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]9;9;\"C:\\Program Files\"\x07");
 
-        Assert.Equal("C:\\Program Files", terminal.CurrentDirectory);
+        terminal.CurrentDirectory.Should().Be("C:\\Program Files");
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Cwd_IgnoresEmptyPath()
     {
         var terminal = CreateTerminal();
@@ -213,17 +212,17 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]9;9;\x07");
 
-        Assert.Equal("C:\\keep", terminal.CurrentDirectory);
+        terminal.CurrentDirectory.Should().Be("C:\\keep");
     }
 
     // ---- OSC 9 ; 4 : progress ----------------------------------------------------------------
 
-    [Theory]
-    [InlineData(0, ProgressState.None)]
-    [InlineData(1, ProgressState.Normal)]
-    [InlineData(2, ProgressState.Error)]
-    [InlineData(3, ProgressState.Indeterminate)]
-    [InlineData(4, ProgressState.Warning)]
+    [TestMethod]
+    [DataRow(0, ProgressState.None)]
+    [DataRow(1, ProgressState.Normal)]
+    [DataRow(2, ProgressState.Error)]
+    [DataRow(3, ProgressState.Indeterminate)]
+    [DataRow(4, ProgressState.Warning)]
     public void Osc9Progress_RecordsEachState(int raw, ProgressState expected)
     {
         var terminal = CreateTerminal();
@@ -232,33 +231,33 @@ public class ShellIntegrationTests
 
         terminal.Write($"\x1B]9;4;{raw};50\x07");
 
-        Assert.Equal(expected, terminal.ProgressState);
-        Assert.NotNull(received);
-        Assert.Equal(expected, received!.State);
+        terminal.ProgressState.Should().Be(expected);
+        received.Should().NotBeNull();
+        (received!.State).Should().Be(expected);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Progress_RecordsValue()
     {
         var terminal = CreateTerminal();
 
         terminal.Write("\x1B]9;4;1;42\x07");
 
-        Assert.Equal(ProgressState.Normal, terminal.ProgressState);
-        Assert.Equal(42, terminal.ProgressValue);
+        terminal.ProgressState.Should().Be(ProgressState.Normal);
+        terminal.ProgressValue.Should().Be(42);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Progress_ClampsOutOfRangeValue()
     {
         var terminal = CreateTerminal();
 
         terminal.Write("\x1B]9;4;1;250\x07");
 
-        Assert.Equal(100, terminal.ProgressValue);
+        terminal.ProgressValue.Should().Be(100);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Progress_ZeroesValue_ForStatesThatHaveNone()
     {
         // Indeterminate carries no percentage; leaving a stale one would render a bar at the old
@@ -268,11 +267,11 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]9;4;3\x07");
 
-        Assert.Equal(ProgressState.Indeterminate, terminal.ProgressState);
-        Assert.Equal(0, terminal.ProgressValue);
+        terminal.ProgressState.Should().Be(ProgressState.Indeterminate);
+        terminal.ProgressValue.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Progress_ClearsOnStateNone()
     {
         var terminal = CreateTerminal();
@@ -280,11 +279,11 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]9;4;0\x07");
 
-        Assert.Equal(ProgressState.None, terminal.ProgressState);
-        Assert.Equal(0, terminal.ProgressValue);
+        terminal.ProgressState.Should().Be(ProgressState.None);
+        terminal.ProgressValue.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Progress_IgnoresUnknownState()
     {
         var terminal = CreateTerminal();
@@ -292,13 +291,13 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]9;4;9;10\x07");
 
-        Assert.Equal(ProgressState.Normal, terminal.ProgressState);
-        Assert.Equal(80, terminal.ProgressValue);
+        terminal.ProgressState.Should().Be(ProgressState.Normal);
+        terminal.ProgressValue.Should().Be(80);
     }
 
     // ---- OSC 9 : notification ----------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Osc9Notification_RaisesWithText()
     {
         var terminal = CreateTerminal();
@@ -307,12 +306,12 @@ public class ShellIntegrationTests
 
         terminal.Write("\x1B]9;Build finished\x07");
 
-        Assert.Equal("Build finished", text);
+        text.Should().Be("Build finished");
     }
 
-    [Theory]
-    [InlineData("9")]
-    [InlineData("4")]
+    [TestMethod]
+    [DataRow("9")]
+    [DataRow("4")]
     public void Osc9_IgnoresAClaimedSubCommandWithNoPayload(string subCommand)
     {
         // "OSC 9;9" carries a sub-command and nothing else. Falling through to the notification case
@@ -323,10 +322,10 @@ public class ShellIntegrationTests
 
         terminal.Write($"\u001b]9;{subCommand}\u0007");
 
-        Assert.Empty(notifications);
+        notifications.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Notification_StillFiresForTextThatContainsSemicolons()
     {
         // The fallback must keep the whole body. Only a CLAIMED sub-command is special.
@@ -336,10 +335,10 @@ public class ShellIntegrationTests
 
         terminal.Write("\u001b]9;Build finished; 3 warnings\u0007");
 
-        Assert.Equal("Build finished; 3 warnings", text);
+        text.Should().Be("Build finished; 3 warnings");
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc9Notification_DoesNotFireForProgressOrCwd()
     {
         // The sub-parameters are not notifications. Without this distinction OSC 9;4 would raise a
@@ -351,6 +350,6 @@ public class ShellIntegrationTests
         terminal.Write("\x1B]9;4;1;50\x07");
         terminal.Write("\x1B]9;9;/home/me\x07");
 
-        Assert.Empty(notifications);
+        notifications.Should().BeEmpty();
     }
 }

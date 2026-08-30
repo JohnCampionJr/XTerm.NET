@@ -1,12 +1,13 @@
 using XTerm.Parser;
 using XTerm.Events.Parser;
-using Xunit;
 
 namespace XTerm.Tests.Parser;
 
+[TestClass]
+
 public class ParserDebugTests
 {
-    [Fact]
+    [TestMethod]
     public void Debug_Parse_5A()
     {
         // Arrange
@@ -21,9 +22,9 @@ public class ParserDebugTests
         parser.Parse("\x1B[5A");
 
         // Assert
-        Assert.Single(calls);
+        calls.Should().ContainSingle();
         var call = calls[0];
-        Assert.Contains("A", call.Item1);
+        call.Item1.Should().Contain("A");
         
         // Debug output
         Console.WriteLine($"Params Length: {call.Item2.Length}");
@@ -32,6 +33,6 @@ public class ParserDebugTests
             Console.WriteLine($"  Param[{i}] = {call.Item2.GetParam(i)}");
         }
         
-        Assert.Equal(5, call.Item2.GetParam(0));
+        call.Item2.GetParam(0).Should().Be(5);
     }
 }

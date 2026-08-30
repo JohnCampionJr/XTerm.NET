@@ -14,6 +14,7 @@ namespace XTerm.Tests.Buffer;
 /// None is exotic: they are what a one-column pane, a full scrollback, or a shrinking window
 /// produce on their own.
 /// </remarks>
+[TestClass]
 public class ResizeEdgeCaseTests
 {
     private static void SetCell(BufferLine line, int col, string content, int width = 1)
@@ -29,7 +30,7 @@ public class ResizeEdgeCaseTests
     }
 
     // One-column reflow with a wide boundary
-    [Fact]
+    [TestMethod]
     public void ShrinkToOneColumn_WithWideChars_Terminates()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -50,7 +51,7 @@ public class ResizeEdgeCaseTests
     }
 
     // The viewport adjustment pops rows the outer loop is still walking
-    [Fact]
+    [TestMethod]
     public void ShrinkWithFullLastRow_AndCursorAtTop_DoesNotThrow()
     {
         // Constructed at 10x10 directly. Resizing an 80x24 buffer down leaves 24 LINES, not 10, so
@@ -65,11 +66,11 @@ public class ResizeEdgeCaseTests
         }
 
         var ex = Record.Exception(() => buffer.Resize(2, 10));
-        Assert.Null(ex);
+        ex.Should().BeNull();
     }
 
     // A negative cursor must not survive a resize
-    [Fact]
+    [TestMethod]
     public void NegativeCursor_IsNotPreservedAcrossResize()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -78,12 +79,12 @@ public class ResizeEdgeCaseTests
         buffer.SetCursorRaw(-5, -5);
         buffer.Resize(10, 5);
 
-        Assert.True(buffer.X >= 0, $"X was {buffer.X}");
-        Assert.True(buffer.Y >= 0, $"Y was {buffer.Y}");
+        ((buffer.X >= 0)).Should().BeTrue($"X was {buffer.X}");
+        ((buffer.Y >= 0)).Should().BeTrue($"Y was {buffer.Y}");
     }
 
     // A line expanding past the remaining capacity
-    [Fact]
+    [TestMethod]
     public void ExpansionBeyondCapacity_DoesNotThrow()
     {
         var buffer = new TerminalBuffer(80, 2, 1);
@@ -95,11 +96,11 @@ public class ResizeEdgeCaseTests
         }
 
         var ex = Record.Exception(() => buffer.Resize(2, 2));
-        Assert.Null(ex);
+        ex.Should().BeNull();
     }
 
     // The viewport after a capacity trim
-    [Fact]
+    [TestMethod]
     public void ViewportFollowsTheBottom_AfterCapacityTrim()
     {
         // Fill past capacity so the buffer is at MaxLength and following the bottom, then shrink the
@@ -111,25 +112,23 @@ public class ResizeEdgeCaseTests
         }
 
         var before = terminal.Buffer;
-        Assert.Equal(before.YBase, before.YDisp);
+        before.YDisp.Should().Be(before.YBase);
 
         terminal.Resize(20, 3);
 
         var after = terminal.Buffer;
-        Assert.Equal(
-            after.Lines.Length - 3,
-            after.YBase);
+        after.YBase.Should().Be(after.Lines.Length - 3);
     }
 
     // A zero-row buffer brought to life by a later resize
-    [Fact]
+    [TestMethod]
     public void ZeroRowBuffer_IsUsableAfterResize()
     {
         var buffer = new TerminalBuffer(80, 0, 1000);
 
         buffer.Resize(80, 24);
 
-        Assert.True(buffer.Lines.Length > 0, $"Lines.Length was {buffer.Lines.Length}");
+        (buffer.Lines.Length > 0).Should().BeTrue($"Lines.Length was {buffer.Lines.Length}");
     }
 
     /// <summary>
@@ -141,7 +140,7 @@ public class ResizeEdgeCaseTests
     /// the screen — and the viewport tops out at YBase, so scrolling could never reach them again.
     /// Caught in review on this PR.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void ShrinkingRows_LeavesNothingStrandedBelowTheScreen()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 40, Rows = 24, Scrollback = 200 });
@@ -158,13 +157,13 @@ public class ResizeEdgeCaseTests
         terminal.Resize(40, 10);
 
         // The cursor is still on its line...
-        Assert.Equal(contentRow, terminal.Buffer.YBase + terminal.Buffer.Y);
+        (terminal.Buffer.YBase + terminal.Buffer.Y).Should().Be(contentRow);
 
         // ...and the screen reaches the end of the buffer, so nothing is below it.
-        Assert.Equal(terminal.Buffer.Lines.Length, terminal.Buffer.YBase + terminal.Rows);
+        (terminal.Buffer.YBase + terminal.Rows).Should().Be(terminal.Buffer.Lines.Length);
 
         // A viewport that was at the tail is still at the tail.
-        Assert.Equal(terminal.Buffer.YBase, terminal.Buffer.ViewportY);
+        terminal.Buffer.ViewportY.Should().Be(terminal.Buffer.YBase);
     }
 
     /// <summary>
@@ -176,7 +175,7 @@ public class ResizeEdgeCaseTests
     /// and the line that came back at the top when rows were restored was the wrong one. Zero rows
     /// is a real case here: a buffer can be built with none and brought to life by a later resize.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void ZeroRowResize_DoesNotScrollTheBuffer()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 40, Rows = 24, Scrollback = 200 });
@@ -187,10 +186,10 @@ public class ResizeEdgeCaseTests
         var contentRow = terminal.Buffer.YBase + terminal.Buffer.Y;
 
         terminal.Resize(40, 0);
-        Assert.Equal(contentRow, terminal.Buffer.YBase + terminal.Buffer.Y);
+        (terminal.Buffer.YBase + terminal.Buffer.Y).Should().Be(contentRow);
 
         terminal.Resize(40, 24);
-        Assert.Equal(contentRow, terminal.Buffer.YBase + terminal.Buffer.Y);
+        (terminal.Buffer.YBase + terminal.Buffer.Y).Should().Be(contentRow);
     }
 
     /// <summary>
@@ -206,7 +205,7 @@ public class ResizeEdgeCaseTests
     /// <para>Both directions are tested, because they fail through different mechanisms and fixing
     /// one leaves the other.</para>
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void ShrinkingRows_KeepsTheCursorOnItsLine()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 40, Rows = 24, Scrollback = 200 });
@@ -218,10 +217,10 @@ public class ResizeEdgeCaseTests
 
         terminal.Resize(40, 8);
 
-        Assert.Equal(contentRow, terminal.Buffer.YBase + terminal.Buffer.Y);
+        (terminal.Buffer.YBase + terminal.Buffer.Y).Should().Be(contentRow);
     }
 
-    [Fact]
+    [TestMethod]
     public void GrowingRows_KeepsTheCursorOnItsLine()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 40, Rows = 24, Scrollback = 200 });
@@ -234,7 +233,7 @@ public class ResizeEdgeCaseTests
 
         terminal.Resize(40, 24);
 
-        Assert.Equal(contentRow, terminal.Buffer.YBase + terminal.Buffer.Y);
+        (terminal.Buffer.YBase + terminal.Buffer.Y).Should().Be(contentRow);
     }
 
     /// <summary>
@@ -242,7 +241,7 @@ public class ResizeEdgeCaseTests
     /// slides over is what gets destroyed, so the round trip is asserted on CONTENT and not only on
     /// coordinates.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void ResizeLadderWithRedraws_LeavesEarlierLinesIntact()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 40, Rows = 24, Scrollback = 200 });
@@ -266,8 +265,8 @@ public class ResizeEdgeCaseTests
         for (var i = 0; i < 20; i++)
         {
             var line = terminal.Buffer.Lines[i];
-            Assert.NotNull(line);
-            Assert.Equal($"line {i}", line!.TranslateToString(true).TrimEnd());
+            line.Should().NotBeNull();
+            (line!.TranslateToString(true).TrimEnd()).Should().Be($"line {i}");
         }
     }
 }

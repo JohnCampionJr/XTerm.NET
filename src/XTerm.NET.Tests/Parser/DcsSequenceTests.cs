@@ -13,6 +13,7 @@ namespace XTerm.Tests.Parser;
 /// and the payload delivery itself, which is streamed rather than handed over whole because a
 /// full-screen image runs to hundreds of kilobytes.</para>
 /// </summary>
+[TestClass]
 public class DcsSequenceTests
 {
     private const string Esc = "\u001b";
@@ -54,26 +55,26 @@ public class DcsSequenceTests
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void A_dcs_sequence_reports_its_final_character_as_the_identifier()
     {
         var recorded = Recorder.Of(Esc + "Pq" + St);
 
-        Assert.Equal(1, recorded.Hooks);
-        Assert.Equal("q", recorded.Identifier);
+        recorded.Hooks.Should().Be(1);
+        recorded.Identifier.Should().Be("q");
     }
 
-    [Fact]
+    [TestMethod]
     public void Intermediates_precede_the_final_character_in_the_identifier()
     {
         // DECRQSS is "ESC P $ q", and reads as "$q" for the same reason a private CSI reads as "?h".
         var recorded = Recorder.Of(Esc + "P$qm" + St);
 
-        Assert.Equal("$q", recorded.Identifier);
-        Assert.Equal("m", recorded.Payload.ToString());
+        recorded.Identifier.Should().Be("$q");
+        recorded.Payload.ToString().Should().Be("m");
     }
 
-    [Fact]
+    [TestMethod]
     public void XtGetTcap_is_told_apart_from_Sixel_by_its_intermediate()
     {
         // "ESC P + q" and "ESC P q" are one character apart and mean entirely different things: a
@@ -82,39 +83,39 @@ public class DcsSequenceTests
         var query = Recorder.Of(Esc + "P+q544e" + St);
         var sixel = Recorder.Of(Esc + "Pq#0;2;100;0;0~" + St);
 
-        Assert.Equal("+q", query.Identifier);
-        Assert.Equal("544e", query.Payload.ToString());
-        Assert.Equal("q", sixel.Identifier);
+        query.Identifier.Should().Be("+q");
+        query.Payload.ToString().Should().Be("544e");
+        sixel.Identifier.Should().Be("q");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parameters_before_the_final_character_are_parsed()
     {
         var recorded = Recorder.Of(Esc + "P0;1;8q" + St);
 
-        Assert.NotNull(recorded.Parameters);
-        Assert.Equal(0, recorded.Parameters!.GetParam(0, -1));
-        Assert.Equal(1, recorded.Parameters.GetParam(1, -1));
-        Assert.Equal(8, recorded.Parameters.GetParam(2, -1));
+        recorded.Parameters.Should().NotBeNull();
+        (recorded.Parameters!.GetParam(0, -1)).Should().Be(0);
+        recorded.Parameters.GetParam(1, -1).Should().Be(1);
+        recorded.Parameters.GetParam(2, -1).Should().Be(8);
     }
 
-    [Fact]
+    [TestMethod]
     public void An_omitted_parameter_defaults_to_zero()
     {
         var recorded = Recorder.Of(Esc + "P;1q" + St);
 
-        Assert.Equal(0, recorded.Parameters!.GetParam(0, -1));
-        Assert.Equal(1, recorded.Parameters.GetParam(1, -1));
+        (recorded.Parameters!.GetParam(0, -1)).Should().Be(0);
+        recorded.Parameters.GetParam(1, -1).Should().Be(1);
     }
 
-    [Fact]
+    [TestMethod]
     public void The_payload_is_delivered_between_hook_and_unhook()
     {
         var recorded = Recorder.Of(Esc + "Pqpayload here" + St);
 
-        Assert.Equal(1, recorded.Hooks);
-        Assert.Equal(1, recorded.Unhooks);
-        Assert.Equal("payload here", recorded.Payload.ToString());
+        recorded.Hooks.Should().Be(1);
+        recorded.Unhooks.Should().Be(1);
+        recorded.Payload.ToString().Should().Be("payload here");
     }
 
     /// <summary>
@@ -122,18 +123,18 @@ public class DcsSequenceTests
     /// batches puts rather than raising one per character, and that seam is where a long image
     /// would lose or reorder bytes if the flush were wrong.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_payload_longer_than_the_chunk_buffer_arrives_intact()
     {
         var payload = string.Concat(Enumerable.Range(0, 5000).Select(i => (char)('a' + i % 26)));
 
         var recorded = Recorder.Of(Esc + "Pq" + payload + St);
 
-        Assert.Equal(payload, recorded.Payload.ToString());
+        recorded.Payload.ToString().Should().Be(payload);
     }
 
     /// <summary>The payload does not care where the write boundaries fall.</summary>
-    [Fact]
+    [TestMethod]
     public void A_payload_split_across_writes_arrives_intact()
     {
         var parser = new EscapeSequenceParser();
@@ -145,43 +146,42 @@ public class DcsSequenceTests
         parser.Parse("0;0;0@@" + Esc);
         parser.Parse("\\");
 
-        Assert.Equal("#0;2;100;0;0@@", payload.ToString());
+        payload.ToString().Should().Be("#0;2;100;0;0@@");
     }
 
-    [Theory]
-    [InlineData("\u001b\\", "two-byte ST")]
-    [InlineData("\u009c", "single-byte ST")]
+    [TestMethod]
+    [DataRow("\u001b\\", "two-byte ST")]
+    [DataRow("\u009c", "single-byte ST")]
     public void A_string_terminator_ends_the_sequence_cleanly(string terminator, string what)
     {
         var recorded = Recorder.Of(Esc + "Pqdata" + terminator);
 
-        Assert.Equal(1, recorded.Unhooks);
-        Assert.True(recorded.TerminatedCleanly == true, $"{what} should end the sequence cleanly");
+        recorded.Unhooks.Should().Be(1);
+        ((recorded.TerminatedCleanly == true)).Should().BeTrue($"{what} should end the sequence cleanly");
     }
 
     /// <summary>
     /// An abandoned sequence has to be distinguishable from a finished one. Half a picture is not
     /// worth drawing, and the only way a decoder can tell is if the parser says so.
     /// </summary>
-    [Theory]
-    [InlineData("\u0018", "CAN")]
-    [InlineData("\u001a", "SUB")]
-    [InlineData("\u001b[", "another escape sequence starting on top of it")]
+    [TestMethod]
+    [DataRow("\u0018", "CAN")]
+    [DataRow("\u001a", "SUB")]
+    [DataRow("\u001b[", "another escape sequence starting on top of it")]
     public void An_abandoned_sequence_is_reported_as_unclean(string interruption, string what)
     {
         var recorded = Recorder.Of(Esc + "Pqdata" + interruption);
 
-        Assert.Equal(1, recorded.Unhooks);
-        Assert.True(recorded.TerminatedCleanly == false,
-            $"{what} abandons the sequence; reporting it as clean would let a truncated image be shown");
+        recorded.Unhooks.Should().Be(1);
+        ((recorded.TerminatedCleanly == false)).Should().BeTrue($"{what} abandons the sequence; reporting it as clean would let a truncated image be shown");
     }
 
-    [Fact]
+    [TestMethod]
     public void The_whole_payload_event_fires_for_short_sequences()
     {
         var recorded = Recorder.Of(Esc + "P$qm" + St, subscribeWholePayload: true);
 
-        Assert.Equal("m", recorded.WholePayload);
+        recorded.WholePayload.Should().Be("m");
     }
 
     /// <summary>
@@ -189,28 +189,28 @@ public class DcsSequenceTests
     /// buffering one so it can be handed over as a single string is how a terminal ends up holding
     /// a copy of every picture ever drawn.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_whole_payload_event_gives_up_on_oversized_sequences()
     {
         var huge = new string('~', EscapeSequenceParser.MaxAccumulatedDcsLength + 1);
 
         var recorded = Recorder.Of(Esc + "Pq" + huge + St, subscribeWholePayload: true);
 
-        Assert.Null(recorded.WholePayload);
-        Assert.Equal(huge, recorded.Payload.ToString());
+        recorded.WholePayload.Should().BeNull();
+        recorded.Payload.ToString().Should().Be(huge);
     }
 
     /// <summary>Nothing is accumulated at all when nobody subscribed to the whole-payload event.</summary>
-    [Fact]
+    [TestMethod]
     public void A_sequence_with_no_whole_payload_listener_still_streams()
     {
         var recorded = Recorder.Of(Esc + "Pqdata" + St);
 
-        Assert.Null(recorded.WholePayload);
-        Assert.Equal("data", recorded.Payload.ToString());
+        recorded.WholePayload.Should().BeNull();
+        recorded.Payload.ToString().Should().Be("data");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_reset_mid_payload_closes_the_sequence()
     {
         var parser = new EscapeSequenceParser();
@@ -221,12 +221,11 @@ public class DcsSequenceTests
         parser.Parse(Esc + "Pqhalf an image");
         parser.Reset();
 
-        Assert.Equal(1, unhooks);
-        Assert.True(cleanly == false,
-            "a reset abandons whatever was arriving; a decoder left open would wait for a payload that never comes");
+        unhooks.Should().Be(1);
+        ((cleanly == false)).Should().BeTrue("a reset abandons whatever was arriving; a decoder left open would wait for a payload that never comes");
     }
 
-    [Fact]
+    [TestMethod]
     public void Two_sequences_in_a_row_are_kept_apart()
     {
         var parser = new EscapeSequenceParser();
@@ -240,8 +239,8 @@ public class DcsSequenceTests
 
         parser.Parse(Esc + "Pqfirst" + St + Esc + "P$qsecond" + St);
 
-        Assert.Equal(new[] { "q", "$q" }, identifiers);
-        Assert.Equal(new[] { "first", "second" }, payloads);
+        identifiers.Should().Equal(new[] { "q", "$q" });
+        payloads.Should().Equal(new[] { "first", "second" });
     }
 
     /// <summary>
@@ -254,7 +253,7 @@ public class DcsSequenceTests
     /// next "ESC ( B" reported its intermediates as "$(" instead of "(" -- designating a character
     /// set the program never asked for, one sequence after the one that caused it.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void A_dcs_does_not_leave_its_intermediates_for_the_next_sequence()
     {
         var parser = new EscapeSequenceParser();
@@ -265,13 +264,12 @@ public class DcsSequenceTests
         // DECRQSS collects "$", then an ordinary charset designation follows.
         parser.Parse(Esc + "P$qm" + St + Esc + "(B");
 
-        Assert.Equal("B", finalChar);
-        Assert.True(collected == "(",
-            $"the DCS left its intermediates behind: ESC ( B reported '{collected}' instead of '('");
+        finalChar.Should().Be("B");
+        ((collected == "(")).Should().BeTrue($"the DCS left its intermediates behind: ESC ( B reported '{collected}' instead of '('");
     }
 
     /// <summary>The same for a CSI following a DCS, which shares the collect buffer.</summary>
-    [Fact]
+    [TestMethod]
     public void A_csi_after_a_dcs_sees_only_its_own_intermediates()
     {
         var parser = new EscapeSequenceParser();
@@ -280,11 +278,11 @@ public class DcsSequenceTests
 
         parser.Parse(Esc + "P$qm" + St + Esc + "[?25h");
 
-        Assert.Equal("?h", identifier);
+        identifier.Should().Be("?h");
     }
 
     /// <summary>The regression this whole area exists to guard: the parser has to come back.</summary>
-    [Fact]
+    [TestMethod]
     public void Text_after_a_dcs_sequence_still_prints()
     {
         var parser = new EscapeSequenceParser();
@@ -293,6 +291,6 @@ public class DcsSequenceTests
 
         parser.Parse(Esc + "Pq#0;2;100;0;0@" + St + "OK");
 
-        Assert.Equal("OK", printed.ToString());
+        printed.ToString().Should().Be("OK");
     }
 }

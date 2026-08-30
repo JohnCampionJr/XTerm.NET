@@ -1,7 +1,6 @@
 using XTerm.Buffer;
 using XTerm.Common;
 using XTerm.Options;
-using Xunit;
 
 namespace XTerm.Tests;
 
@@ -12,6 +11,7 @@ namespace XTerm.Tests;
 /// integration actually needs — jumping to the previous prompt, selecting a command's output,
 /// putting an exit status beside the command that produced it.</para>
 /// </summary>
+[TestClass]
 public class ShellIntegrationMarkAnchorTests
 {
     private const string Esc = "\u001b";
@@ -25,63 +25,61 @@ public class ShellIntegrationMarkAnchorTests
     private static IReadOnlyList<LineMark> MarksOn(Terminal t, int screenRow)
         => t.Buffer.Lines[t.Buffer.YBase + screenRow]!.Marks;
 
-    [Fact]
+    [TestMethod]
     public void A_prompt_mark_lands_on_the_line_it_was_emitted_on()
     {
         var t = Fresh();
         t.Write("\r\n\r\n");
         t.Write(Mark("A") + "$ ");
 
-        Assert.Empty(MarksOn(t, 0));
-        Assert.Single(MarksOn(t, 2));
-        Assert.Equal(ShellIntegrationMark.PromptStart, MarksOn(t, 2)[0].Kind);
+        MarksOn(t, 0).Should().BeEmpty();
+        MarksOn(t, 2).Should().ContainSingle();
+        (MarksOn(t, 2)[0].Kind).Should().Be(ShellIntegrationMark.PromptStart);
     }
 
     /// <summary>The column too, so a host can tell the prompt from what follows it.</summary>
-    [Fact]
+    [TestMethod]
     public void A_mark_records_the_column()
     {
         var t = Fresh();
         t.Write("$ " + Mark("B"));
 
-        Assert.Equal(2, MarksOn(t, 0)[0].Column);
+        (MarksOn(t, 0)[0].Column).Should().Be(2);
     }
 
     /// <summary>A prompt emits A then B, and a command with no output finishes on the same line.</summary>
-    [Fact]
+    [TestMethod]
     public void One_line_can_carry_several_marks()
     {
         var t = Fresh();
         t.Write(Mark("A") + "$ " + Mark("B") + "true" + Mark("C") + Mark("D;0"));
 
         var marks = MarksOn(t, 0);
-        Assert.Equal(4, marks.Count);
-        Assert.Equal(
-            new[] { ShellIntegrationMark.PromptStart, ShellIntegrationMark.CommandStart,
-                    ShellIntegrationMark.CommandExecuted, ShellIntegrationMark.CommandFinished },
-            marks.Select(m => m.Kind));
+        marks.Count.Should().Be(4);
+        marks.Select(m => m.Kind).Should().Equal(new[] { ShellIntegrationMark.PromptStart, ShellIntegrationMark.CommandStart,
+                    ShellIntegrationMark.CommandExecuted, ShellIntegrationMark.CommandFinished });
     }
 
-    [Fact]
+    [TestMethod]
     public void The_exit_status_is_kept_with_the_mark_that_reported_it()
     {
         var t = Fresh();
         t.Write(Mark("D;7"));
 
-        Assert.Equal(7, MarksOn(t, 0)[0].ExitCode);
+        (MarksOn(t, 0)[0].ExitCode).Should().Be(7);
     }
 
     /// <summary>
     /// A bare D reports nothing, which is not the same as reporting success — cmd.exe cannot read
     /// the previous status from its prompt and always sends one.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_bare_finish_reports_no_status_rather_than_zero()
     {
         var t = Fresh();
         t.Write(Mark("D"));
 
-        Assert.Null(MarksOn(t, 0)[0].ExitCode);
+        (MarksOn(t, 0)[0].ExitCode).Should().BeNull();
     }
 
     /// <summary>
@@ -93,18 +91,18 @@ public class ShellIntegrationMarkAnchorTests
     /// them, would otherwise destroy the A mark it had just emitted, a moment before the prompt it
     /// marks is even printed.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void Erasing_the_line_leaves_the_mark_alone()
     {
         var t = Fresh();
         t.Write(Mark("A"));
         t.Write($"\r{Esc}[K$ ");
 
-        Assert.Single(MarksOn(t, 0));
-        Assert.Equal(ShellIntegrationMark.PromptStart, MarksOn(t, 0)[0].Kind);
+        MarksOn(t, 0).Should().ContainSingle();
+        (MarksOn(t, 0)[0].Kind).Should().Be(ShellIntegrationMark.PromptStart);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_moves_a_mark_to_the_row_and_column_owning_its_position()
     {
         var t = Fresh(cols: 10, rows: 5);
@@ -113,14 +111,14 @@ public class ShellIntegrationMarkAnchorTests
 
         t.Resize(20, 5);
 
-        Assert.Empty(MarksOn(t, 1));
-        var mark = Assert.Single(MarksOn(t, 0));
-        Assert.Equal(12, mark.Column);
-        Assert.Equal(ShellIntegrationMark.PromptStart, mark.Kind);
+        MarksOn(t, 1).Should().BeEmpty();
+        var mark = MarksOn(t, 0).Should().ContainSingle().Which;
+        mark.Column.Should().Be(12);
+        mark.Kind.Should().Be(ShellIntegrationMark.PromptStart);
     }
 
     /// <summary>A recycled line is a new line: the ring hands back the object it is about to drop.</summary>
-    [Fact]
+    [TestMethod]
     public void A_line_reused_by_the_ring_carries_no_marks_over()
     {
         var t = new Terminal(new TerminalOptions { Cols = 20, Rows = 3, Scrollback = 2 });
@@ -130,13 +128,12 @@ public class ShellIntegrationMarkAnchorTests
             t.Write($"line {i}\r\n");
 
         for (var i = 0; i < t.Buffer.Lines.Length; i++)
-            Assert.False(t.Buffer.Lines[i]?.HasMarks ?? false,
-                         $"row {i} kept a mark from a line the ring had dropped");
+            (t.Buffer.Lines[i]?.HasMarks ?? false).Should().BeFalse($"row {i} kept a mark from a line the ring had dropped");
     }
 
     // ---- what the marks are for ------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Jumping_back_walks_through_the_prompts()
     {
         var t = Fresh(rows: 10);
@@ -151,29 +148,29 @@ public class ShellIntegrationMarkAnchorTests
             from = row;
         }
 
-        Assert.Equal(3, found.Count);
-        Assert.Equal(found.OrderByDescending(r => r), found);
+        found.Count.Should().Be(3);
+        found.Should().Equal(found.OrderByDescending(r => r));
     }
 
-    [Fact]
+    [TestMethod]
     public void Jumping_forward_walks_the_other_way()
     {
         var t = Fresh(rows: 10);
         for (var i = 0; i < 3; i++)
             t.Write(Mark("A") + $"$ cmd{i}\r\noutput\r\n");
 
-        Assert.True(t.TryFindNextPrompt(-1, out var first));
-        Assert.True(t.TryFindNextPrompt(first, out var second));
-        Assert.True(second > first, "the search must be strictly below the row given");
+        t.TryFindNextPrompt(-1, out var first).Should().BeTrue();
+        t.TryFindNextPrompt(first, out var second).Should().BeTrue();
+        (second > first).Should().BeTrue("the search must be strictly below the row given");
     }
 
-    [Fact]
+    [TestMethod]
     public void With_no_prompts_there_is_nothing_to_jump_to()
     {
         var t = Fresh();
         t.Write("just some output\r\n");
 
-        Assert.False(t.TryFindPreviousPrompt(t.Buffer.Lines.Length, out _));
-        Assert.False(t.TryFindNextPrompt(-1, out _));
+        t.TryFindPreviousPrompt(t.Buffer.Lines.Length, out _).Should().BeFalse();
+        t.TryFindNextPrompt(-1, out _).Should().BeFalse();
     }
 }

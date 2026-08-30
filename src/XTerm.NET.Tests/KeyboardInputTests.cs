@@ -4,6 +4,8 @@ using XTerm.Options;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class KeyboardInputTests
 {
     private Terminal CreateTerminal(int cols = 80, int rows = 24)
@@ -14,7 +16,7 @@ public class KeyboardInputTests
 
     #region Arrow Keys
 
-    [Fact]
+    [TestMethod]
     public void ArrowKeys_NormalMode_GenerateCorrectSequences()
     {
         // Arrange
@@ -22,13 +24,13 @@ public class KeyboardInputTests
         terminal.ApplicationCursorKeys = false;
 
         // Act & Assert
-        Assert.Equal("\x1B[A", terminal.GenerateKeyInput(Key.UpArrow));
-        Assert.Equal("\x1B[B", terminal.GenerateKeyInput(Key.DownArrow));
-        Assert.Equal("\x1B[C", terminal.GenerateKeyInput(Key.RightArrow));
-        Assert.Equal("\x1B[D", terminal.GenerateKeyInput(Key.LeftArrow));
+        terminal.GenerateKeyInput(Key.UpArrow).Should().Be("\x1B[A");
+        terminal.GenerateKeyInput(Key.DownArrow).Should().Be("\x1B[B");
+        terminal.GenerateKeyInput(Key.RightArrow).Should().Be("\x1B[C");
+        terminal.GenerateKeyInput(Key.LeftArrow).Should().Be("\x1B[D");
     }
 
-    [Fact]
+    [TestMethod]
     public void ArrowKeys_ApplicationMode_GenerateCorrectSequences()
     {
         // Arrange
@@ -36,45 +38,45 @@ public class KeyboardInputTests
         terminal.ApplicationCursorKeys = true;
 
         // Act & Assert
-        Assert.Equal("\x1BOA", terminal.GenerateKeyInput(Key.UpArrow));
-        Assert.Equal("\x1BOB", terminal.GenerateKeyInput(Key.DownArrow));
-        Assert.Equal("\x1BOC", terminal.GenerateKeyInput(Key.RightArrow));
-        Assert.Equal("\x1BOD", terminal.GenerateKeyInput(Key.LeftArrow));
+        terminal.GenerateKeyInput(Key.UpArrow).Should().Be("\x1BOA");
+        terminal.GenerateKeyInput(Key.DownArrow).Should().Be("\x1BOB");
+        terminal.GenerateKeyInput(Key.RightArrow).Should().Be("\x1BOC");
+        terminal.GenerateKeyInput(Key.LeftArrow).Should().Be("\x1BOD");
     }
 
-    [Fact]
+    [TestMethod]
     public void ArrowKeys_WithShift_GenerateModifiedSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[1;2A", terminal.GenerateKeyInput(Key.UpArrow, KeyModifiers.Shift));
-        Assert.Equal("\x1B[1;2B", terminal.GenerateKeyInput(Key.DownArrow, KeyModifiers.Shift));
+        terminal.GenerateKeyInput(Key.UpArrow, KeyModifiers.Shift).Should().Be("\x1B[1;2A");
+        terminal.GenerateKeyInput(Key.DownArrow, KeyModifiers.Shift).Should().Be("\x1B[1;2B");
     }
 
-    [Fact]
+    [TestMethod]
     public void ArrowKeys_WithControl_GenerateModifiedSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[1;5A", terminal.GenerateKeyInput(Key.UpArrow, KeyModifiers.Control));
-        Assert.Equal("\x1B[1;5D", terminal.GenerateKeyInput(Key.LeftArrow, KeyModifiers.Control));
+        terminal.GenerateKeyInput(Key.UpArrow, KeyModifiers.Control).Should().Be("\x1B[1;5A");
+        terminal.GenerateKeyInput(Key.LeftArrow, KeyModifiers.Control).Should().Be("\x1B[1;5D");
     }
 
-    [Fact]
+    [TestMethod]
     public void ArrowKeys_WithAlt_GenerateModifiedSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[1;3A", terminal.GenerateKeyInput(Key.UpArrow, KeyModifiers.Alt));
+        terminal.GenerateKeyInput(Key.UpArrow, KeyModifiers.Alt).Should().Be("\x1B[1;3A");
     }
 
-    [Fact]
+    [TestMethod]
     public void ArrowKeys_WithMultipleModifiers_GenerateCorrectCode()
     {
         // Arrange
@@ -86,121 +88,121 @@ public class KeyboardInputTests
 
         // Assert - Control (4) + Shift (1) + 1 = 6
         var expected = "\x1B[1;6A";
-        Assert.Equal(expected, sequence);
+        sequence.Should().Be(expected);
     }
 
     #endregion
 
     #region Function Keys
 
-    [Fact]
+    [TestMethod]
     public void FunctionKeys_F1ToF4_GenerateSS3Sequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1BOP", terminal.GenerateKeyInput(Key.F1));
-        Assert.Equal("\x1BOQ", terminal.GenerateKeyInput(Key.F2));
-        Assert.Equal("\x1BOR", terminal.GenerateKeyInput(Key.F3));
-        Assert.Equal("\x1BOS", terminal.GenerateKeyInput(Key.F4));
+        terminal.GenerateKeyInput(Key.F1).Should().Be("\x1BOP");
+        terminal.GenerateKeyInput(Key.F2).Should().Be("\x1BOQ");
+        terminal.GenerateKeyInput(Key.F3).Should().Be("\x1BOR");
+        terminal.GenerateKeyInput(Key.F4).Should().Be("\x1BOS");
     }
 
-    [Fact]
+    [TestMethod]
     public void FunctionKeys_F5ToF12_GenerateCSISequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[15~", terminal.GenerateKeyInput(Key.F5));
-        Assert.Equal("\x1B[17~", terminal.GenerateKeyInput(Key.F6));
-        Assert.Equal("\x1B[18~", terminal.GenerateKeyInput(Key.F7));
-        Assert.Equal("\x1B[19~", terminal.GenerateKeyInput(Key.F8));
-        Assert.Equal("\x1B[20~", terminal.GenerateKeyInput(Key.F9));
-        Assert.Equal("\x1B[21~", terminal.GenerateKeyInput(Key.F10));
-        Assert.Equal("\x1B[23~", terminal.GenerateKeyInput(Key.F11));
-        Assert.Equal("\x1B[24~", terminal.GenerateKeyInput(Key.F12));
+        terminal.GenerateKeyInput(Key.F5).Should().Be("\x1B[15~");
+        terminal.GenerateKeyInput(Key.F6).Should().Be("\x1B[17~");
+        terminal.GenerateKeyInput(Key.F7).Should().Be("\x1B[18~");
+        terminal.GenerateKeyInput(Key.F8).Should().Be("\x1B[19~");
+        terminal.GenerateKeyInput(Key.F9).Should().Be("\x1B[20~");
+        terminal.GenerateKeyInput(Key.F10).Should().Be("\x1B[21~");
+        terminal.GenerateKeyInput(Key.F11).Should().Be("\x1B[23~");
+        terminal.GenerateKeyInput(Key.F12).Should().Be("\x1B[24~");
     }
 
-    [Fact]
+    [TestMethod]
     public void FunctionKeys_F13ToF20_GenerateExtendedSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[25~", terminal.GenerateKeyInput(Key.F13));
-        Assert.Equal("\x1B[26~", terminal.GenerateKeyInput(Key.F14));
-        Assert.Equal("\x1B[28~", terminal.GenerateKeyInput(Key.F15));
-        Assert.Equal("\x1B[29~", terminal.GenerateKeyInput(Key.F16));
-        Assert.Equal("\x1B[31~", terminal.GenerateKeyInput(Key.F17));
-        Assert.Equal("\x1B[32~", terminal.GenerateKeyInput(Key.F18));
-        Assert.Equal("\x1B[33~", terminal.GenerateKeyInput(Key.F19));
-        Assert.Equal("\x1B[34~", terminal.GenerateKeyInput(Key.F20));
+        terminal.GenerateKeyInput(Key.F13).Should().Be("\x1B[25~");
+        terminal.GenerateKeyInput(Key.F14).Should().Be("\x1B[26~");
+        terminal.GenerateKeyInput(Key.F15).Should().Be("\x1B[28~");
+        terminal.GenerateKeyInput(Key.F16).Should().Be("\x1B[29~");
+        terminal.GenerateKeyInput(Key.F17).Should().Be("\x1B[31~");
+        terminal.GenerateKeyInput(Key.F18).Should().Be("\x1B[32~");
+        terminal.GenerateKeyInput(Key.F19).Should().Be("\x1B[33~");
+        terminal.GenerateKeyInput(Key.F20).Should().Be("\x1B[34~");
     }
 
-    [Fact]
+    [TestMethod]
     public void FunctionKeys_WithShift_GenerateModifiedSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[1;2P", terminal.GenerateKeyInput(Key.F1, KeyModifiers.Shift));
-        Assert.Equal("\x1B[15;2~", terminal.GenerateKeyInput(Key.F5, KeyModifiers.Shift));
+        terminal.GenerateKeyInput(Key.F1, KeyModifiers.Shift).Should().Be("\x1B[1;2P");
+        terminal.GenerateKeyInput(Key.F5, KeyModifiers.Shift).Should().Be("\x1B[15;2~");
     }
 
     #endregion
 
     #region Navigation Keys
 
-    [Fact]
+    [TestMethod]
     public void NavigationKeys_GenerateCorrectSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[H", terminal.GenerateKeyInput(Key.Home));
-        Assert.Equal("\x1B[F", terminal.GenerateKeyInput(Key.End));
-        Assert.Equal("\x1B[5~", terminal.GenerateKeyInput(Key.PageUp));
-        Assert.Equal("\x1B[6~", terminal.GenerateKeyInput(Key.PageDown));
-        Assert.Equal("\x1B[2~", terminal.GenerateKeyInput(Key.Insert));
-        Assert.Equal("\x1B[3~", terminal.GenerateKeyInput(Key.Delete));
+        terminal.GenerateKeyInput(Key.Home).Should().Be("\x1B[H");
+        terminal.GenerateKeyInput(Key.End).Should().Be("\x1B[F");
+        terminal.GenerateKeyInput(Key.PageUp).Should().Be("\x1B[5~");
+        terminal.GenerateKeyInput(Key.PageDown).Should().Be("\x1B[6~");
+        terminal.GenerateKeyInput(Key.Insert).Should().Be("\x1B[2~");
+        terminal.GenerateKeyInput(Key.Delete).Should().Be("\x1B[3~");
     }
 
-    [Fact]
+    [TestMethod]
     public void NavigationKeys_WithModifiers_GenerateModifiedSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x1B[1;2H", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift));
-        Assert.Equal("\x1B[5;5~", terminal.GenerateKeyInput(Key.PageUp, KeyModifiers.Control));
-        Assert.Equal("\x1B[3;3~", terminal.GenerateKeyInput(Key.Delete, KeyModifiers.Alt));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift).Should().Be("\x1B[1;2H");
+        terminal.GenerateKeyInput(Key.PageUp, KeyModifiers.Control).Should().Be("\x1B[5;5~");
+        terminal.GenerateKeyInput(Key.Delete, KeyModifiers.Alt).Should().Be("\x1B[3;3~");
     }
 
     #endregion
 
     #region Control Keys
 
-    [Fact]
+    [TestMethod]
     public void ControlKeys_GenerateCorrectSequences()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\r", terminal.GenerateKeyInput(Key.Enter));
-        Assert.Equal("\t", terminal.GenerateKeyInput(Key.Tab));
-        Assert.Equal("\x7F", terminal.GenerateKeyInput(Key.Backspace)); // DEL
-        Assert.Equal("\x1B", terminal.GenerateKeyInput(Key.Escape));
-        Assert.Equal(" ", terminal.GenerateKeyInput(Key.Space));
+        terminal.GenerateKeyInput(Key.Enter).Should().Be("\r");
+        terminal.GenerateKeyInput(Key.Tab).Should().Be("\t");
+        terminal.GenerateKeyInput(Key.Backspace).Should().Be("\x7F"); // DEL
+        terminal.GenerateKeyInput(Key.Escape).Should().Be("\x1B");
+        terminal.GenerateKeyInput(Key.Space).Should().Be(" ");
     }
 
-    [Fact]
+    [TestMethod]
     public void Tab_WithShift_GeneratesBackTab()
     {
         // Arrange
@@ -210,14 +212,14 @@ public class KeyboardInputTests
         var sequence = terminal.GenerateKeyInput(Key.Tab, KeyModifiers.Shift);
 
         // Assert
-        Assert.Equal("\x1B[Z", sequence);
+        sequence.Should().Be("\x1B[Z");
     }
 
     #endregion
 
     #region Keypad Keys
 
-    [Fact]
+    [TestMethod]
     public void KeypadKeys_NormalMode_GenerateNumericCharacters()
     {
         // Arrange
@@ -225,13 +227,13 @@ public class KeyboardInputTests
         terminal.ApplicationKeypad = false;
 
         // Act & Assert
-        Assert.Equal("0", terminal.GenerateKeyInput(Key.Keypad0));
-        Assert.Equal("5", terminal.GenerateKeyInput(Key.Keypad5));
-        Assert.Equal("9", terminal.GenerateKeyInput(Key.Keypad9));
-        Assert.Equal(".", terminal.GenerateKeyInput(Key.KeypadDecimal));
+        terminal.GenerateKeyInput(Key.Keypad0).Should().Be("0");
+        terminal.GenerateKeyInput(Key.Keypad5).Should().Be("5");
+        terminal.GenerateKeyInput(Key.Keypad9).Should().Be("9");
+        terminal.GenerateKeyInput(Key.KeypadDecimal).Should().Be(".");
     }
 
-    [Fact]
+    [TestMethod]
     public void KeypadKeys_ApplicationMode_GenerateEscapeSequences()
     {
         // Arrange
@@ -239,74 +241,74 @@ public class KeyboardInputTests
         terminal.ApplicationKeypad = true;
 
         // Act & Assert
-        Assert.Equal("\x1BOp", terminal.GenerateKeyInput(Key.Keypad0));
-        Assert.Equal("\x1BOu", terminal.GenerateKeyInput(Key.Keypad5));
-        Assert.Equal("\x1BOy", terminal.GenerateKeyInput(Key.Keypad9));
-        Assert.Equal("\x1BOn", terminal.GenerateKeyInput(Key.KeypadDecimal));
+        terminal.GenerateKeyInput(Key.Keypad0).Should().Be("\x1BOp");
+        terminal.GenerateKeyInput(Key.Keypad5).Should().Be("\x1BOu");
+        terminal.GenerateKeyInput(Key.Keypad9).Should().Be("\x1BOy");
+        terminal.GenerateKeyInput(Key.KeypadDecimal).Should().Be("\x1BOn");
     }
 
-    [Fact]
+    [TestMethod]
     public void KeypadOperators_GenerateCorrectCharacters()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("/", terminal.GenerateKeyInput(Key.KeypadDivide));
-        Assert.Equal("*", terminal.GenerateKeyInput(Key.KeypadMultiply));
-        Assert.Equal("-", terminal.GenerateKeyInput(Key.KeypadSubtract));
-        Assert.Equal("+", terminal.GenerateKeyInput(Key.KeypadAdd));
-        Assert.Equal("\r", terminal.GenerateKeyInput(Key.KeypadEnter));
+        terminal.GenerateKeyInput(Key.KeypadDivide).Should().Be("/");
+        terminal.GenerateKeyInput(Key.KeypadMultiply).Should().Be("*");
+        terminal.GenerateKeyInput(Key.KeypadSubtract).Should().Be("-");
+        terminal.GenerateKeyInput(Key.KeypadAdd).Should().Be("+");
+        terminal.GenerateKeyInput(Key.KeypadEnter).Should().Be("\r");
     }
 
     #endregion
 
     #region Character Input
 
-    [Fact]
+    [TestMethod]
     public void CharInput_PlainCharacter_ReturnsCharacter()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("a", terminal.GenerateCharInput('a'));
-        Assert.Equal("Z", terminal.GenerateCharInput('Z'));
-        Assert.Equal("5", terminal.GenerateCharInput('5'));
-        Assert.Equal("@", terminal.GenerateCharInput('@'));
+        terminal.GenerateCharInput('a').Should().Be("a");
+        terminal.GenerateCharInput('Z').Should().Be("Z");
+        terminal.GenerateCharInput('5').Should().Be("5");
+        terminal.GenerateCharInput('@').Should().Be("@");
     }
 
-    [Fact]
+    [TestMethod]
     public void CharInput_WithControl_GeneratesControlCharacter()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x01", terminal.GenerateCharInput('a', KeyModifiers.Control)); // Ctrl+A
-        Assert.Equal("\x03", terminal.GenerateCharInput('c', KeyModifiers.Control)); // Ctrl+C
-        Assert.Equal("\x1A", terminal.GenerateCharInput('z', KeyModifiers.Control)); // Ctrl+Z
-        Assert.Equal("\x01", terminal.GenerateCharInput('A', KeyModifiers.Control)); // Ctrl+A (uppercase)
+        terminal.GenerateCharInput('a', KeyModifiers.Control).Should().Be("\x01"); // Ctrl+A
+        terminal.GenerateCharInput('c', KeyModifiers.Control).Should().Be("\x03"); // Ctrl+C
+        terminal.GenerateCharInput('z', KeyModifiers.Control).Should().Be("\x1A"); // Ctrl+Z
+        terminal.GenerateCharInput('A', KeyModifiers.Control).Should().Be("\x01"); // Ctrl+A (uppercase)
     }
 
-    [Fact]
+    [TestMethod]
     public void CharInput_ControlSpecialCharacters_GenerateCorrectCodes()
     {
         // Arrange
         var terminal = CreateTerminal();
 
         // Act & Assert
-        Assert.Equal("\x00", terminal.GenerateCharInput(' ', KeyModifiers.Control)); // Ctrl+Space = NUL
-        Assert.Equal("\x00", terminal.GenerateCharInput('@', KeyModifiers.Control)); // Ctrl+@ = NUL
-        Assert.Equal("\x1B", terminal.GenerateCharInput('[', KeyModifiers.Control)); // Ctrl+[ = ESC
-        Assert.Equal("\x1C", terminal.GenerateCharInput('\\', KeyModifiers.Control)); // Ctrl+\ = FS
-        Assert.Equal("\x1D", terminal.GenerateCharInput(']', KeyModifiers.Control)); // Ctrl+] = GS
-        Assert.Equal("\x1E", terminal.GenerateCharInput('^', KeyModifiers.Control)); // Ctrl+^ = RS
-        Assert.Equal("\x1F", terminal.GenerateCharInput('_', KeyModifiers.Control)); // Ctrl+_ = US
-        Assert.Equal("\x7F", terminal.GenerateCharInput('?', KeyModifiers.Control)); // Ctrl+? = DEL
+        terminal.GenerateCharInput(' ', KeyModifiers.Control).Should().Be("\x00"); // Ctrl+Space = NUL
+        terminal.GenerateCharInput('@', KeyModifiers.Control).Should().Be("\x00"); // Ctrl+@ = NUL
+        terminal.GenerateCharInput('[', KeyModifiers.Control).Should().Be("\x1B"); // Ctrl+[ = ESC
+        terminal.GenerateCharInput('\\', KeyModifiers.Control).Should().Be("\x1C"); // Ctrl+\ = FS
+        terminal.GenerateCharInput(']', KeyModifiers.Control).Should().Be("\x1D"); // Ctrl+] = GS
+        terminal.GenerateCharInput('^', KeyModifiers.Control).Should().Be("\x1E"); // Ctrl+^ = RS
+        terminal.GenerateCharInput('_', KeyModifiers.Control).Should().Be("\x1F"); // Ctrl+_ = US
+        terminal.GenerateCharInput('?', KeyModifiers.Control).Should().Be("\x7F"); // Ctrl+? = DEL
     }
 
-    [Fact]
+    [TestMethod]
     public void CharInput_WithAlt_GeneratesEscapePrefix()
     {
         // Arrange
@@ -314,20 +316,20 @@ public class KeyboardInputTests
 
         // Act & Assert
         var expected = "\u001ba";
-        Assert.Equal(expected, terminal.GenerateCharInput('a', KeyModifiers.Alt)); // Alt+a
+        terminal.GenerateCharInput('a', KeyModifiers.Alt).Should().Be(expected); // Alt+a
         
         expected = "\u001bX";
-        Assert.Equal(expected, terminal.GenerateCharInput('X', KeyModifiers.Alt)); // Alt+X
+        terminal.GenerateCharInput('X', KeyModifiers.Alt).Should().Be(expected); // Alt+X
         
         expected = "\u001b1";
-        Assert.Equal(expected, terminal.GenerateCharInput('1', KeyModifiers.Alt)); // Alt+1
+        terminal.GenerateCharInput('1', KeyModifiers.Alt).Should().Be(expected); // Alt+1
     }
 
     #endregion
 
     #region Mode Changes
 
-    [Fact]
+    [TestMethod]
     public void KeyboardInput_AfterModeChange_ReflectsNewMode()
     {
         // Arrange
@@ -341,11 +343,11 @@ public class KeyboardInputTests
         var appSequence = terminal.GenerateKeyInput(Key.UpArrow);
 
         // Assert
-        Assert.Equal("\x1B[A", normalSequence);
-        Assert.Equal("\x1BOA", appSequence);
+        normalSequence.Should().Be("\x1B[A");
+        appSequence.Should().Be("\x1BOA");
     }
 
-    [Fact]
+    [TestMethod]
     public void KeypadInput_AfterModeChange_ReflectsNewMode()
     {
         // Arrange
@@ -359,15 +361,15 @@ public class KeyboardInputTests
         var appSequence = terminal.GenerateKeyInput(Key.Keypad5);
 
         // Assert
-        Assert.Equal("5", numericSequence);
-        Assert.Equal("\x1BOu", appSequence);
+        numericSequence.Should().Be("5");
+        appSequence.Should().Be("\x1BOu");
     }
 
     #endregion
 
     #region Modifier Encoding
 
-    [Fact]
+    [TestMethod]
     public void Modifiers_SingleModifier_GeneratesCorrectCode()
     {
         // Arrange
@@ -375,14 +377,14 @@ public class KeyboardInputTests
 
         // Act & Assert
         // Shift = 1 + 1 = 2
-        Assert.Contains(";2", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift).Should().Contain(";2");
         // Alt = 1 + 2 = 3
-        Assert.Contains(";3", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Alt));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Alt).Should().Contain(";3");
         // Control = 1 + 4 = 5
-        Assert.Contains(";5", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Control));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Control).Should().Contain(";5");
     }
 
-    [Fact]
+    [TestMethod]
     public void Modifiers_CombinedModifiers_GeneratesCorrectCode()
     {
         // Arrange
@@ -390,20 +392,20 @@ public class KeyboardInputTests
 
         // Act & Assert
         // Shift + Alt = 1 + 1 + 2 = 4
-        Assert.Contains(";4", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift | KeyModifiers.Alt));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift | KeyModifiers.Alt).Should().Contain(";4");
         // Shift + Control = 1 + 1 + 4 = 6
-        Assert.Contains(";6", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift | KeyModifiers.Control));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift | KeyModifiers.Control).Should().Contain(";6");
         // Alt + Control = 1 + 2 + 4 = 7
-        Assert.Contains(";7", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Alt | KeyModifiers.Control));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Alt | KeyModifiers.Control).Should().Contain(";7");
         // All = 1 + 1 + 2 + 4 = 8
-        Assert.Contains(";8", terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift | KeyModifiers.Alt | KeyModifiers.Control));
+        terminal.GenerateKeyInput(Key.Home, KeyModifiers.Shift | KeyModifiers.Alt | KeyModifiers.Control).Should().Contain(";8");
     }
 
     #endregion
 
     #region Edge Cases
 
-    [Fact]
+    [TestMethod]
     public void EmptyKey_DoesNotCrash()
     {
         // Arrange
@@ -413,10 +415,10 @@ public class KeyboardInputTests
         var result = terminal.GenerateKeyInput((Key)999); // Invalid key
 
         // Assert - Should not throw
-        Assert.NotNull(result);
+        result.Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void AllKeys_GenerateNonEmptySequences()
     {
         // Arrange
@@ -426,13 +428,13 @@ public class KeyboardInputTests
         foreach (Key key in Enum.GetValues(typeof(Key)))
         {
             var sequence = terminal.GenerateKeyInput(key);
-            Assert.NotNull(sequence);
+            sequence.Should().NotBeNull();
             // Most keys should generate non-empty sequences
             // (except potentially invalid ones)
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void ModifierCombinations_AllCombinations_WorkCorrectly()
     {
         // Arrange
@@ -443,8 +445,8 @@ public class KeyboardInputTests
         {
             var mods = (KeyModifiers)i;
             var sequence = terminal.GenerateKeyInput(Key.Home, mods);
-            Assert.NotNull(sequence);
-            Assert.NotEmpty(sequence);
+            sequence.Should().NotBeNull();
+            sequence.Should().NotBeEmpty();
         }
     }
 

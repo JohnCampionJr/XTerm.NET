@@ -13,6 +13,7 @@ namespace XTerm.Tests.Graphics;
 /// covers. Without that it can only assume the image's natural metric -- which drew every stretched
 /// picture at its own size instead: striped when blown up, clipped when shrunk. Tom's #114.</para>
 /// </summary>
+[TestClass]
 public class PlacementScalingTests
 {
     private const string Esc = "";
@@ -41,7 +42,7 @@ public class PlacementScalingTests
     private static LinePlacement FirstPlacement(Terminal terminal, int screenRow)
         => terminal.Buffer.Lines[terminal.Buffer.YBase + screenRow]!.Placements.First();
 
-    [Fact]
+    [TestMethod]
     public void A_stretched_placement_carries_its_boxs_pixels_per_cell()
     {
         // An 8x9 picture stretched into a 2x3 cell box: each cell covers 4x3 source pixels,
@@ -52,11 +53,11 @@ public class PlacementScalingTests
 
         var strip = FirstPlacement(terminal, 0);
 
-        Assert.Equal(8f / 2, strip.PxPerCellX);
-        Assert.Equal(9f / 3, strip.PxPerCellY);
+        strip.PxPerCellX.Should().Be(8f / 2);
+        strip.PxPerCellY.Should().Be(9f / 3);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_natural_placement_carries_zero_meaning_the_images_own_metric()
     {
         // Zero rather than the cell metric itself, so a renderer can tell "natural" apart from
@@ -68,11 +69,11 @@ public class PlacementScalingTests
 
         var strip = FirstPlacement(terminal, 0);
 
-        Assert.Equal(0f, strip.PxPerCellX);
-        Assert.Equal(0f, strip.PxPerCellY);
+        strip.PxPerCellX.Should().Be(0f);
+        strip.PxPerCellY.Should().Be(0f);
     }
 
-    [Fact]
+    [TestMethod]
     public void Slicing_a_run_keeps_the_scaling_context()
     {
         // Sixel runs are split when text prints into them; the surviving parts must keep drawing
@@ -84,7 +85,7 @@ public class PlacementScalingTests
 
         var right = placement.TruncatedAfter(3);
 
-        Assert.Equal(4f, right.PxPerCellX);
-        Assert.Equal(3f, right.PxPerCellY);
+        right.PxPerCellX.Should().Be(4f);
+        right.PxPerCellY.Should().Be(3f);
     }
 }

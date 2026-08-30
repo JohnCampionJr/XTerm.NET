@@ -1,7 +1,6 @@
 using System.Text;
 using XTerm;
 using XTerm.Options;
-using Xunit;
 
 namespace XTerm.Tests;
 
@@ -16,61 +15,62 @@ namespace XTerm.Tests;
 /// Every case here is run through both paths and the resulting buffers compared cell by cell, with
 /// UseRunPrinting as the only difference between them.
 /// </summary>
+[TestClass]
 public class RunPrintingParityTests
 {
     private const int Cols = 20;
     private const int Rows = 5;
 
-    public static TheoryData<string, string> Cases() => new()
+    public static IEnumerable<object[]> Cases() => new[]
     {
-        { "short", "hello" },
-        { "exactly one line", new string('a', Cols) },
-        { "one past a line", new string('b', Cols + 1) },
-        { "several lines", new string('c', Cols * 3 + 7) },
-        { "more than the screen", new string('d', Cols * Rows * 2 + 3) },
-        { "run then control", new string('e', Cols - 2) + "\r\n" + "tail" },
-        { "control mid-run", "abc\rdef" },
-        { "newline mid-run", "abc\ndef" },
-        { "tab mid-run", "abc\tdef" },
-        { "backspace mid-run", "abcd\b\bxy" },
-        { "sgr between runs", "aaa\u001b[31mbbb\u001b[0mccc" },
-        { "wrap exactly at sgr", new string('f', Cols) + "\u001b[32m" + new string('g', 5) },
-        { "cursor move mid-run", "aaaa\u001b[3;5Hbbbb" },
-        { "DEL and C1 in a run", "abcdef" },
-        { "non-ascii splits the run", "abc世界def" },
-        { "emoji splits the run", "abc\U0001F600def" },
-        { "combining after a run", "abcéfg" },
-        { "scroll region", "\u001b[2;4r" + new string('h', Cols * 6) },
-        { "wraparound off", "\u001b[?7l" + new string('i', Cols * 2) },
-        { "wraparound back on", "\u001b[?7l" + new string('j', Cols + 5) + "\u001b[?7h" + new string('k', Cols + 5) },
-        { "insert mode", "\u001b[4h" + "abcdef" + "\u001b[2G" + "XYZ" },
-        { "line drawing charset", "\u001b(0" + "abcdefg" + "\u001b(B" + "hijk" },
-        { "shift out and in", "abcdefghi" },
-        { "empty write", "" },
+        new object[] { "short", "hello" },
+        new object[] { "exactly one line", new string('a', Cols) },
+        new object[] { "one past a line", new string('b', Cols + 1) },
+        new object[] { "several lines", new string('c', Cols * 3 + 7) },
+        new object[] { "more than the screen", new string('d', Cols * Rows * 2 + 3) },
+        new object[] { "run then control", new string('e', Cols - 2) + "\r\n" + "tail" },
+        new object[] { "control mid-run", "abc\rdef" },
+        new object[] { "newline mid-run", "abc\ndef" },
+        new object[] { "tab mid-run", "abc\tdef" },
+        new object[] { "backspace mid-run", "abcd\b\bxy" },
+        new object[] { "sgr between runs", "aaa\u001b[31mbbb\u001b[0mccc" },
+        new object[] { "wrap exactly at sgr", new string('f', Cols) + "\u001b[32m" + new string('g', 5) },
+        new object[] { "cursor move mid-run", "aaaa\u001b[3;5Hbbbb" },
+        new object[] { "DEL and C1 in a run", "abcdef" },
+        new object[] { "non-ascii splits the run", "abc世界def" },
+        new object[] { "emoji splits the run", "abc\U0001F600def" },
+        new object[] { "combining after a run", "abcéfg" },
+        new object[] { "scroll region", "\u001b[2;4r" + new string('h', Cols * 6) },
+        new object[] { "wraparound off", "\u001b[?7l" + new string('i', Cols * 2) },
+        new object[] { "wraparound back on", "\u001b[?7l" + new string('j', Cols + 5) + "\u001b[?7h" + new string('k', Cols + 5) },
+        new object[] { "insert mode", "\u001b[4h" + "abcdef" + "\u001b[2G" + "XYZ" },
+        new object[] { "line drawing charset", "\u001b(0" + "abcdefg" + "\u001b(B" + "hijk" },
+        new object[] { "shift out and in", "abcdefghi" },
+        new object[] { "empty write", "" },
     };
 
-    [Theory]
-    [MemberData(nameof(Cases))]
+    [TestMethod]
+    [DynamicData(nameof(Cases))]
     public void Batched_and_per_character_printing_agree(string name, string input)
     {
         var batched = Run(input, useRunPrinting: true);
         var perChar = Run(input, useRunPrinting: false);
 
-        Assert.True(batched == perChar, $"'{name}' diverged.\n--- batched ---\n{batched}\n--- per character ---\n{perChar}");
+        ((batched == perChar)).Should().BeTrue($"'{name}' diverged.\n--- batched ---\n{batched}\n--- per character ---\n{perChar}");
     }
 
     /// <summary>
     /// Also feed each case in one-character writes. Chunk boundaries fall in different places than a
     /// single write, so a run that assumed it saw a whole line at once would show up here.
     /// </summary>
-    [Theory]
-    [MemberData(nameof(Cases))]
+    [TestMethod]
+    [DynamicData(nameof(Cases))]
     public void Chunking_does_not_change_the_result(string name, string input)
     {
         var whole = Run(input, useRunPrinting: true);
         var chunked = Run(input, useRunPrinting: true, chunkSize: 1);
 
-        Assert.True(whole == chunked, $"'{name}' diverged on chunking.\n--- one write ---\n{whole}\n--- char at a time ---\n{chunked}");
+        ((whole == chunked)).Should().BeTrue($"'{name}' diverged on chunking.\n--- one write ---\n{whole}\n--- char at a time ---\n{chunked}");
     }
 
     private static string Run(string input, bool useRunPrinting, int chunkSize = 0)

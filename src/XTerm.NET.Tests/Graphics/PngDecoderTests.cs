@@ -19,6 +19,7 @@ namespace XTerm.Tests.Graphics;
 /// <para>System.Drawing is deliberately not used at runtime — it is Windows-only since .NET 6 and
 /// CI runs on Linux.</para>
 /// </summary>
+[TestClass]
 public class PngDecoderTests
 {
     private const long NoLimit = 1_000_000;
@@ -54,12 +55,12 @@ public class PngDecoderTests
         (220, 150, 200, 210),(241, 185, 77, 230), (22, 220, 154, 250), (0, 0, 0, 0),        (0, 0, 0, 0)
     };
 
-    [Fact]
+    [TestMethod]
     public void A_png_from_a_real_encoder_decodes_to_the_pixels_it_holds()
     {
-        Assert.True(TryDecode(RealPng, out var pixels, out var width, out var height));
-        Assert.Equal((5, 3), (width, height));
-        Assert.Equal(5 * 3 * 4, pixels.Length);
+        TryDecode(RealPng, out var pixels, out var width, out var height).Should().BeTrue();
+        (width, height).Should().Be((5, 3));
+        pixels.Length.Should().Be(5 * 3 * 4);
 
         for (int y = 0; y < height; y++)
         {
@@ -67,8 +68,7 @@ public class PngDecoderTests
             {
                 var expected = RealPngPixels[y * width + x];
                 var actual = Pixel(pixels, width, x, y);
-                Assert.True(actual == expected,
-                    $"pixel ({x},{y}) decoded as {actual}, expected {expected}");
+                ((actual == expected)).Should().BeTrue($"pixel ({x},{y}) decoded as {actual}, expected {expected}");
             }
         }
     }
@@ -77,14 +77,14 @@ public class PngDecoderTests
     /// Alpha has to survive. A Kitty image is composited over the cell behind it, so a decoder that
     /// quietly forced everything opaque would look right until something transparent arrived.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Transparency_survives()
     {
-        Assert.True(TryDecode(RealPng, out var pixels, out var width, out _));
+        TryDecode(RealPng, out var pixels, out var width, out _).Should().BeTrue();
 
-        Assert.Equal((byte)10, Pixel(pixels, width, 0, 0).A);   // barely there
-        Assert.Equal((byte)250, Pixel(pixels, width, 2, 2).A);  // nearly solid
-        Assert.Equal((byte)0, Pixel(pixels, width, 3, 2).A);    // gone entirely
+        (Pixel(pixels, width, 0, 0).A).Should().Be((byte)10);   // barely there
+        (Pixel(pixels, width, 2, 2).A).Should().Be((byte)250);  // nearly solid
+        (Pixel(pixels, width, 3, 2).A).Should().Be((byte)0);    // gone entirely
     }
 
     // ---- every scanline filter, one at a time ---------------------------------------------------
@@ -94,21 +94,20 @@ public class PngDecoderTests
     /// different neighbours — left, above, both, or the Paeth predictor of all three. An encoder
     /// picks them by heuristic, so the only way to be sure each path works is to demand it.
     /// </summary>
-    [Theory]
-    [InlineData(0, "None")]
-    [InlineData(1, "Sub")]
-    [InlineData(2, "Up")]
-    [InlineData(3, "Average")]
-    [InlineData(4, "Paeth")]
+    [TestMethod]
+    [DataRow((byte)0, "None")]
+    [DataRow((byte)1, "Sub")]
+    [DataRow((byte)2, "Up")]
+    [DataRow((byte)3, "Average")]
+    [DataRow((byte)4, "Paeth")]
     public void Every_scanline_filter_reconstructs_the_original(byte filter, string name)
     {
         var (source, width, height) = Gradient(9, 7);
 
         var png = Encode(source, width, height, filter);
 
-        Assert.True(TryDecode(png, out var pixels, out var decodedWidth, out var decodedHeight),
-            $"filter {name} did not decode at all");
-        Assert.Equal((width, height), (decodedWidth, decodedHeight));
+        TryDecode(png, out var pixels, out var decodedWidth, out var decodedHeight).Should().BeTrue($"filter {name} did not decode at all");
+        (decodedWidth, decodedHeight).Should().Be((width, height));
 
         for (int y = 0; y < height; y++)
         {
@@ -117,8 +116,7 @@ public class PngDecoderTests
                 var at = (y * width + x) * 4;
                 var expected = (source[at], source[at + 1], source[at + 2], source[at + 3]);
                 var actual = Pixel(pixels, width, x, y);
-                Assert.True(actual == expected,
-                    $"filter {name}: pixel ({x},{y}) came back {actual}, expected {expected}");
+                ((actual == expected)).Should().BeTrue($"filter {name}: pixel ({x},{y}) came back {actual}, expected {expected}");
             }
         }
     }
@@ -151,10 +149,10 @@ public class PngDecoderTests
     /// an encoder written by the same hand, and a shared misreading of the predictor would cancel
     /// out and pass.
     /// </remarks>
-    [Theory]
-    [InlineData(3, "Average", new byte[] { 3, 10, 20, 30, 40, 45, 50, 55, 60,
+    [TestMethod]
+    [DataRow((byte)3, "Average", new byte[] { 3, 10, 20, 30, 40, 45, 50, 55, 60,
                                            3, 85, 90, 95, 100, 60, 60, 60, 60 })]
-    [InlineData(4, "Paeth", new byte[] { 4, 10, 20, 30, 40, 40, 40, 40, 40,
+    [DataRow((byte)4, "Paeth", new byte[] { 4, 10, 20, 30, 40, 40, 40, 40, 40,
                                          4, 80, 80, 80, 80, 40, 40, 40, 40 })]
     public void A_filter_computed_by_hand_reconstructs_the_original(byte filter, string name, byte[] scanlines)
     {
@@ -169,17 +167,15 @@ public class PngDecoderTests
 
         var png = WrapPng(scanlines, 2, 2);
 
-        Assert.True(TryDecode(png, out var pixels, out var width, out var height),
-            $"the hand-built {name} image did not decode");
-        Assert.Equal((2, 2), (width, height));
+        TryDecode(png, out var pixels, out var width, out var height).Should().BeTrue($"the hand-built {name} image did not decode");
+        (width, height).Should().Be((2, 2));
 
         for (int y = 0; y < 2; y++)
         {
             for (int x = 0; x < 2; x++)
             {
                 var actual = Pixel(pixels, width, x, y);
-                Assert.True(actual == expected[y * 2 + x],
-                    $"{name}: pixel ({x},{y}) came back {actual}, expected {expected[y * 2 + x]}");
+                ((actual == expected[y * 2 + x])).Should().BeTrue($"{name}: pixel ({x},{y}) came back {actual}, expected {expected[y * 2 + x]}");
             }
         }
     }
@@ -197,7 +193,7 @@ public class PngDecoderTests
     /// pa 10, pb 20, pc 10, and the tie decides between returning 80 and returning 100. Every other
     /// fixture in this file, and both icons in this repository, happen to avoid it.</para>
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void Paeth_breaks_a_tie_towards_the_left_neighbour()
     {
         // aboveLeft=100, above=110, left=80, and the pixel itself 200.
@@ -209,9 +205,8 @@ public class PngDecoderTests
 
         var png = WrapPng(scanlines, 2, 2);
 
-        Assert.True(TryDecode(png, out var pixels, out var width, out _));
-        Assert.True(Pixel(pixels, width, 1, 1) == ((byte)200, (byte)200, (byte)200, (byte)200),
-            $"the tie resolved the wrong way: got {Pixel(pixels, width, 1, 1)}, expected (200, 200, 200, 200). "
+        TryDecode(png, out var pixels, out var width, out _).Should().BeTrue();
+        (Pixel(pixels, width, 1, 1) == ((byte)200, (byte)200, (byte)200, (byte)200)).Should().BeTrue($"the tie resolved the wrong way: got {Pixel(pixels, width, 1, 1)}, expected (200, 200, 200, 200). "
             + "The predictor must prefer the left neighbour when the distances are equal.");
     }
 
@@ -221,14 +216,14 @@ public class PngDecoderTests
     /// The payload is untrusted output from another process. Every one of these means "no image",
     /// and none may escape as an exception.
     /// </summary>
-    [Theory]
-    [InlineData("empty")]
-    [InlineData("not a png at all")]
-    [InlineData("signature only")]
-    [InlineData("truncated mid-idat")]
-    [InlineData("header truncated")]
-    [InlineData("chunk longer than the file")]
-    [InlineData("corrupt compressed stream")]
+    [TestMethod]
+    [DataRow("empty")]
+    [DataRow("not a png at all")]
+    [DataRow("signature only")]
+    [DataRow("truncated mid-idat")]
+    [DataRow("header truncated")]
+    [DataRow("chunk longer than the file")]
+    [DataRow("corrupt compressed stream")]
     public void Malformed_input_is_refused_rather_than_thrown(string what)
     {
         var png = RealPng;
@@ -246,7 +241,7 @@ public class PngDecoderTests
 
         var exception = Record.Exception(() => TryDecode(data, out _, out _, out _));
 
-        Assert.True(exception is null, $"{what} threw instead of being refused: {exception}");
+        (exception is null).Should().BeTrue($"{what} threw instead of being refused: {exception}");
     }
 
     private static byte[] WithChunkLength(byte[] png, int length)
@@ -278,11 +273,11 @@ public class PngDecoderTests
     /// The header declares a size before any pixel data arrives, so an absurd one is refused before
     /// anything is allocated for it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_image_larger_than_the_budget_is_refused()
     {
-        Assert.False(TryDecode(RealPng, out _, out _, out _, maxPixels: 4));
-        Assert.True(TryDecode(RealPng, out _, out _, out _, maxPixels: 15));
+        TryDecode(RealPng, out _, out _, out _, maxPixels: 4).Should().BeFalse();
+        TryDecode(RealPng, out _, out _, out _, maxPixels: 15).Should().BeTrue();
     }
 
     /// <summary>
@@ -292,19 +287,19 @@ public class PngDecoderTests
     /// Eight by eight so that all seven passes carry data -- a smaller picture leaves some of them
     /// empty and the scatter arithmetic goes untested for those.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void An_interlaced_png_decodes_to_the_same_pixels_as_a_plain_one()
     {
         var (source, width, height) = Gradient(8, 8);
 
-        Assert.True(TryDecode(Encode(source, width, height, filter: 0),
-                              out var plain, out _, out _));
-        Assert.True(TryDecode(EncodeInterlaced(source, width, height),
-                              out var interlaced, out var w, out var h));
+        TryDecode(Encode(source, width, height, filter: 0),
+                              out var plain, out _, out _).Should().BeTrue();
+        TryDecode(EncodeInterlaced(source, width, height),
+                              out var interlaced, out var w, out var h).Should().BeTrue();
 
-        Assert.Equal(8, w);
-        Assert.Equal(8, h);
-        Assert.Equal(plain, interlaced);
+        w.Should().Be(8);
+        h.Should().Be(8);
+        interlaced.Should().Equal(plain);
     }
 
     /// <summary>
@@ -312,38 +307,38 @@ public class PngDecoderTests
     /// all, not even a filter byte -- counting one would shift every later pass and turn the rest of
     /// the image into noise.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_interlaced_png_with_empty_passes_still_decodes()
     {
         var (source, width, height) = Gradient(2, 2);
 
-        Assert.True(TryDecode(Encode(source, width, height, filter: 0), out var plain, out _, out _));
-        Assert.True(TryDecode(EncodeInterlaced(source, width, height), out var interlaced, out _, out _));
+        TryDecode(Encode(source, width, height, filter: 0), out var plain, out _, out _).Should().BeTrue();
+        TryDecode(EncodeInterlaced(source, width, height), out var interlaced, out _, out _).Should().BeTrue();
 
-        Assert.Equal(plain, interlaced);
+        interlaced.Should().Equal(plain);
     }
 
     /// <summary>
     /// The interlace flag set over scanlines that are not interlaced. The pass lengths cannot match,
     /// and a picture decoded from misread bytes would be worse than an error reply.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_png_claiming_interlace_it_does_not_have_is_refused()
     {
         var (source, width, height) = Gradient(8, 8);
         var png = Encode(source, width, height, filter: 0, interlace: 1);
 
-        Assert.False(TryDecode(png, out _, out _, out _));
+        TryDecode(png, out _, out _, out _).Should().BeFalse();
     }
 
     /// <summary>An interlace method that does not exist is refused rather than guessed at.</summary>
-    [Fact]
+    [TestMethod]
     public void An_unknown_interlace_method_is_refused()
     {
         var (source, width, height) = Gradient(4, 4);
         var png = Encode(source, width, height, filter: 0, interlace: 2);
 
-        Assert.False(TryDecode(png, out _, out _, out _));
+        TryDecode(png, out _, out _, out _).Should().BeFalse();
     }
 
     /// <summary>

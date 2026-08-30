@@ -15,6 +15,7 @@ namespace XTerm.Tests.Graphics;
 /// different in kind and keeps its replace-on-write, which <see cref="KittyOverlapTests"/> checks
 /// from the other side.</para>
 /// </summary>
+[TestClass]
 public class KittyZIndexTests
 {
     private const string Esc = "\u001b";
@@ -56,34 +57,32 @@ public class KittyZIndexTests
     // ---- ordering between pictures ----------------------------------------------------------------
 
     /// <summary>The stack at a cell is ordered by z, front first.</summary>
-    [Fact]
+    [TestMethod]
     public void The_higher_z_picture_is_in_front()
     {
         var terminal = WithTwoImages();
         PlaceAt(terminal, 1, 0, 0, z: 1);
         PlaceAt(terminal, 2, 0, 0, z: 5);
 
-        Assert.Equal(new[] { 5, 1 },
-                     ImageAssertions.StackAt(terminal, 0, 0).Select(p => (int)p.ZIndex));
+        ImageAssertions.StackAt(terminal, 0, 0).Select(p => (int)p.ZIndex).Should().Equal(new[] { 5, 1 });
     }
 
     /// <summary>And the order does not depend on which arrived first.</summary>
-    [Fact]
+    [TestMethod]
     public void Order_is_by_z_not_by_arrival()
     {
         var terminal = WithTwoImages();
         PlaceAt(terminal, 1, 0, 0, z: 5);
         PlaceAt(terminal, 2, 0, 0, z: 1);
 
-        Assert.Equal(new[] { 5, 1 },
-                     ImageAssertions.StackAt(terminal, 0, 0).Select(p => (int)p.ZIndex));
+        ImageAssertions.StackAt(terminal, 0, 0).Select(p => (int)p.ZIndex).Should().Equal(new[] { 5, 1 });
     }
 
     /// <summary>
     /// At the same depth the newer picture is in front, which is Kitty's rule. Age is the order the
     /// runs were added to the line, so a stable sort on z alone expresses it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void At_equal_z_the_newer_picture_is_in_front()
     {
         var terminal = WithTwoImages();
@@ -93,30 +92,30 @@ public class KittyZIndexTests
         PlaceAt(terminal, 2, 0, 0, z: 3);
 
         var stack = ImageAssertions.StackAt(terminal, 0, 0);
-        Assert.Equal(2, stack.Count);
-        Assert.NotEqual(older, stack[0].Serial);
-        Assert.Equal(older, stack[1].Serial);
+        stack.Count.Should().Be(2);
+        stack[0].Serial.Should().NotBe(older);
+        stack[1].Serial.Should().Be(older);
     }
 
     /// <summary>
     /// Only the overlapping cells carry both. A picture beside another is one run, not two.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_partly_covered_picture_is_only_stacked_where_it_overlaps()
     {
         var terminal = WithTwoImages();
         PlaceAt(terminal, 1, 0, 0, z: 1);          // columns 0-1
         PlaceAt(terminal, 2, 1, 0, z: 5);          // columns 1-2
 
-        Assert.Single(ImageAssertions.StackAt(terminal, 0, 0));
-        Assert.Equal(2, ImageAssertions.StackAt(terminal, 1, 0).Count);
-        Assert.Single(ImageAssertions.StackAt(terminal, 2, 0));
+        ImageAssertions.StackAt(terminal, 0, 0).Should().ContainSingle();
+        (ImageAssertions.StackAt(terminal, 1, 0).Count).Should().Be(2);
+        ImageAssertions.StackAt(terminal, 2, 0).Should().ContainSingle();
     }
 
     // ---- against the text -------------------------------------------------------------------------
 
     /// <summary>A picture at negative z goes under text already on the screen and leaves it there.</summary>
-    [Fact]
+    [TestMethod]
     public void A_negative_z_picture_keeps_the_text_it_covers()
     {
         var terminal = WithTwoImages();
@@ -124,14 +123,14 @@ public class KittyZIndexTests
 
         PlaceAt(terminal, 1, 0, 0, z: -1);
 
-        Assert.Equal("A", Content(terminal, 0, 0));
-        Assert.Equal("B", Content(terminal, 1, 0));
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.True(ImageAssertions.IsImageAt(terminal, 1, 0));
+        Content(terminal, 0, 0).Should().Be("A");
+        Content(terminal, 1, 0).Should().Be("B");
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        ImageAssertions.IsImageAt(terminal, 1, 0).Should().BeTrue();
     }
 
     /// <summary>And text typed onto it afterwards leaves the picture there.</summary>
-    [Fact]
+    [TestMethod]
     public void Text_typed_over_a_negative_z_picture_keeps_it()
     {
         var terminal = WithTwoImages();
@@ -139,8 +138,8 @@ public class KittyZIndexTests
 
         terminal.Write($"{Esc}[1;1HX");
 
-        Assert.Equal("X", Content(terminal, 0, 0));
-        Assert.Equal(-1, ImageAssertions.PlacementAt(terminal, 0, 0)!.Value.ZIndex);
+        Content(terminal, 0, 0).Should().Be("X");
+        (ImageAssertions.PlacementAt(terminal, 0, 0)!.Value.ZIndex).Should().Be(-1);
     }
 
     /// <summary>
@@ -152,7 +151,7 @@ public class KittyZIndexTests
     /// gives it back when it is deleted. Blanking the cell would make that irreversible, and it is
     /// the z-index rather than the buffer that decides which one a renderer draws on top.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void A_front_picture_hides_the_text_without_destroying_it()
     {
         var terminal = WithTwoImages();
@@ -160,12 +159,12 @@ public class KittyZIndexTests
 
         PlaceAt(terminal, 1, 0, 0, z: 0);
 
-        Assert.Equal("A", Content(terminal, 0, 0));
-        Assert.Equal(0, ImageAssertions.PlacementAt(terminal, 0, 0)!.Value.ZIndex);
+        Content(terminal, 0, 0).Should().Be("A");
+        (ImageAssertions.PlacementAt(terminal, 0, 0)!.Value.ZIndex).Should().Be(0);
     }
 
     /// <summary>Typing over a Kitty picture does not modify it either -- it is not content.</summary>
-    [Fact]
+    [TestMethod]
     public void Text_typed_over_a_front_picture_leaves_it()
     {
         var terminal = WithTwoImages();
@@ -173,15 +172,15 @@ public class KittyZIndexTests
 
         terminal.Write($"{Esc}[1;1HX");
 
-        Assert.Equal("X", Content(terminal, 0, 0));
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
+        Content(terminal, 0, 0).Should().Be("X");
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
     }
 
     /// <summary>
     /// Erasing clears a picture as well as the text. Erase means the cell is blank, and a picture
     /// still showing through a cleared screen would be a leak, not a feature.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Erasing_clears_a_picture_too()
     {
         var terminal = WithTwoImages();
@@ -190,15 +189,15 @@ public class KittyZIndexTests
 
         terminal.Write($"{Esc}[2J");
 
-        Assert.False(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.Equal(" ", Content(terminal, 0, 0));
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeFalse();
+        Content(terminal, 0, 0).Should().Be(" ");
     }
 
     /// <summary>
     /// A wide glyph occupies two cells, and the picture behind it covers both -- a run spans
     /// columns and knows nothing about what is printed across them.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_wide_glyph_keeps_the_background_under_both_its_cells()
     {
         var terminal = WithTwoImages();
@@ -206,7 +205,7 @@ public class KittyZIndexTests
 
         terminal.Write($"{Esc}[1;1H一");   // a full-width ideograph
 
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.True(ImageAssertions.IsImageAt(terminal, 1, 0));
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        ImageAssertions.IsImageAt(terminal, 1, 0).Should().BeTrue();
     }
 }

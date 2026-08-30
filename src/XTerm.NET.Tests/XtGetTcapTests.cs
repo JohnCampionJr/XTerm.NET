@@ -17,6 +17,7 @@ namespace XTerm.Tests;
 /// told apart by the identifier the parser builds, so there are tests here for the neighbour as
 /// well: adding one must not have taken the other away.</para>
 /// </summary>
+[TestClass]
 public class XtGetTcapTests
 {
     // Spelled from their code points so no line in this file has to carry a control character it
@@ -56,44 +57,44 @@ public class XtGetTcapTests
 
     private static string Invalid(string encodedName) => $"{Esc}P0+r{encodedName}{St}";
 
-    [Fact]
+    [TestMethod]
     public void A_capability_the_terminal_has_is_answered_with_its_value()
     {
         var replies = Ask(Fresh(), Hex("TN"));
 
-        Assert.Equal(new[] { Valid("TN", "xterm") }, replies);
+        replies.Should().Equal(new[] { Valid("TN", "xterm") });
     }
 
-    [Fact]
+    [TestMethod]
     public void The_reported_name_is_the_one_the_host_configured()
     {
         // TermName is what the host tells programs to call this terminal, so it is what comes back:
         // answering "xterm" to a host that set xterm-256color would contradict its own environment.
         var replies = Ask(Fresh(o => o.TermName = "xterm-256color"), Hex("TN"));
 
-        Assert.Equal(new[] { Valid("TN", "xterm-256color") }, replies);
+        replies.Should().Equal(new[] { Valid("TN", "xterm-256color") });
     }
 
-    [Fact]
+    [TestMethod]
     public void Both_spellings_of_a_capability_are_answered()
     {
         // A caller uses whichever spelling its own database uses and cannot know which one we would
         // have preferred, so both work: "Co" is termcap, "colors" is terminfo.
-        Assert.Equal(new[] { Valid("Co", "256") }, Ask(Fresh(), Hex("Co")));
-        Assert.Equal(new[] { Valid("colors", "256") }, Ask(Fresh(), Hex("colors")));
+        Ask(Fresh(), Hex("Co")).Should().Equal(new[] { Valid("Co", "256") });
+        Ask(Fresh(), Hex("colors")).Should().Equal(new[] { Valid("colors", "256") });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_capability_name_is_case_sensitive()
     {
         // "Co" is the number of colours and "co" is the number of columns. Folding case would let
         // one of them answer for the other.
         var replies = Ask(Fresh(o => o.Cols = 132), Hex("co"));
 
-        Assert.Equal(new[] { Valid("co", "132") }, replies);
+        replies.Should().Equal(new[] { Valid("co", "132") });
     }
 
-    [Fact]
+    [TestMethod]
     public void The_size_reported_is_the_size_the_terminal_is_now()
     {
         // The size is asked about as a fallback by a caller with no ioctl to ask instead, so a stale
@@ -103,81 +104,77 @@ public class XtGetTcapTests
 
         var replies = Ask(terminal, $"{Hex("cols")};{Hex("lines")}");
 
-        Assert.Equal(new[] { Valid("cols", "100"), Valid("lines", "40") }, replies);
+        replies.Should().Equal(new[] { Valid("cols", "100"), Valid("lines", "40") });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_boolean_capability_is_answered_with_an_empty_value()
     {
         // Tc is a flag, not a string. It still gets the success reply — the empty value IS the
         // answer, and a failure reply would say the terminal has no direct colour at all.
         var replies = Ask(Fresh(), Hex("Tc"));
 
-        Assert.Equal(new[] { $"{Esc}P1+r{Hex("Tc")}={St}" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}P1+r{Hex("Tc")}={St}" });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_capability_the_terminal_does_not_have_is_refused()
     {
         var replies = Ask(Fresh(), Hex("nosuchcap"));
 
-        Assert.Equal(new[] { Invalid(Hex("nosuchcap")) }, replies);
+        replies.Should().Equal(new[] { Invalid(Hex("nosuchcap")) });
     }
 
-    [Fact]
+    [TestMethod]
     public void Every_name_in_a_request_gets_its_own_reply_in_order()
     {
         // One reply per name, so a client can pair each answer with the question it asked even when
         // only some of them were understood.
         var replies = Ask(Fresh(), $"{Hex("TN")};{Hex("nope")};{Hex("Co")}");
 
-        Assert.Equal(
-            new[] { Valid("TN", "xterm"), Invalid(Hex("nope")), Valid("Co", "256") },
-            replies);
+        replies.Should().Equal(new[] { Valid("TN", "xterm"), Invalid(Hex("nope")), Valid("Co", "256") });
     }
 
-    [Fact]
+    [TestMethod]
     public void Lowercase_hex_is_accepted_and_the_name_is_echoed_back_as_it_arrived()
     {
         // The name comes back exactly as it was sent rather than re-encoded, so a client can match
         // the reply against its own bytes without knowing which hex case we would have chosen.
         var replies = Ask(Fresh(), "544e");
 
-        Assert.Equal(new[] { $"{Esc}P1+r544e={Hex("xterm")}{St}" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}P1+r544e={Hex("xterm")}{St}" });
     }
 
-    [Theory]
-    [InlineData("544")]      // an odd number of digits
-    [InlineData("zz")]       // digits that are not hex
+    [TestMethod]
+    [DataRow("544")]      // an odd number of digits
+    [DataRow("zz")]       // digits that are not hex
     public void A_name_that_is_not_hex_is_refused_rather_than_guessed_at(string encoded)
     {
         // Half a decoded name is some other capability, and answering that confidently would be
         // worse than refusing.
         var replies = Ask(Fresh(), encoded);
 
-        Assert.Equal(new[] { Invalid(encoded) }, replies);
+        replies.Should().Equal(new[] { Invalid(encoded) });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_missing_name_between_separators_is_refused_without_taking_its_neighbours_with_it()
     {
         var replies = Ask(Fresh(), $"{Hex("TN")};;{Hex("Co")}");
 
-        Assert.Equal(
-            new[] { Valid("TN", "xterm"), Invalid(string.Empty), Valid("Co", "256") },
-            replies);
+        replies.Should().Equal(new[] { Valid("TN", "xterm"), Invalid(string.Empty), Valid("Co", "256") });
     }
 
-    [Fact]
+    [TestMethod]
     public void An_empty_request_is_refused_rather_than_ignored()
     {
         // Silence would leave a client that expects an answer waiting for one.
         var replies = Ask(Fresh(), string.Empty);
 
-        Assert.Equal(new[] { Invalid(string.Empty) }, replies);
+        replies.Should().Equal(new[] { Invalid(string.Empty) });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_request_split_across_writes_is_still_answered()
     {
         // The payload arrives as chunks, and a name can be cut in half by a write boundary.
@@ -189,10 +186,10 @@ public class XtGetTcapTests
         terminal.Write("4E");
         terminal.Write(St);
 
-        Assert.Equal(new[] { Valid("TN", "xterm") }, replies);
+        replies.Should().Equal(new[] { Valid("TN", "xterm") });
     }
 
-    [Fact]
+    [TestMethod]
     public void An_abandoned_request_is_not_answered()
     {
         // CAN abandons the sequence. Answering it would attribute an answer to a question that was
@@ -203,10 +200,10 @@ public class XtGetTcapTests
 
         terminal.Write($"{Esc}P+q{Hex("TN")}{Can}");
 
-        Assert.Empty(replies);
+        replies.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void An_abandoned_request_does_not_leak_into_the_next_one()
     {
         var terminal = Fresh();
@@ -214,34 +211,30 @@ public class XtGetTcapTests
 
         var replies = Ask(terminal, Hex("TN"));
 
-        Assert.Equal(new[] { Valid("TN", "xterm") }, replies);
+        replies.Should().Equal(new[] { Valid("TN", "xterm") });
     }
 
-    [Fact]
+    [TestMethod]
     public void Sixel_is_optional_and_is_only_claimed_when_it_is_switched_on()
     {
         // Claiming Su while Sixel is off would send a program down a path that puts nothing on the
         // screen at all.
-        Assert.Equal(
-            new[] { $"{Esc}P1+r{Hex("Su")}={St}" },
-            Ask(Fresh(o => o.SixelEnabled = true), Hex("Su")));
+        Ask(Fresh(o => o.SixelEnabled = true), Hex("Su")).Should().Equal(new[] { $"{Esc}P1+r{Hex("Su")}={St}" });
 
-        Assert.Equal(
-            new[] { Invalid(Hex("Su")) },
-            Ask(Fresh(o => o.SixelEnabled = false), Hex("Su")));
+        Ask(Fresh(o => o.SixelEnabled = false), Hex("Su")).Should().Equal(new[] { Invalid(Hex("Su")) });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_value_carrying_control_characters_survives_the_encoding()
     {
         // The whole point of the hex is that a terminfo string is bytes: kcuu1 is ESC O A, and
         // sending it back raw would have the client's own parser act on it instead of reading it.
         var replies = Ask(Fresh(), Hex("kcuu1"));
 
-        Assert.Equal(new[] { $"{Esc}P1+r{Hex("kcuu1")}=1B4F41{St}" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}P1+r{Hex("kcuu1")}=1B4F41{St}" });
     }
 
-    [Fact]
+    [TestMethod]
     public void A_value_that_is_not_ASCII_goes_out_as_bytes_rather_than_as_characters()
     {
         // The reader takes the value two digits at a time, so a value is bytes and the bytes are
@@ -252,12 +245,12 @@ public class XtGetTcapTests
         var eAcute = ((char)0x00E9).ToString();
         var replies = Ask(Fresh(o => o.TermName = "xterm-" + eAcute), Hex("TN"));
 
-        Assert.Equal(new[] { $"{Esc}P1+r{Hex("TN")}={Hex("xterm-")}C3A9{St}" }, replies);
+        replies.Should().Equal(new[] { $"{Esc}P1+r{Hex("TN")}={Hex("xterm-")}C3A9{St}" });
     }
 
     // ---- The neighbour: DCS q is still DECSIXEL -------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void A_sixel_payload_is_not_mistaken_for_a_capability_request()
     {
         // DCS q and DCS + q differ by one intermediate character. If the capability path claimed
@@ -268,11 +261,11 @@ public class XtGetTcapTests
 
         terminal.Write($"{Esc}P0;1;0q{SixelImage}{St}");
 
-        Assert.Empty(replies);
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 0, 0));
+        replies.Should().BeEmpty();
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_capability_request_after_an_image_is_still_answered()
     {
         // The two share the hook/put/unhook path, so what one leaves behind is the other's problem.
@@ -281,10 +274,10 @@ public class XtGetTcapTests
 
         var replies = Ask(terminal, Hex("TN"));
 
-        Assert.Equal(new[] { Valid("TN", "xterm") }, replies);
+        replies.Should().Equal(new[] { Valid("TN", "xterm") });
     }
 
-    [Fact]
+    [TestMethod]
     public void An_image_after_a_capability_request_is_still_decoded()
     {
         var terminal = Fresh();
@@ -292,6 +285,6 @@ public class XtGetTcapTests
 
         terminal.Write($"{Esc}P0;1;0q{SixelImage}{St}");
 
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 0, 0));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().NotBeNull();
     }
 }

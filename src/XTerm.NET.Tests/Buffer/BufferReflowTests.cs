@@ -2,9 +2,11 @@ using XTerm.Buffer;
 
 namespace XTerm.Tests.Buffer;
 
+[TestClass]
+
 public class BufferReflowTests
 {
-    [Fact]
+    [TestMethod]
     public void ReflowSmallerGetNewLineLengths_SmallLineWithWideCharacters()
     {
         var line = new BufferLine(4);
@@ -13,12 +15,12 @@ public class BufferReflowTests
         SetCell(line, 2, "语", 2);
         SetCell(line, 3, "", 0);
 
-        Assert.Equal("汉语", line.TranslateToString(trimRight: true));
-        Assert.Equal(new[] { 2, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 3));
-        Assert.Equal(new[] { 2, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 2));
+        line.TranslateToString(trimRight: true).Should().Be("汉语");
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 3).Should().Equal(new[] { 2, 2 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 2).Should().Equal(new[] { 2, 2 });
     }
 
-    [Fact]
+    [TestMethod]
     public void ReflowSmallerGetNewLineLengths_LargeLineWithWideCharacters()
     {
         var line = new BufferLine(12);
@@ -32,20 +34,20 @@ public class BufferReflowTests
             SetCell(line, i, "", 0);
         }
 
-        Assert.Equal("汉语汉语汉语", line.TranslateToString());
-        Assert.Equal(new[] { 10, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 11));
-        Assert.Equal(new[] { 10, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 10));
-        Assert.Equal(new[] { 8, 4 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 9));
-        Assert.Equal(new[] { 8, 4 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 8));
-        Assert.Equal(new[] { 6, 6 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 7));
-        Assert.Equal(new[] { 6, 6 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 6));
-        Assert.Equal(new[] { 4, 4, 4 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 5));
-        Assert.Equal(new[] { 4, 4, 4 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 4));
-        Assert.Equal(new[] { 2, 2, 2, 2, 2, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 3));
-        Assert.Equal(new[] { 2, 2, 2, 2, 2, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 2));
+        line.TranslateToString().Should().Be("汉语汉语汉语");
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 11).Should().Equal(new[] { 10, 2 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 10).Should().Equal(new[] { 10, 2 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 9).Should().Equal(new[] { 8, 4 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 8).Should().Equal(new[] { 8, 4 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 7).Should().Equal(new[] { 6, 6 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 6).Should().Equal(new[] { 6, 6 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 5).Should().Equal(new[] { 4, 4, 4 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 4).Should().Equal(new[] { 4, 4, 4 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 3).Should().Equal(new[] { 2, 2, 2, 2, 2, 2 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 12, 2).Should().Equal(new[] { 2, 2, 2, 2, 2, 2 });
     }
 
-    [Fact]
+    [TestMethod]
     public void ReflowSmallerGetNewLineLengths_MixedWideAndSingleCharacters()
     {
         var line = new BufferLine(6);
@@ -56,14 +58,14 @@ public class BufferReflowTests
         SetCell(line, 4, "", 0);
         SetCell(line, 5, "b", 1);
 
-        Assert.Equal("a汉语b", line.TranslateToString());
-        Assert.Equal(new[] { 5, 1 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 5));
-        Assert.Equal(new[] { 3, 3 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 4));
-        Assert.Equal(new[] { 3, 3 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 3));
-        Assert.Equal(new[] { 1, 2, 2, 1 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 2));
+        line.TranslateToString().Should().Be("a汉语b");
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 5).Should().Equal(new[] { 5, 1 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 4).Should().Equal(new[] { 3, 3 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 3).Should().Equal(new[] { 3, 3 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 6, 2).Should().Equal(new[] { 1, 2, 2, 1 });
     }
 
-    [Fact]
+    [TestMethod]
     public void ReflowSmallerGetNewLineLengths_WrappedLineWithWideAndSingleCharacters()
     {
         var line1 = new BufferLine(6);
@@ -82,13 +84,13 @@ public class BufferReflowTests
         SetCell(line2, 4, "", 0);
         SetCell(line2, 5, "b", 1);
 
-        Assert.Equal(new[] { 5, 4, 3 }, BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 5));
-        Assert.Equal(new[] { 3, 4, 4, 1 }, BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 4));
-        Assert.Equal(new[] { 3, 3, 3, 3 }, BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 3));
-        Assert.Equal(new[] { 1, 2, 2, 2, 2, 2, 1 }, BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 2));
+        BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 5).Should().Equal(new[] { 5, 4, 3 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 4).Should().Equal(new[] { 3, 4, 4, 1 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 3).Should().Equal(new[] { 3, 3, 3, 3 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line1, line2], 6, 2).Should().Equal(new[] { 1, 2, 2, 2, 2, 2, 1 });
     }
 
-    [Fact]
+    [TestMethod]
     public void ReflowSmallerGetNewLineLengths_LinesEndingInNullSpace()
     {
         var line = new BufferLine(5);
@@ -99,9 +101,9 @@ public class BufferReflowTests
         var empty = BufferCell.Empty;
         line.SetCell(4, ref empty);
 
-        Assert.Equal("汉语", line.TranslateToString(trimRight: true));
-        Assert.Equal(new[] { 2, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 3));
-        Assert.Equal(new[] { 2, 2 }, BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 2));
+        line.TranslateToString(trimRight: true).Should().Be("汉语");
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 3).Should().Equal(new[] { 2, 2 });
+        BufferReflow.ReflowSmallerGetNewLineLengths([line], 4, 2).Should().Equal(new[] { 2, 2 });
     }
 
     private static void SetCell(BufferLine line, int col, string content, int width = 1)

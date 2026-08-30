@@ -7,6 +7,7 @@ namespace XTerm.Tests;
 /// What the terminal sends UP to the application when the user types or clicks. These encodings
 /// are read by programs that cannot ask for clarification, so being close is being wrong.
 /// </summary>
+[TestClass]
 public class InputEncodingTests
 {
     private static readonly string Esc = ((char)0x1B).ToString();
@@ -14,7 +15,7 @@ public class InputEncodingTests
     private static Terminal NewTerminal() =>
         new(new TerminalOptions { Cols = 300, Rows = 24 });
 
-    [Fact]
+    [TestMethod]
     public void The_x10_report_never_emits_a_byte_utf8_would_split()
     {
         // The report is a byte sequence but the string is UTF-8 encoded on its way to the pty, so
@@ -26,12 +27,12 @@ public class InputEncodingTests
 
         var seq = terminal.GenerateMouseEvent(MouseButton.Left, 80, 10, MouseEventType.Down);
 
-        Assert.NotEmpty(seq);
-        Assert.Equal(seq.Length, System.Text.Encoding.UTF8.GetByteCount(seq));
-        Assert.All(seq, c => Assert.True(c <= 127, $"emitted U+{(int)c:X4}, which UTF-8 splits"));
+        seq.Should().NotBeEmpty();
+        System.Text.Encoding.UTF8.GetByteCount(seq).Should().Be(seq.Length);
+        seq.ToCharArray().Should().OnlyContain(c => c <= 127, "a split UTF-8 sequence would carry a non-ASCII char");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_click_past_the_addressable_range_is_dropped_rather_than_reported_as_column_95()
     {
         // Clamping produced a confident lie: every click past the limit arrived as the last
@@ -40,13 +41,11 @@ public class InputEncodingTests
         var terminal = NewTerminal();
         terminal.Write($"{Esc}[?1000h");
 
-        Assert.Equal(string.Empty,
-            terminal.GenerateMouseEvent(MouseButton.Left, 250, 10, MouseEventType.Down));
-        Assert.Equal(string.Empty,
-            terminal.GenerateMouseEvent(MouseButton.Left, 10, 250, MouseEventType.Down));
+        terminal.GenerateMouseEvent(MouseButton.Left, 250, 10, MouseEventType.Down).Should().Be(string.Empty);
+        terminal.GenerateMouseEvent(MouseButton.Left, 10, 250, MouseEventType.Down).Should().Be(string.Empty);
     }
 
-    [Fact]
+    [TestMethod]
     public void Sgr_coordinates_still_carry_the_whole_screen()
     {
         // The X10 ceiling is a property of that encoding's transport, not of the terminal. An
@@ -56,10 +55,10 @@ public class InputEncodingTests
 
         var seq = terminal.GenerateMouseEvent(MouseButton.Left, 250, 10, MouseEventType.Down);
 
-        Assert.Contains("251", seq);
+        seq.Should().Contain("251");
     }
 
-    [Fact]
+    [TestMethod]
     public void X10_mode_reports_no_modifier_bits()
     {
         // X10 (DECSET 9) is the original protocol: button and position, nothing else. Adding
@@ -71,10 +70,10 @@ public class InputEncodingTests
         var shifted = terminal.GenerateMouseEvent(MouseButton.Left, 5, 5, MouseEventType.Down,
                                                   KeyModifiers.Shift);
 
-        Assert.Equal(plain, shifted);
+        shifted.Should().Be(plain);
     }
 
-    [Fact]
+    [TestMethod]
     public void An_sgr_release_never_emits_a_negative_parameter()
     {
         // MouseButton.None is -1, so a release reported without a button produced ESC[<-1;7;7m --
@@ -84,10 +83,10 @@ public class InputEncodingTests
 
         var seq = terminal.GenerateMouseEvent(MouseButton.None, 6, 6, MouseEventType.Up);
 
-        Assert.DoesNotContain("-", seq);
+        seq.Should().NotContain("-");
     }
 
-    [Fact]
+    [TestMethod]
     public void Escape_sends_escape_whatever_is_held()
     {
         // CSI 27 ; mod ~ belongs to protocols an application opts into. Sending it unasked meant
@@ -95,37 +94,37 @@ public class InputEncodingTests
         // it recognised, so Escape appeared dead with a modifier held.
         var terminal = NewTerminal();
 
-        Assert.Equal(Esc, terminal.GenerateKeyInput(Key.Escape, KeyModifiers.Control));
-        Assert.Equal(Esc, terminal.GenerateKeyInput(Key.Escape, KeyModifiers.Shift));
-        Assert.Equal(Esc, terminal.GenerateKeyInput(Key.Escape));
+        terminal.GenerateKeyInput(Key.Escape, KeyModifiers.Control).Should().Be(Esc);
+        terminal.GenerateKeyInput(Key.Escape, KeyModifiers.Shift).Should().Be(Esc);
+        terminal.GenerateKeyInput(Key.Escape).Should().Be(Esc);
     }
 
-    [Fact]
+    [TestMethod]
     public void Home_and_end_follow_application_cursor_keys_like_the_arrows()
     {
         var terminal = NewTerminal();
         terminal.ApplicationCursorKeys = true;
 
-        Assert.Equal($"{Esc}OH", terminal.GenerateKeyInput(Key.Home));
-        Assert.Equal($"{Esc}OF", terminal.GenerateKeyInput(Key.End));
-        Assert.Equal($"{Esc}OA", terminal.GenerateKeyInput(Key.UpArrow));
+        terminal.GenerateKeyInput(Key.Home).Should().Be($"{Esc}OH");
+        terminal.GenerateKeyInput(Key.End).Should().Be($"{Esc}OF");
+        terminal.GenerateKeyInput(Key.UpArrow).Should().Be($"{Esc}OA");
     }
 
-    [Fact]
+    [TestMethod]
     public void The_keypad_operators_follow_application_keypad_mode()
     {
         var terminal = NewTerminal();
         terminal.ApplicationKeypad = true;
 
-        Assert.Equal($"{Esc}Oo", terminal.GenerateKeyInput(Key.KeypadDivide));
-        Assert.Equal($"{Esc}OM", terminal.GenerateKeyInput(Key.KeypadEnter));
+        terminal.GenerateKeyInput(Key.KeypadDivide).Should().Be($"{Esc}Oo");
+        terminal.GenerateKeyInput(Key.KeypadEnter).Should().Be($"{Esc}OM");
 
         terminal.ApplicationKeypad = false;
-        Assert.Equal("/", terminal.GenerateKeyInput(Key.KeypadDivide));
-        Assert.Equal("\r", terminal.GenerateKeyInput(Key.KeypadEnter));
+        terminal.GenerateKeyInput(Key.KeypadDivide).Should().Be("/");
+        terminal.GenerateKeyInput(Key.KeypadEnter).Should().Be("\r");
     }
 
-    [Fact]
+    [TestMethod]
     public void Deckpam_and_deckpnm_set_the_keypad_mode()
     {
         // terminfo's smkx is ESC [ ? 1 h ESC =, so the second half used to be dropped and the
@@ -133,13 +132,13 @@ public class InputEncodingTests
         var terminal = NewTerminal();
 
         terminal.Write($"{Esc}=");
-        Assert.True(terminal.ApplicationKeypad);
+        terminal.ApplicationKeypad.Should().BeTrue();
 
         terminal.Write($"{Esc}>");
-        Assert.False(terminal.ApplicationKeypad);
+        terminal.ApplicationKeypad.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void An_intermediate_stops_a_bare_esc_final_from_matching()
     {
         // The two switches ran one after the other, so a sequence with an intermediate also took
@@ -149,10 +148,10 @@ public class InputEncodingTests
 
         terminal.Write($"{Esc}(=");
 
-        Assert.False(terminal.ApplicationKeypad);
+        terminal.ApplicationKeypad.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Decaln_does_not_also_restore_the_saved_cursor_state()
     {
         // Same defect, and this one vttest actually sends: ESC # 8 took the "8" arm as DECRC on
@@ -168,6 +167,6 @@ public class InputEncodingTests
         terminal.Write("X");
 
         var line = terminal.Buffer.Lines[terminal.Buffer.YBase]!;
-        Assert.False(line[0].Attributes.IsBold());
+        (line[0].Attributes.IsBold()).Should().BeFalse();
     }
 }

@@ -4,6 +4,8 @@ using XTerm.Options;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class MouseTrackingTests
 {
     private Terminal CreateTerminal(int cols = 80, int rows = 24)
@@ -14,7 +16,7 @@ public class MouseTrackingTests
 
     #region Mouse Mode Activation
 
-    [Fact]
+    [TestMethod]
     public void MouseMode_X10_EnablesClickTracking()
     {
         // Arrange
@@ -24,10 +26,10 @@ public class MouseTrackingTests
         terminal.Write("\x1B[?9h"); // Enable X10 mouse
 
         // Assert
-        Assert.Equal(MouseTrackingMode.X10, terminal.MouseTrackingMode);
+        terminal.MouseTrackingMode.Should().Be(MouseTrackingMode.X10);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseMode_VT200_EnablesNormalTracking()
     {
         // Arrange
@@ -37,10 +39,10 @@ public class MouseTrackingTests
         terminal.Write("\x1B[?1000h"); // Enable VT200 mouse
 
         // Assert
-        Assert.Equal(MouseTrackingMode.VT200, terminal.MouseTrackingMode);
+        terminal.MouseTrackingMode.Should().Be(MouseTrackingMode.VT200);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseMode_ButtonEvent_EnablesButtonTracking()
     {
         // Arrange
@@ -50,10 +52,10 @@ public class MouseTrackingTests
         terminal.Write("\x1B[?1002h"); // Enable button event tracking
 
         // Assert
-        Assert.Equal(MouseTrackingMode.ButtonEvent, terminal.MouseTrackingMode);
+        terminal.MouseTrackingMode.Should().Be(MouseTrackingMode.ButtonEvent);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseMode_AnyEvent_EnablesAllTracking()
     {
         // Arrange
@@ -63,10 +65,10 @@ public class MouseTrackingTests
         terminal.Write("\x1B[?1003h"); // Enable any event tracking
 
         // Assert
-        Assert.Equal(MouseTrackingMode.AnyEvent, terminal.MouseTrackingMode);
+        terminal.MouseTrackingMode.Should().Be(MouseTrackingMode.AnyEvent);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseMode_SGR_EnablesSGREncoding()
     {
         // Arrange
@@ -76,10 +78,10 @@ public class MouseTrackingTests
         terminal.Write("\x1B[?1006h"); // Enable SGR encoding
 
         // Assert
-        Assert.Equal(MouseEncoding.SGR, terminal.MouseEncoding);
+        terminal.MouseEncoding.Should().Be(MouseEncoding.SGR);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseMode_Disable_ResetsToNone()
     {
         // Arrange
@@ -90,14 +92,14 @@ public class MouseTrackingTests
         terminal.Write("\x1B[?1000l"); // Disable
 
         // Assert
-        Assert.Equal(MouseTrackingMode.None, terminal.MouseTrackingMode);
+        terminal.MouseTrackingMode.Should().Be(MouseTrackingMode.None);
     }
 
     #endregion
 
     #region Mouse Event Generation - Default Format
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_LeftClick_GeneratesCorrectSequence()
     {
         // Arrange
@@ -112,11 +114,11 @@ public class MouseTrackingTests
         // Cb = 32 + button (0) = 32
         // Cx = 32 + x + 1 = 32 + 5 + 1 = 38 ('&')
         // Cy = 32 + y + 1 = 32 + 10 + 1 = 43 ('+')
-        Assert.StartsWith("\x1B[M", sequence);
-        Assert.Equal(6, sequence.Length);
+        sequence.Should().StartWith("\x1B[M");
+        sequence.Length.Should().Be(6);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_NoMode_ReturnsEmpty()
     {
         // Arrange
@@ -127,10 +129,10 @@ public class MouseTrackingTests
         var sequence = terminal.GenerateMouseEvent(MouseButton.Left, 5, 10, MouseEventType.Down);
 
         // Assert
-        Assert.Equal(string.Empty, sequence);
+        sequence.Should().Be(string.Empty);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_X10Mode_OnlyReportsDown()
     {
         // Arrange
@@ -143,12 +145,12 @@ public class MouseTrackingTests
         var moveSeq = terminal.GenerateMouseEvent(MouseButton.Left, 6, 10, MouseEventType.Move);
 
         // Assert
-        Assert.NotEmpty(downSeq);
-        Assert.Empty(upSeq);
-        Assert.Empty(moveSeq);
+        downSeq.Should().NotBeEmpty();
+        upSeq.Should().BeEmpty();
+        moveSeq.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_VT200Mode_ReportsDownAndUp()
     {
         // Arrange
@@ -161,12 +163,12 @@ public class MouseTrackingTests
         var moveSeq = terminal.GenerateMouseEvent(MouseButton.Left, 6, 10, MouseEventType.Move);
 
         // Assert
-        Assert.NotEmpty(downSeq);
-        Assert.NotEmpty(upSeq);
-        Assert.Empty(moveSeq); // Motion not reported in VT200
+        downSeq.Should().NotBeEmpty();
+        upSeq.Should().NotBeEmpty();
+        moveSeq.Should().BeEmpty(); // Motion not reported in VT200
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_ButtonEventMode_ReportsDrag()
     {
         // Arrange
@@ -177,10 +179,10 @@ public class MouseTrackingTests
         var dragSeq = terminal.GenerateMouseEvent(MouseButton.Left, 6, 10, MouseEventType.Drag);
 
         // Assert
-        Assert.NotEmpty(dragSeq);
+        dragSeq.Should().NotBeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_AnyEventMode_ReportsMotion()
     {
         // Arrange
@@ -191,14 +193,14 @@ public class MouseTrackingTests
         var moveSeq = terminal.GenerateMouseEvent(MouseButton.None, 6, 10, MouseEventType.Move);
 
         // Assert
-        Assert.NotEmpty(moveSeq);
+        moveSeq.Should().NotBeEmpty();
     }
 
     #endregion
 
     #region Mouse Buttons
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_MiddleButton_GeneratesCorrectCode()
     {
         // Arrange
@@ -209,11 +211,11 @@ public class MouseTrackingTests
         var sequence = terminal.GenerateMouseEvent(MouseButton.Middle, 5, 10, MouseEventType.Down);
 
         // Assert
-        Assert.NotEmpty(sequence);
-        Assert.StartsWith("\x1B[M", sequence);
+        sequence.Should().NotBeEmpty();
+        sequence.Should().StartWith("\x1B[M");
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_RightButton_GeneratesCorrectCode()
     {
         // Arrange
@@ -224,11 +226,11 @@ public class MouseTrackingTests
         var sequence = terminal.GenerateMouseEvent(MouseButton.Right, 5, 10, MouseEventType.Down);
 
         // Assert
-        Assert.NotEmpty(sequence);
-        Assert.StartsWith("\x1B[M", sequence);
+        sequence.Should().NotBeEmpty();
+        sequence.Should().StartWith("\x1B[M");
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_WheelUp_GeneratesCorrectSequence()
     {
         // Arrange
@@ -239,10 +241,10 @@ public class MouseTrackingTests
         var sequence = terminal.GenerateMouseEvent(MouseButton.WheelUp, 5, 10, MouseEventType.WheelUp);
 
         // Assert
-        Assert.NotEmpty(sequence);
+        sequence.Should().NotBeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_WheelDown_GeneratesCorrectSequence()
     {
         // Arrange
@@ -253,14 +255,14 @@ public class MouseTrackingTests
         var sequence = terminal.GenerateMouseEvent(MouseButton.WheelDown, 5, 10, MouseEventType.WheelDown);
 
         // Assert
-        Assert.NotEmpty(sequence);
+        sequence.Should().NotBeEmpty();
     }
 
     #endregion
 
     #region SGR Format
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_SGRFormat_GeneratesCorrectSequence()
     {
         // Arrange
@@ -272,12 +274,12 @@ public class MouseTrackingTests
         var sequence = terminal.GenerateMouseEvent(MouseButton.Left, 5, 10, MouseEventType.Down);
 
         // Assert - SGR format: ESC [ < Cb ; Cx ; Cy M
-        Assert.StartsWith("\x1B[<", sequence);
-        Assert.Contains(";", sequence);
-        Assert.EndsWith("M", sequence);
+        sequence.Should().StartWith("\x1B[<");
+        sequence.Should().Contain(";");
+        sequence.Should().EndWith("M");
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_SGRFormat_Release_UsesLowercaseM()
     {
         // Arrange
@@ -290,15 +292,15 @@ public class MouseTrackingTests
         var upSeq = terminal.GenerateMouseEvent(MouseButton.Left, 5, 10, MouseEventType.Up);
 
         // Assert
-        Assert.EndsWith("M", downSeq); // Uppercase for press
-        Assert.EndsWith("m", upSeq);   // Lowercase for release
+        downSeq.Should().EndWith("M"); // Uppercase for press
+        upSeq.Should().EndWith("m");   // Lowercase for release
     }
 
     #endregion
 
     #region Modifiers
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_WithShift_IncludesModifier()
     {
         // Arrange
@@ -310,10 +312,10 @@ public class MouseTrackingTests
         var shiftSeq = terminal.GenerateMouseEvent(MouseButton.Left, 5, 10, MouseEventType.Down, KeyModifiers.Shift);
 
         // Assert
-        Assert.NotEqual(normalSeq, shiftSeq);
+        shiftSeq.Should().NotBe(normalSeq);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_WithControl_IncludesModifier()
     {
         // Arrange
@@ -325,10 +327,10 @@ public class MouseTrackingTests
         var ctrlSeq = terminal.GenerateMouseEvent(MouseButton.Left, 5, 10, MouseEventType.Down, KeyModifiers.Control);
 
         // Assert
-        Assert.NotEqual(normalSeq, ctrlSeq);
+        ctrlSeq.Should().NotBe(normalSeq);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_WithAlt_IncludesModifier()
     {
         // Arrange
@@ -340,14 +342,14 @@ public class MouseTrackingTests
         var altSeq = terminal.GenerateMouseEvent(MouseButton.Left, 5, 10, MouseEventType.Down, KeyModifiers.Alt);
 
         // Assert
-        Assert.NotEqual(normalSeq, altSeq);
+        altSeq.Should().NotBe(normalSeq);
     }
 
     #endregion
 
     #region Focus Events
 
-    [Fact]
+    [TestMethod]
     public void FocusEvent_Enabled_GeneratesSequence()
     {
         // Arrange
@@ -359,11 +361,11 @@ public class MouseTrackingTests
         var focusOut = terminal.GenerateFocusEvent(false);
 
         // Assert
-        Assert.Equal("\x1B[I", focusIn);
-        Assert.Equal("\x1B[O", focusOut);
+        focusIn.Should().Be("\x1B[I");
+        focusOut.Should().Be("\x1B[O");
     }
 
-    [Fact]
+    [TestMethod]
     public void FocusEvent_Disabled_ReturnsEmpty()
     {
         // Arrange
@@ -374,14 +376,14 @@ public class MouseTrackingTests
         var focusIn = terminal.GenerateFocusEvent(true);
 
         // Assert
-        Assert.Equal(string.Empty, focusIn);
+        focusIn.Should().Be(string.Empty);
     }
 
     #endregion
 
     #region Edge Cases
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_AtBoundaries_HandlesCorrectly()
     {
         // Arrange
@@ -393,11 +395,11 @@ public class MouseTrackingTests
         var bottomRight = terminal.GenerateMouseEvent(MouseButton.Left, 79, 23, MouseEventType.Down);
 
         // Assert
-        Assert.NotEmpty(topLeft);
-        Assert.NotEmpty(bottomRight);
+        topLeft.Should().NotBeEmpty();
+        bottomRight.Should().NotBeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEvent_LargeCoordinates_AreDroppedRatherThanMisreported()
     {
         // This asserted only "generates something", which the clamp satisfied by reporting the
@@ -409,10 +411,10 @@ public class MouseTrackingTests
 
         var sequence = terminal.GenerateMouseEvent(MouseButton.Left, 300, 300, MouseEventType.Down);
 
-        Assert.Empty(sequence);
+        sequence.Should().BeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseMode_ModeSwitch_UpdatesCorrectly()
     {
         // Arrange
@@ -429,12 +431,12 @@ public class MouseTrackingTests
         var mode3 = terminal.MouseTrackingMode;
 
         // Assert
-        Assert.Equal(MouseTrackingMode.X10, mode1);
-        Assert.Equal(MouseTrackingMode.VT200, mode2);
-        Assert.Equal(MouseTrackingMode.AnyEvent, mode3);
+        mode1.Should().Be(MouseTrackingMode.X10);
+        mode2.Should().Be(MouseTrackingMode.VT200);
+        mode3.Should().Be(MouseTrackingMode.AnyEvent);
     }
 
-    [Fact]
+    [TestMethod]
     public void MouseEncoding_Switch_UpdatesCorrectly()
     {
         // Arrange
@@ -451,9 +453,9 @@ public class MouseTrackingTests
         var enc3 = terminal.MouseEncoding;
 
         // Assert
-        Assert.Equal(MouseEncoding.SGR, enc1);
-        Assert.Equal(MouseEncoding.Utf8, enc2);
-        Assert.Equal(MouseEncoding.Default, enc3);
+        enc1.Should().Be(MouseEncoding.SGR);
+        enc2.Should().Be(MouseEncoding.Utf8);
+        enc3.Should().Be(MouseEncoding.Default);
     }
 
     #endregion

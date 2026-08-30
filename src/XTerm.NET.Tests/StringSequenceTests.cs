@@ -11,6 +11,7 @@ namespace XTerm.Tests;
 /// graphics query and the terminal stopped answering anything — including the cursor position reports a
 /// program was waiting on, which is a hang rather than a glitch.</para>
 /// </summary>
+[TestClass]
 public class StringSequenceTests
 {
     private const string Esc = "\u001b";
@@ -25,29 +26,28 @@ public class StringSequenceTests
     }
 
     /// <summary>Every string sequence must hand the parser back afterwards.</summary>
-    [Theory]
-    [InlineData("\u001b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA", "APC — kitty graphics")]
-    [InlineData("\u001b^some private message", "PM")]
-    [InlineData("\u001bXsome string", "SOS")]
-    [InlineData("\u001bP$qm", "DCS — DECRQSS")]
-    [InlineData("\u001bP+q544e", "DCS — XTGETTCAP")]
+    [TestMethod]
+    [DataRow("\u001b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA", "APC — kitty graphics")]
+    [DataRow("\u001b^some private message", "PM")]
+    [DataRow("\u001bXsome string", "SOS")]
+    [DataRow("\u001bP$qm", "DCS — DECRQSS")]
+    [DataRow("\u001bP+q544e", "DCS — XTGETTCAP")]
     public void Text_after_a_string_sequence_still_prints(string sequence, string what)
     {
         var terminal = Fresh();
         terminal.Write(sequence + St + "OK");
 
-        Assert.True(ScreenTop(terminal) == "OK",
-            $"after {what} the parser never came back — it swallowed everything after it. Saw: '{ScreenTop(terminal)}'");
+        (ScreenTop(terminal) == "OK").Should().BeTrue($"after {what} the parser never came back — it swallowed everything after it. Saw: '{ScreenTop(terminal)}'");
     }
 
     /// <summary>
     /// The case that hung: a query, then a cursor position request. The request has to be answered.
     /// </summary>
-    [Theory]
-    [InlineData("\u001b_Gi=31,a=q;AAAA", "APC")]
-    [InlineData("\u001b^private", "PM")]
-    [InlineData("\u001bXstring", "SOS")]
-    [InlineData("\u001bP$qm", "DCS")]
+    [TestMethod]
+    [DataRow("\u001b_Gi=31,a=q;AAAA", "APC")]
+    [DataRow("\u001b^private", "PM")]
+    [DataRow("\u001bXstring", "SOS")]
+    [DataRow("\u001bP$qm", "DCS")]
     public void A_cursor_report_after_a_string_sequence_is_answered(string sequence, string what)
     {
         var terminal = Fresh();
@@ -56,30 +56,29 @@ public class StringSequenceTests
 
         terminal.Write(sequence + St + Esc + "[6n");
 
-        Assert.True(reply is not null,
-            $"no cursor report after {what}: a program that queries and waits would wait for ever");
+        (reply is not null).Should().BeTrue($"no cursor report after {what}: a program that queries and waits would wait for ever");
     }
 
     /// <summary>
     /// The terminator is two bytes, and both belong to it. Leaving the second to be printed put a stray
     /// backslash on screen after every DCS a program sent.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_backslash_of_a_two_byte_terminator_is_not_printed()
     {
         var terminal = Fresh();
         terminal.Write(Esc + "P$qm" + St);
 
-        Assert.Equal("", ScreenTop(terminal));
+        ScreenTop(terminal).Should().Be("");
     }
 
     /// <summary>A single-byte ST ends it too.</summary>
-    [Fact]
+    [TestMethod]
     public void A_single_byte_terminator_also_ends_the_sequence()
     {
         var terminal = Fresh();
         terminal.Write(Esc + "_apc\u009c" + "OK");
 
-        Assert.Equal("OK", ScreenTop(terminal));
+        ScreenTop(terminal).Should().Be("OK");
     }
 }

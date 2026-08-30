@@ -1,5 +1,4 @@
 using XTerm.Buffer;
-using Xunit;
 
 namespace XTerm.Tests.Buffer;
 
@@ -8,21 +7,22 @@ namespace XTerm.Tests.Buffer;
 /// and otherwise from an interned cluster id. Setting it must therefore still round-trip, for
 /// anything a hosted program can actually produce.
 /// </summary>
+[TestClass]
 public class BufferCellContentTests
 {
-    [Theory]
-    [InlineData("")]
-    [InlineData("a")]
-    [InlineData("\u00e9")]
-    [InlineData("\u4e16")]
-    [InlineData("\U0001F600")]
-    [InlineData("e\u0301")]
-    [InlineData("\U0001F468\u200D\U0001F469")]
+    [TestMethod]
+    [DataRow("")]
+    [DataRow("a")]
+    [DataRow("\u00e9")]
+    [DataRow("\u4e16")]
+    [DataRow("\U0001F600")]
+    [DataRow("e\u0301")]
+    [DataRow("\U0001F468\u200D\U0001F469")]
     public void Content_round_trips(string text)
     {
         var cell = new BufferCell { Content = text };
 
-        Assert.Equal(text, cell.Content);
+        cell.Content.Should().Be(text);
     }
 
     /// <summary>
@@ -35,7 +35,7 @@ public class BufferCellContentTests
     /// lone surrogate does not survive the round trip -- it arrives as U+FFFD, so the test would
     /// pass while never once handling the input it names.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void An_unpaired_surrogate_is_stored_rather_than_thrown_on()
     {
         var cases = new[]
@@ -53,10 +53,8 @@ public class BufferCellContentTests
 
             var thrown = Record.Exception(() => cell.Content = text);
 
-            Assert.True(thrown is null,
-                $"threw on {Describe(text)}: {thrown?.GetType().Name}");
-            Assert.True(text == cell.Content,
-                $"{Describe(text)} came back as {Describe(cell.Content)}");
+            (thrown is null).Should().BeTrue($"threw on {Describe(text)}: {thrown?.GetType().Name}");
+            ((text == cell.Content)).Should().BeTrue($"{Describe(text)} came back as {Describe(cell.Content)}");
         }
     }
 
@@ -68,11 +66,11 @@ public class BufferCellContentTests
     /// combining-character tests, which read CodePoint, see something meaningful rather than half a
     /// character.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_unpaired_surrogate_reads_as_the_replacement_character()
     {
         var cell = new BufferCell { Content = "\uD83D" };
 
-        Assert.Equal(0xFFFD, cell.CodePoint);
+        cell.CodePoint.Should().Be(0xFFFD);
     }
 }

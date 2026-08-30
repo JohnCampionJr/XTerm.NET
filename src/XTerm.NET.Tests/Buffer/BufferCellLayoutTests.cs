@@ -1,6 +1,5 @@
 using System.Runtime.CompilerServices;
 using XTerm.Buffer;
-using Xunit;
 
 namespace XTerm.Tests.Buffer;
 
@@ -11,6 +10,7 @@ namespace XTerm.Tests.Buffer;
 /// they do not. That makes them the right things to guard in CI, where a throughput number cannot be
 /// trusted to a few per cent but a struct layout can be trusted absolutely.</para>
 /// </summary>
+[TestClass]
 public class BufferCellLayoutTests
 {
     /// <summary>
@@ -25,11 +25,10 @@ public class BufferCellLayoutTests
     /// A <c>string</c>, an object, or an array field added to <see cref="BufferCell"/> would undo
     /// that at a stroke, and nothing else in the suite would notice.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void The_cell_holds_no_managed_references()
     {
-        Assert.False(RuntimeHelpers.IsReferenceOrContainsReferences<BufferCell>(),
-            "BufferCell gained a managed reference. Every cell of the scrollback is now traced by "
+        (RuntimeHelpers.IsReferenceOrContainsReferences<BufferCell>()).Should().BeFalse("BufferCell gained a managed reference. Every cell of the scrollback is now traced by "
           + "the GC and every write to one emits a barrier; a 240-column fill goes from about 70 ns "
           + "to about 239 ns. Store an int and intern the rest, as CodePoint and ClusterId do.");
     }
@@ -43,9 +42,9 @@ public class BufferCellLayoutTests
     /// re-measured, rather than something that arrives as a side effect of adding a field. Update
     /// this test in the same commit that widens the struct.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void The_cell_is_twenty_four_bytes()
     {
-        Assert.Equal(24, Unsafe.SizeOf<BufferCell>());
+        (Unsafe.SizeOf<BufferCell>()).Should().Be(24);
     }
 }

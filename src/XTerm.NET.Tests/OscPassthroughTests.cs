@@ -8,6 +8,7 @@ namespace XTerm.Tests;
 /// Covers <see cref="Terminal.OscReceived"/>, the escape hatch for OSC codes this terminal does not
 /// implement.
 /// </summary>
+[TestClass]
 public class OscPassthroughTests
 {
     private Terminal CreateTerminal(int cols = 80, int rows = 24)
@@ -23,7 +24,7 @@ public class OscPassthroughTests
         return seen;
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_FiresForUnknownSequence()
     {
         // The reason this event exists: a code with no case here reaches Debug.WriteLine and is
@@ -39,15 +40,15 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]1337;SetMark\x07");
 
-        var osc = Assert.Single(seen);
-        Assert.Equal(1337, osc.Code);
-        Assert.Equal("1337", osc.Identifier);
-        Assert.Equal("SetMark", osc.Data);
-        Assert.Equal("1337;SetMark", osc.Raw);
-        Assert.False(osc.Recognized, "the terminal has no handler for 1337, which is the point");
+        var osc = seen.Should().ContainSingle().Which;
+        osc.Code.Should().Be(1337);
+        osc.Identifier.Should().Be("1337");
+        osc.Data.Should().Be("SetMark");
+        osc.Raw.Should().Be("1337;SetMark");
+        osc.Recognized.Should().BeFalse("the terminal has no handler for 1337, which is the point");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_ReportsShellIntegrationAsRecognized_NowThatItIsImplemented()
     {
         // The other half: OSC 133 is handled now, so a listener that only wants what this terminal
@@ -57,12 +58,12 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]133;A\x07");
 
-        var osc = Assert.Single(seen);
-        Assert.Equal(133, osc.Code);
-        Assert.True(osc.Recognized, "133 reaches a handler now, and Recognized has to say so");
+        var osc = seen.Should().ContainSingle().Which;
+        osc.Code.Should().Be(133);
+        osc.Recognized.Should().BeTrue("133 reaches a handler now, and Recognized has to say so");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_FiresForKnownSequence_AndReportsItRecognized()
     {
         var terminal = CreateTerminal();
@@ -70,13 +71,13 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]0;A Title\x07");
 
-        var osc = Assert.Single(seen);
-        Assert.Equal(0, osc.Code);
-        Assert.Equal("A Title", osc.Data);
-        Assert.True(osc.Recognized);
+        var osc = seen.Should().ContainSingle().Which;
+        osc.Code.Should().Be(0);
+        osc.Data.Should().Be("A Title");
+        osc.Recognized.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_DoesNotDisturbBuiltInHandling()
     {
         // Purely additive: subscribing must not change what the terminal already did.
@@ -85,10 +86,10 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]0;Still Set\x07");
 
-        Assert.Equal("Still Set", terminal.Title);
+        terminal.Title.Should().Be("Still Set");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_FiresAfterBuiltInHandling()
     {
         // Ordering is contractual: a listener reads terminal state as settled, not mid-flight.
@@ -98,10 +99,10 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]0;Observed\x07");
 
-        Assert.Equal("Observed", titleWhenObserved);
+        titleWhenObserved.Should().Be("Observed");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_ReportsNegativeCode_ForNonNumericIdentifier()
     {
         var terminal = CreateTerminal();
@@ -109,14 +110,14 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]notanumber;payload\x07");
 
-        var osc = Assert.Single(seen);
-        Assert.Equal(-1, osc.Code);
-        Assert.Equal("notanumber", osc.Identifier);
-        Assert.Equal("payload", osc.Data);
-        Assert.False(osc.Recognized);
+        var osc = seen.Should().ContainSingle().Which;
+        osc.Code.Should().Be(-1);
+        osc.Identifier.Should().Be("notanumber");
+        osc.Data.Should().Be("payload");
+        osc.Recognized.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_ReportsEmptyData_WhenSequenceHasNoParameters()
     {
         var terminal = CreateTerminal();
@@ -124,13 +125,13 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]133\x07");
 
-        var osc = Assert.Single(seen);
-        Assert.Equal(133, osc.Code);
-        Assert.Equal(string.Empty, osc.Data);
-        Assert.Equal("133", osc.Raw);
+        var osc = seen.Should().ContainSingle().Which;
+        osc.Code.Should().Be(133);
+        osc.Data.Should().Be(string.Empty);
+        osc.Raw.Should().Be("133");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_KeepsDataIntact_WhenPayloadContainsSemicolons()
     {
         // Only the FIRST ';' separates identifier from data. OSC 9;4 and OSC 133;D;<exit> both carry
@@ -140,13 +141,13 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]9;4;1;50\x07");
 
-        var osc = Assert.Single(seen);
-        Assert.Equal(9, osc.Code);
-        Assert.Equal("4;1;50", osc.Data);
-        Assert.Equal("9;4;1;50", osc.Raw);
+        var osc = seen.Should().ContainSingle().Which;
+        osc.Code.Should().Be(9);
+        osc.Data.Should().Be("4;1;50");
+        osc.Raw.Should().Be("9;4;1;50");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_FiresOncePerSequence()
     {
         var terminal = CreateTerminal();
@@ -154,11 +155,11 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]133;A\x07\x1B]133;B\x07\x1B]133;C\x07");
 
-        Assert.Equal(3, seen.Count);
-        Assert.Equal(new[] { "A", "B", "C" }, seen.Select(o => o.Data));
+        seen.Count.Should().Be(3);
+        seen.Select(o => o.Data).Should().Equal(new[] { "A", "B", "C" });
     }
 
-    [Fact]
+    [TestMethod]
     public void OscReceived_AcceptsStringTerminator_AsWellAsBel()
     {
         // Shell-integration snippets in the wild use both terminators; OSC 133 examples ship with ST.
@@ -167,8 +168,8 @@ public class OscPassthroughTests
 
         terminal.Write("\x1B]133;D;0\x1B\\");
 
-        var osc = Assert.Single(seen);
-        Assert.Equal(133, osc.Code);
-        Assert.Equal("D;0", osc.Data);
+        var osc = seen.Should().ContainSingle().Which;
+        osc.Code.Should().Be(133);
+        osc.Data.Should().Be("D;0");
     }
 }

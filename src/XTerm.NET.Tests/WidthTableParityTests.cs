@@ -9,9 +9,10 @@ namespace XTerm.Tests;
 /// edit to either — or a regeneration that changes what the referee would measure — goes red
 /// with the first diverging codepoint named.
 /// </summary>
+[TestClass]
 public class WidthTableParityTests
 {
-    [Fact]
+    [TestMethod]
     public void Every_codepoint_matches_the_referee()
     {
         var lines = File.ReadAllLines(Path.Combine("Fixtures", "wcwidth-parity.rle"));
@@ -32,6 +33,6 @@ public class WidthTableParityTests
             }
         }
 
-        Assert.Equal(0x110000, codePoint);   // the fixture covered the whole codespace
+        codePoint.Should().Be(0x110000);   // the fixture covered the whole codespace
     }
 }

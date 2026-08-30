@@ -4,19 +4,21 @@ using System.Text;
 
 namespace XTerm.Tests.Parser;
 
+[TestClass]
+
 public class EscapeSequenceParserTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_InitializesParser()
     {
         // Arrange & Act
         var parser = new EscapeSequenceParser();
 
         // Assert
-        Assert.NotNull(parser);
+        parser.Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_SimpleText_CallsPrintHandler()
     {
         // Arrange
@@ -28,10 +30,10 @@ public class EscapeSequenceParserTests
         parser.Parse("Hello");
 
         // Assert
-        Assert.Equal("Hello", printed.ToString());
+        printed.ToString().Should().Be("Hello");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_EmptyString_DoesNothing()
     {
         // Arrange
@@ -43,10 +45,10 @@ public class EscapeSequenceParserTests
         parser.Parse("");
 
         // Assert
-        Assert.False(called);
+        called.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ControlCharacter_CallsExecuteHandler()
     {
         // Arrange
@@ -58,10 +60,10 @@ public class EscapeSequenceParserTests
         parser.Parse("\x07"); // BEL
 
         // Assert
-        Assert.Contains(0x07, executedCodes);
+        executedCodes.Should().Contain(0x07);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_LineFeed_CallsExecuteHandler()
     {
         // Arrange
@@ -73,10 +75,10 @@ public class EscapeSequenceParserTests
         parser.Parse("\n");
 
         // Assert
-        Assert.Contains(0x0A, executedCodes);
+        executedCodes.Should().Contain(0x0A);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_CarriageReturn_CallsExecuteHandler()
     {
         // Arrange
@@ -88,10 +90,10 @@ public class EscapeSequenceParserTests
         parser.Parse("\r");
 
         // Assert
-        Assert.Contains(0x0D, executedCodes);
+        executedCodes.Should().Contain(0x0D);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_Tab_CallsExecuteHandler()
     {
         // Arrange
@@ -103,10 +105,10 @@ public class EscapeSequenceParserTests
         parser.Parse("\t");
 
         // Assert
-        Assert.Contains(0x09, executedCodes);
+        executedCodes.Should().Contain(0x09);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_Backspace_CallsExecuteHandler()
     {
         // Arrange
@@ -118,10 +120,10 @@ public class EscapeSequenceParserTests
         parser.Parse("\x08");
 
         // Assert
-        Assert.Contains(0x08, executedCodes);
+        executedCodes.Should().Contain(0x08);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_CsiSequence_CallsCsiHandler()
     {
         // Arrange
@@ -133,11 +135,11 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[H"); // Cursor Home
 
         // Assert
-        Assert.Single(csiCalls);
-        Assert.Contains("H", csiCalls[0].identifier);
+        csiCalls.Should().ContainSingle();
+        csiCalls[0].identifier.Should().Contain("H");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_CsiWithParameters_PassesParameters()
     {
         // Arrange
@@ -149,14 +151,14 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[10;20H"); // Cursor Position
 
         // Assert
-        Assert.Single(csiCalls);
+        csiCalls.Should().ContainSingle();
         var call = csiCalls[0];
-        Assert.Contains("H", call.identifier);
-        Assert.Equal(10, call.parameters.GetParam(0));
-        Assert.Equal(20, call.parameters.GetParam(1));
+        call.identifier.Should().Contain("H");
+        call.parameters.GetParam(0).Should().Be(10);
+        call.parameters.GetParam(1).Should().Be(20);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_CsiWithSingleParameter_ParsesCorrectly()
     {
         // Arrange
@@ -168,13 +170,13 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[5A"); // Cursor Up 5
 
         // Assert
-        Assert.Single(csiCalls);
+        csiCalls.Should().ContainSingle();
         var call = csiCalls[0];
-        Assert.Contains("A", call.identifier);
-        Assert.Equal(5, call.parameters.GetParam(0));
+        call.identifier.Should().Contain("A");
+        call.parameters.GetParam(0).Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_SgrSequence_CallsCsiHandler()
     {
         // Arrange
@@ -186,14 +188,14 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[1;31m"); // Bold + Red foreground
 
         // Assert
-        Assert.Single(csiCalls);
+        csiCalls.Should().ContainSingle();
         var call = csiCalls[0];
-        Assert.Contains("m", call.identifier);
-        Assert.Equal(1, call.parameters.GetParam(0));
-        Assert.Equal(31, call.parameters.GetParam(1));
+        call.identifier.Should().Contain("m");
+        call.parameters.GetParam(0).Should().Be(1);
+        call.parameters.GetParam(1).Should().Be(31);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_EscSequence_CallsEscHandler()
     {
         // Arrange
@@ -205,11 +207,11 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B" + "D"); // Index
 
         // Assert
-        Assert.Single(escCalls);
-        Assert.Equal("D", escCalls[0].finalChar);
+        escCalls.Should().ContainSingle();
+        escCalls[0].finalChar.Should().Be("D");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_OscSequence_CallsOscHandler()
     {
         // Arrange
@@ -221,11 +223,11 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B]0;Test Title\x07"); // Set title
 
         // Assert
-        Assert.Single(oscData);
-        Assert.Equal("0;Test Title", oscData[0]);
+        oscData.Should().ContainSingle();
+        oscData[0].Should().Be("0;Test Title");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_OscWithEscTerminator_CallsOscHandler()
     {
         // Arrange
@@ -237,11 +239,11 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B]2;Window Title\x1B\\"); // Set title with ESC terminator
 
         // Assert
-        Assert.Single(oscData);
-        Assert.Equal("2;Window Title", oscData[0]);
+        oscData.Should().ContainSingle();
+        oscData[0].Should().Be("2;Window Title");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_MixedContent_HandlesCorrectly()
     {
         // Arrange
@@ -256,12 +258,12 @@ public class EscapeSequenceParserTests
         parser.Parse("Hello\x1B[1mWorld");
 
         // Assert
-        Assert.Contains("Hello", printed.ToString());
-        Assert.Contains("World", printed.ToString());
-        Assert.Single(csiCalls);
+        printed.ToString().Should().Contain("Hello");
+        printed.ToString().Should().Contain("World");
+        csiCalls.Should().ContainSingle();
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_MultipleSequences_HandlesAll()
     {
         // Arrange
@@ -273,13 +275,13 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[H\x1B[2J\x1B[1;1H");
 
         // Assert
-        Assert.Equal(3, csiCalls.Count);
-        Assert.Contains("H", csiCalls[0]);
-        Assert.Contains("J", csiCalls[1]);
-        Assert.Contains("H", csiCalls[2]);
+        csiCalls.Count.Should().Be(3);
+        csiCalls[0].Should().Contain("H");
+        csiCalls[1].Should().Contain("J");
+        csiCalls[2].Should().Contain("H");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_LongString_HandlesCorrectly()
     {
         // Arrange
@@ -292,10 +294,10 @@ public class EscapeSequenceParserTests
         parser.Parse(longString);
 
         // Assert
-        Assert.Equal(1000, printed.Length);
+        printed.Length.Should().Be(1000);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_ResetsParserState()
     {
         // Arrange
@@ -310,10 +312,10 @@ public class EscapeSequenceParserTests
         parser.Parse("Test");
 
         // Assert
-        Assert.Equal("Test", printed.ToString());
+        printed.ToString().Should().Be("Test");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_IncompleteSequence_HandlesGracefully()
     {
         // Arrange
@@ -329,7 +331,7 @@ public class EscapeSequenceParserTests
         // The parser handles incomplete sequences by continuing in next parse
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_CsiErase_ParsesCorrectly()
     {
         // Arrange
@@ -341,12 +343,12 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[2J"); // Erase Display
 
         // Assert
-        Assert.Single(csiCalls);
-        Assert.Contains("J", csiCalls[0].identifier);
-        Assert.Equal(2, csiCalls[0].parameters.GetParam(0));
+        csiCalls.Should().ContainSingle();
+        csiCalls[0].identifier.Should().Contain("J");
+        (csiCalls[0].parameters.GetParam(0)).Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_CsiCursorMovement_ParsesCorrectly()
     {
         // Arrange
@@ -361,14 +363,14 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[4D"); // Cursor Backward
 
         // Assert
-        Assert.Equal(4, csiCalls.Count);
-        Assert.Contains("A", csiCalls[0].identifier);
-        Assert.Contains("B", csiCalls[1].identifier);
-        Assert.Contains("C", csiCalls[2].identifier);
-        Assert.Contains("D", csiCalls[3].identifier);
+        csiCalls.Count.Should().Be(4);
+        csiCalls[0].identifier.Should().Contain("A");
+        csiCalls[1].identifier.Should().Contain("B");
+        csiCalls[2].identifier.Should().Contain("C");
+        csiCalls[3].identifier.Should().Contain("D");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_SaveRestoreCursor_ParsesCorrectly()
     {
         // Arrange
@@ -381,12 +383,12 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B" + "8"); // Restore cursor - ESC followed by '8'
 
         // Assert
-        Assert.Equal(2, escCalls.Count);
-        Assert.Contains("7", escCalls);
-        Assert.Contains("8", escCalls);
+        escCalls.Count.Should().Be(2);
+        escCalls.Should().Contain("7");
+        escCalls.Should().Contain("8");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ComplexSgrSequence_ParsesAllParameters()
     {
         // Arrange
@@ -398,17 +400,17 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[1;3;4;31;42m"); // Bold, Italic, Underline, Red FG, Green BG
 
         // Assert
-        Assert.Single(csiCalls);
+        csiCalls.Should().ContainSingle();
         var call = csiCalls[0];
-        Assert.Contains("m", call.identifier);
-        Assert.Equal(1, call.parameters.GetParam(0));
-        Assert.Equal(3, call.parameters.GetParam(1));
-        Assert.Equal(4, call.parameters.GetParam(2));
-        Assert.Equal(31, call.parameters.GetParam(3));
-        Assert.Equal(42, call.parameters.GetParam(4));
+        call.identifier.Should().Contain("m");
+        call.parameters.GetParam(0).Should().Be(1);
+        call.parameters.GetParam(1).Should().Be(3);
+        call.parameters.GetParam(2).Should().Be(4);
+        call.parameters.GetParam(3).Should().Be(31);
+        call.parameters.GetParam(4).Should().Be(42);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ScrollRegion_ParsesCorrectly()
     {
         // Arrange
@@ -420,14 +422,14 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[5;20r"); // Set scroll region
 
         // Assert
-        Assert.Single(csiCalls);
+        csiCalls.Should().ContainSingle();
         var call = csiCalls[0];
-        Assert.Contains("r", call.identifier);
-        Assert.Equal(5, call.parameters.GetParam(0));
-        Assert.Equal(20, call.parameters.GetParam(1));
+        call.identifier.Should().Contain("r");
+        call.parameters.GetParam(0).Should().Be(5);
+        call.parameters.GetParam(1).Should().Be(20);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_TextWithEmbeddedEscapes_HandlesCorrectly()
     {
         // Arrange
@@ -442,13 +444,13 @@ public class EscapeSequenceParserTests
         parser.Parse("Line1\x1B[1mBold\x1B[0mNormal");
 
         // Assert
-        Assert.Contains("Line1", printed.ToString());
-        Assert.Contains("Bold", printed.ToString());
-        Assert.Contains("Normal", printed.ToString());
-        Assert.Equal(2, csiCount);
+        printed.ToString().Should().Contain("Line1");
+        printed.ToString().Should().Contain("Bold");
+        printed.ToString().Should().Contain("Normal");
+        csiCount.Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ZeroParameters_HandlesCorrectly()
     {
         // Arrange
@@ -460,11 +462,11 @@ public class EscapeSequenceParserTests
         parser.Parse("\x1B[m"); // SGR reset with no parameters
 
         // Assert
-        Assert.Single(csiCalls);
-        Assert.Contains("m", csiCalls[0].identifier);
+        csiCalls.Should().ContainSingle();
+        csiCalls[0].identifier.Should().Contain("m");
     }
 
-    [Fact]
+    [TestMethod]
     public void Handlers_CanBeNull_WithoutCrashing()
     {
         // Arrange
@@ -478,7 +480,7 @@ public class EscapeSequenceParserTests
         parser.Parse("\x07");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_UnicodeCharacters_HandlesCorrectly()
     {
         // Arrange
@@ -490,8 +492,8 @@ public class EscapeSequenceParserTests
         parser.Parse("Hello ?? ??");
 
         // Assert
-        Assert.Contains("Hello", printed.ToString());
-        Assert.Contains("??", printed.ToString());
-        Assert.Contains("??", printed.ToString());
+        printed.ToString().Should().Contain("Hello");
+        printed.ToString().Should().Contain("??");
+        printed.ToString().Should().Contain("??");
     }
 }

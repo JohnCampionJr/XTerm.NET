@@ -5,23 +5,25 @@ using XTerm.Options;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class TerminalTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_InitializesTerminal()
     {
         // Arrange & Act
         var terminal = new Terminal();
 
         // Assert
-        Assert.NotNull(terminal);
-        Assert.NotNull(terminal.Options);
-        Assert.NotNull(terminal.Buffer);
-        Assert.Equal(80, terminal.Cols);
-        Assert.Equal(24, terminal.Rows);
+        terminal.Should().NotBeNull();
+        terminal.Options.Should().NotBeNull();
+        terminal.Buffer.Should().NotBeNull();
+        terminal.Cols.Should().Be(80);
+        terminal.Rows.Should().Be(24);
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_WithOptions_SnapshotsProvidedOptions()
     {
         // Arrange
@@ -31,14 +33,14 @@ public class TerminalTests
         var terminal = new Terminal(options);
 
         // Assert
-        Assert.Equal(100, terminal.Cols);
-        Assert.Equal(30, terminal.Rows);
-        Assert.NotSame(options, terminal.Options);
-        Assert.Equal(options.Cols, terminal.Options.Cols);
-        Assert.Equal(options.Rows, terminal.Options.Rows);
+        terminal.Cols.Should().Be(100);
+        terminal.Rows.Should().Be(30);
+        terminal.Options.Should().NotBeSameAs(options);
+        terminal.Options.Cols.Should().Be(options.Cols);
+        terminal.Options.Rows.Should().Be(options.Rows);
     }
 
-    [Fact]
+    [TestMethod]
     public void Terminals_created_from_one_options_object_do_not_alias_each_other()
     {
         var options = new TerminalOptions { CursorBlink = false };
@@ -47,12 +49,12 @@ public class TerminalTests
 
         first.Options.CursorBlink = true;
 
-        Assert.True(first.Options.CursorBlink);
-        Assert.False(second.Options.CursorBlink);
-        Assert.False(options.CursorBlink);
+        first.Options.CursorBlink.Should().BeTrue();
+        second.Options.CursorBlink.Should().BeFalse();
+        options.CursorBlink.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Mutating_ConstructorOptions_Later_DoesNotReconfigureTheTerminal()
     {
         var options = new TerminalOptions { CursorStyle = CursorStyle.Block };
@@ -60,46 +62,46 @@ public class TerminalTests
 
         options.CursorStyle = CursorStyle.Bar;
 
-        Assert.Equal(CursorStyle.Block, terminal.Options.CursorStyle);
+        terminal.Options.CursorStyle.Should().Be(CursorStyle.Block);
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_Snapshot_IncludesNestedOptions()
     {
         var options = new TerminalOptions();
         var terminal = new Terminal(options);
 
-        Assert.NotSame(options.Theme, terminal.Options.Theme);
-        Assert.NotSame(options.WindowOptions, terminal.Options.WindowOptions);
+        terminal.Options.Theme.Should().NotBeSameAs(options.Theme);
+        terminal.Options.WindowOptions.Should().NotBeSameAs(options.WindowOptions);
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_ToleratesNullNestedOptions()
     {
         var options = new TerminalOptions { Theme = null!, WindowOptions = null! };
 
         var terminal = new Terminal(options);
 
-        Assert.NotNull(terminal.Options.Theme);
-        Assert.NotNull(terminal.Options.WindowOptions);
+        terminal.Options.Theme.Should().NotBeNull();
+        terminal.Options.WindowOptions.Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_InitializesTerminalState()
     {
         // Arrange & Act
         var terminal = new Terminal();
 
         // Assert
-        Assert.False(terminal.InsertMode);
-        Assert.False(terminal.ApplicationCursorKeys);
-        Assert.False(terminal.ApplicationKeypad);
-        Assert.False(terminal.BracketedPasteMode);
-        Assert.False(terminal.OriginMode);
-        Assert.Equal(string.Empty, terminal.Title);
+        terminal.InsertMode.Should().BeFalse();
+        terminal.ApplicationCursorKeys.Should().BeFalse();
+        terminal.ApplicationKeypad.Should().BeFalse();
+        terminal.BracketedPasteMode.Should().BeFalse();
+        terminal.OriginMode.Should().BeFalse();
+        terminal.Title.Should().Be(string.Empty);
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_EmptyString_DoesNothing()
     {
         // Arrange
@@ -110,7 +112,7 @@ public class TerminalTests
         terminal.Write((string)null!);   // disambiguated: Write(ReadOnlySpan<byte>) also accepts null
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_PlainText_PrintsToBuffer()
     {
         // Arrange
@@ -121,10 +123,10 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("Hello", line);
+        line.Should().Contain("Hello");
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_WithEscapeSequence_ProcessesSequence()
     {
         // Arrange
@@ -135,10 +137,10 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("Bold", line);
+        line.Should().Contain("Bold");
     }
 
-    [Fact]
+    [TestMethod]
     public void WriteLine_AddsLineFeed()
     {
         // Arrange
@@ -151,11 +153,11 @@ public class TerminalTests
         // Assert
         var line0 = terminal.GetLine(0);
         var line1 = terminal.GetLine(1);
-        Assert.Contains("Line1", line0);
-        Assert.Contains("Line2", line1);
+        line0.Should().Contain("Line1");
+        line1.Should().Contain("Line2");
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_ChangesTerminalSize()
     {
         // Arrange
@@ -175,14 +177,14 @@ public class TerminalTests
         terminal.Resize(100, 30);
 
         // Assert
-        Assert.Equal(100, terminal.Cols);
-        Assert.Equal(30, terminal.Rows);
-        Assert.True(resized);
-        Assert.Equal(100, newCols);
-        Assert.Equal(30, newRows);
+        terminal.Cols.Should().Be(100);
+        terminal.Rows.Should().Be(30);
+        resized.Should().BeTrue();
+        newCols.Should().Be(100);
+        newRows.Should().Be(30);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_SameSize_DoesNotFireEvent()
     {
         // Arrange
@@ -194,10 +196,10 @@ public class TerminalTests
         terminal.Resize(80, 24); // Same as default
 
         // Assert
-        Assert.False(resized);
+        resized.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_ResetsTerminalState()
     {
         // Arrange
@@ -213,14 +215,14 @@ public class TerminalTests
         terminal.Reset();
 
         // Assert
-        Assert.False(terminal.InsertMode);
-        Assert.False(terminal.ApplicationCursorKeys);
-        Assert.False(terminal.ApplicationKeypad);
-        Assert.False(terminal.BracketedPasteMode);
-        Assert.False(terminal.OriginMode);
+        terminal.InsertMode.Should().BeFalse();
+        terminal.ApplicationCursorKeys.Should().BeFalse();
+        terminal.ApplicationKeypad.Should().BeFalse();
+        terminal.BracketedPasteMode.Should().BeFalse();
+        terminal.OriginMode.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Clear_ClearsBuffer()
     {
         // Arrange
@@ -232,10 +234,10 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.DoesNotContain("Test", line);
+        line.Should().NotContain("Test");
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollLines_ScrollsViewport()
     {
         // Arrange
@@ -252,10 +254,10 @@ public class TerminalTests
         terminal.ScrollLines(5);
 
         // Assert
-        Assert.True(scrolled);
+        scrolled.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToTop_ScrollsToTop()
     {
         // Arrange
@@ -273,11 +275,11 @@ public class TerminalTests
         terminal.ScrollToTop();
 
         // Assert
-        Assert.True(scrolled);
-        Assert.Equal(0, terminal.Buffer.YDisp);
+        scrolled.Should().BeTrue();
+        terminal.Buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToBottom_ScrollsToBottom()
     {
         // Arrange
@@ -295,11 +297,11 @@ public class TerminalTests
         terminal.ScrollToBottom();
 
         // Assert
-        Assert.True(scrolled);
-        Assert.Equal(terminal.Buffer.YBase, terminal.Buffer.YDisp);
+        scrolled.Should().BeTrue();
+        terminal.Buffer.YDisp.Should().Be(terminal.Buffer.YBase);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetLine_ReturnsLineContent()
     {
         // Arrange
@@ -310,10 +312,10 @@ public class TerminalTests
         var line = terminal.GetLine(0);
 
         // Assert
-        Assert.Contains("Test Line", line);
+        line.Should().Contain("Test Line");
     }
 
-    [Fact]
+    [TestMethod]
     public void GetLine_InvalidIndex_ReturnsEmpty()
     {
         // Arrange
@@ -323,10 +325,10 @@ public class TerminalTests
         var line = terminal.GetLine(1000);
 
         // Assert
-        Assert.Equal(string.Empty, line);
+        line.Should().Be(string.Empty);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetVisibleLines_ReturnsAllVisibleLines()
     {
         // Arrange
@@ -339,13 +341,13 @@ public class TerminalTests
         var lines = terminal.GetVisibleLines();
 
         // Assert
-        Assert.Equal(5, lines.Length);
-        Assert.Contains("Line1", lines[0]);
-        Assert.Contains("Line2", lines[1]);
-        Assert.Contains("Line3", lines[2]);
+        lines.Length.Should().Be(5);
+        lines[0].Should().Contain("Line1");
+        lines[1].Should().Contain("Line2");
+        lines[2].Should().Contain("Line3");
     }
 
-    [Fact]
+    [TestMethod]
     public void OnBell_FiresWhenBellReceived()
     {
         // Arrange
@@ -357,10 +359,10 @@ public class TerminalTests
         terminal.Write("\x07"); // BEL character
 
         // Assert
-        Assert.True(bellRang);
+        bellRang.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void OnLineFeed_FiresOnLineFeed()
     {
         // Arrange
@@ -372,10 +374,10 @@ public class TerminalTests
         terminal.Write("\n");
 
         // Assert
-        Assert.True(lineFeedFired);
+        lineFeedFired.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Title_CanBeSetViaOscSequence()
     {
         // Arrange
@@ -385,20 +387,20 @@ public class TerminalTests
         terminal.Write("\x1B]0;Test Title\x07");
 
         // Assert
-        Assert.Equal("Test Title", terminal.Title);
+        terminal.Title.Should().Be("Test Title");
     }
 
-    [Fact]
+    [TestMethod]
     public void Title_InitiallyEmpty()
     {
         // Arrange & Act
         var terminal = new Terminal();
 
         // Assert
-        Assert.Equal(string.Empty, terminal.Title);
+        terminal.Title.Should().Be(string.Empty);
     }
 
-    [Fact]
+    [TestMethod]
     public void SwitchToAltBuffer_SwitchesBuffer()
     {
         // Arrange
@@ -411,10 +413,10 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("Alt buffer", line);
+        line.Should().Contain("Alt buffer");
     }
 
-    [Fact]
+    [TestMethod]
     public void SwitchToNormalBuffer_RestoresNormalBuffer()
     {
         // Arrange
@@ -428,10 +430,10 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("Normal content", line);
+        line.Should().Contain("Normal content");
     }
 
-    [Fact]
+    [TestMethod]
     public void SwitchToAltBuffer_WhenAlreadyInAltBuffer_DoesNothing()
     {
         // Arrange
@@ -442,7 +444,7 @@ public class TerminalTests
         terminal.SwitchToAltBuffer();
     }
 
-    [Fact]
+    [TestMethod]
     public void SwitchToNormalBuffer_WhenAlreadyInNormalBuffer_DoesNothing()
     {
         // Arrange
@@ -452,7 +454,7 @@ public class TerminalTests
         terminal.SwitchToNormalBuffer();
     }
 
-    [Fact]
+    [TestMethod]
     public void Dispose_ClearsAllEvents()
     {
         // Arrange
@@ -467,10 +469,10 @@ public class TerminalTests
         terminal.ScrollLines(1); // Try to trigger scroll
 
         // Assert
-        Assert.Equal(0, count); // Events should not fire after dispose
+        count.Should().Be(0); // Events should not fire after dispose
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_WithBackspace_MovesBack()
     {
         // Arrange
@@ -483,10 +485,10 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("ABX", line);
+        line.Should().Contain("ABX");
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_WithTab_MovesToNextTabStop()
     {
         // Arrange
@@ -498,10 +500,10 @@ public class TerminalTests
         terminal.Write("B");
 
         // Assert
-        Assert.True(terminal.Buffer.X >= 8); // Should be at or past first tab stop
+        ((terminal.Buffer.X >= 8)).Should().BeTrue(); // Should be at or past first tab stop
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_WithCarriageReturn_MovesToLineStart()
     {
         // Arrange
@@ -513,10 +515,10 @@ public class TerminalTests
         terminal.Write("X");
 
         // Assert
-        Assert.Equal(1, terminal.Buffer.X); // Should be at position 1 after writing X
+        terminal.Buffer.X.Should().Be(1); // Should be at position 1 after writing X
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_CursorMovement_WorksCorrectly()
     {
         // Arrange
@@ -527,11 +529,11 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("Start", line);
-        Assert.Contains("Here", line);
+        line.Should().Contain("Start");
+        line.Should().Contain("Here");
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_Colors_ApplyCorrectly()
     {
         // Arrange
@@ -542,11 +544,11 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("Red", line);
-        Assert.Contains("Normal", line);
+        line.Should().Contain("Red");
+        line.Should().Contain("Normal");
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_BoldText_AppliesAttribute()
     {
         // Arrange
@@ -557,11 +559,11 @@ public class TerminalTests
 
         // Assert
         var line = terminal.Buffer.Lines[0];
-        Assert.NotNull(line);
-        Assert.True(line[0].Attributes.IsBold());
+        line.Should().NotBeNull();
+        (line[0].Attributes.IsBold()).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_MultipleLines_HandlesCorrectly()
     {
         // Arrange
@@ -571,12 +573,12 @@ public class TerminalTests
         terminal.Write("Line1\nLine2\nLine3");
 
         // Assert
-        Assert.Contains("Line1", terminal.GetLine(0));
-        Assert.Contains("Line2", terminal.GetLine(1));
-        Assert.Contains("Line3", terminal.GetLine(2));
+        terminal.GetLine(0).Should().Contain("Line1");
+        terminal.GetLine(1).Should().Contain("Line2");
+        terminal.GetLine(2).Should().Contain("Line3");
     }
 
-    [Fact]
+    [TestMethod]
     public void InsertMode_AffectsPrinting()
     {
         // Arrange
@@ -591,10 +593,10 @@ public class TerminalTests
         // Assert
         // Character should be inserted, not overwritten
         var line = terminal.GetLine(0);
-        Assert.Contains("X", line);
+        line.Should().Contain("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void OriginMode_CanBeToggled()
     {
         // Arrange
@@ -604,16 +606,16 @@ public class TerminalTests
         terminal.OriginMode = true;
 
         // Assert
-        Assert.True(terminal.OriginMode);
+        terminal.OriginMode.Should().BeTrue();
 
         // Act
         terminal.OriginMode = false;
 
         // Assert
-        Assert.False(terminal.OriginMode);
+        terminal.OriginMode.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ApplicationCursorKeys_CanBeToggled()
     {
         // Arrange
@@ -623,10 +625,10 @@ public class TerminalTests
         terminal.ApplicationCursorKeys = true;
 
         // Assert
-        Assert.True(terminal.ApplicationCursorKeys);
+        terminal.ApplicationCursorKeys.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_LongText_HandlesCorrectly()
     {
         // Arrange
@@ -637,7 +639,7 @@ public class TerminalTests
         terminal.Write(longText);
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_UnicodeCharacters_HandlesCorrectly()
     {
         // Arrange
@@ -648,12 +650,12 @@ public class TerminalTests
 
         // Assert
         var line = terminal.GetLine(0);
-        Assert.Contains("Hello", line);
-        Assert.Contains("??", line);
-        Assert.Contains("??", line);
+        line.Should().Contain("Hello");
+        line.Should().Contain("??");
+        line.Should().Contain("??");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_ClearsCursorPosition()
     {
         // Arrange
@@ -664,11 +666,11 @@ public class TerminalTests
         terminal.Reset();
 
         // Assert
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Buffer_IsAccessible()
     {
         // Arrange
@@ -678,13 +680,13 @@ public class TerminalTests
         var buffer = terminal.Buffer;
 
         // Assert
-        Assert.NotNull(buffer);
-        Assert.Equal(terminal.Buffer, buffer);
+        buffer.Should().NotBeNull();
+        buffer.Should().Be(terminal.Buffer);
     }
 
     #region Scrolling Beyond Viewport Tests
 
-    [Fact]
+    [TestMethod]
     public void WriteLine_BeyondViewport_ScrollsBuffer()
     {
         // Arrange - 5 row terminal
@@ -697,11 +699,11 @@ public class TerminalTests
         }
 
         // Assert
-        Assert.True(terminal.Buffer.YBase > 0);
-        Assert.Equal(terminal.Buffer.YBase, terminal.Buffer.YDisp);
+        (terminal.Buffer.YBase > 0).Should().BeTrue();
+        terminal.Buffer.YDisp.Should().Be(terminal.Buffer.YBase);
     }
 
-    [Fact]
+    [TestMethod]
     public void WriteLine_BeyondViewport_ContentInScrollback()
     {
         // Arrange - 5 row terminal
@@ -715,13 +717,13 @@ public class TerminalTests
 
         // Assert - First lines should be in scrollback
         var scrollbackLine0 = terminal.Buffer.Lines[0]?.TranslateToString(true);
-        Assert.Contains("Line0", scrollbackLine0);
+        scrollbackLine0.Should().Contain("Line0");
 
         var scrollbackLine1 = terminal.Buffer.Lines[1]?.TranslateToString(true);
-        Assert.Contains("Line1", scrollbackLine1);
+        scrollbackLine1.Should().Contain("Line1");
     }
 
-    [Fact]
+    [TestMethod]
     public void WriteLine_BeyondViewport_YBaseIncrementsCorrectly()
     {
         // Arrange - 5 row terminal
@@ -736,10 +738,10 @@ public class TerminalTests
         // Assert - After 5 lines, we're at bottom. Lines 6, 7, 8 cause scrolling.
         // Actually: line 0-4 fill rows 0-4, then newline on row 4 causes scroll
         // So after 8 WriteLines, we have scrolled 8 - 5 = 3 times (roughly)
-        Assert.True(terminal.Buffer.YBase >= 3);
+        ((terminal.Buffer.YBase >= 3)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void GetVisibleLines_ReturnsActiveAreaContent()
     {
         // Arrange
@@ -755,13 +757,13 @@ public class TerminalTests
         var visibleLines = terminal.GetVisibleLines();
 
         // Assert - Should get 5 lines
-        Assert.Equal(5, visibleLines.Length);
+        visibleLines.Length.Should().Be(5);
         
         // The visible lines should be the most recent ones (since we're at bottom)
         // Due to scrolling, the last lines written should be visible
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToTop_ThenGetVisibleLines_ReturnsScrollbackContent()
     {
         // Arrange
@@ -778,10 +780,10 @@ public class TerminalTests
         var visibleLines = terminal.GetVisibleLines();
 
         // Assert - First visible line should contain early content
-        Assert.Contains("Line0", visibleLines[0]);
+        visibleLines[0].Should().Contain("Line0");
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollLines_NavigatesScrollback()
     {
         // Arrange
@@ -798,10 +800,10 @@ public class TerminalTests
         terminal.ScrollLines(-10);
 
         // Assert
-        Assert.Equal(initialYDisp - 10, terminal.Buffer.YDisp);
+        terminal.Buffer.YDisp.Should().Be(initialYDisp - 10);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToBottom_AfterScrollingUp_ReturnsToLatestContent()
     {
         // Arrange
@@ -813,16 +815,16 @@ public class TerminalTests
         }
 
         terminal.ScrollToTop();
-        Assert.Equal(0, terminal.Buffer.YDisp);
+        terminal.Buffer.YDisp.Should().Be(0);
 
         // Act
         terminal.ScrollToBottom();
 
         // Assert
-        Assert.Equal(terminal.Buffer.YBase, terminal.Buffer.YDisp);
+        terminal.Buffer.YDisp.Should().Be(terminal.Buffer.YBase);
     }
 
-    [Fact]
+    [TestMethod]
     public void LargeOutput_HandlesScrollbackCorrectly()
     {
         // Arrange - Terminal with limited scrollback
@@ -835,11 +837,11 @@ public class TerminalTests
         }
 
         // Assert - Should handle gracefully
-        Assert.True(terminal.Buffer.YBase > 0);
-        Assert.NotNull(terminal.Buffer.Lines);
+        (terminal.Buffer.YBase > 0).Should().BeTrue();
+        terminal.Buffer.Lines.Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollbackLimit_RecyclesOldContent()
     {
         // Arrange - Terminal with very limited scrollback
@@ -853,16 +855,16 @@ public class TerminalTests
         }
 
         // Assert - Buffer should be at max capacity
-        Assert.Equal(15, terminal.Buffer.Lines.Length);
+        terminal.Buffer.Lines.Length.Should().Be(15);
         
         // Early content should have been recycled
         // Line0 through Line9 should be gone
         terminal.ScrollToTop();
         var firstVisibleLine = terminal.GetVisibleLines()[0];
-        Assert.DoesNotContain("L0", firstVisibleLine);
+        firstVisibleLine.Should().NotContain("L0");
     }
 
-    [Fact]
+    [TestMethod]
     public void ContinuousOutput_MaintainsViewportAtBottom()
     {
         // Arrange
@@ -875,11 +877,11 @@ public class TerminalTests
         }
 
         // Assert - Viewport should stay at bottom
-        Assert.Equal(terminal.Buffer.YBase, terminal.Buffer.YDisp);
-        Assert.True(terminal.Buffer.IsAtBottom);
+        terminal.Buffer.YDisp.Should().Be(terminal.Buffer.YBase);
+        terminal.Buffer.IsAtBottom.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void UserScrollsUp_NewOutput_DoesNotAutoScroll()
     {
         // Arrange
@@ -893,7 +895,7 @@ public class TerminalTests
 
         // User scrolls up
         terminal.ScrollToTop();
-        Assert.Equal(0, terminal.Buffer.YDisp);
+        terminal.Buffer.YDisp.Should().Be(0);
 
         // Act - More output arrives
         for (int i = 0; i < 10; i++)
@@ -906,7 +908,7 @@ public class TerminalTests
         // If auto-scroll preservation is desired, this test would need the implementation to change
     }
 
-    [Fact]
+    [TestMethod]
     public void Write_WithNewlines_ScrollsCorrectly()
     {
         // Arrange
@@ -916,10 +918,10 @@ public class TerminalTests
         terminal.Write("Line1\nLine2\nLine3\nLine4\nLine5\nLine6\nLine7\n");
 
         // Assert
-        Assert.True(terminal.Buffer.YBase > 0);
+        (terminal.Buffer.YBase > 0).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void GetLine_WithScrollback_ReturnsCorrectContent()
     {
         // Arrange
@@ -937,12 +939,12 @@ public class TerminalTests
         var firstLine = terminal.GetLine(0);
 
         // Assert
-        Assert.Contains("FirstLine", firstLine);
+        firstLine.Should().Contain("FirstLine");
     }
 
     #endregion
 
-    [Fact]
+    [TestMethod]
     public void Reset_ClearsLineAttributes()
     {
         // Arrange
@@ -958,9 +960,9 @@ public class TerminalTests
         terminal.Write("Line 3 Wide\n");
 
         // Verify line attributes are set
-        Assert.Equal(LineAttribute.DoubleHeightTop, terminal.Buffer.Lines[1]?.LineAttribute);
-        Assert.Equal(LineAttribute.DoubleHeightBottom, terminal.Buffer.Lines[2]?.LineAttribute);
-        Assert.Equal(LineAttribute.DoubleWidth, terminal.Buffer.Lines[3]?.LineAttribute);
+        (terminal.Buffer.Lines[1]?.LineAttribute).Should().Be(LineAttribute.DoubleHeightTop);
+        (terminal.Buffer.Lines[2]?.LineAttribute).Should().Be(LineAttribute.DoubleHeightBottom);
+        (terminal.Buffer.Lines[3]?.LineAttribute).Should().Be(LineAttribute.DoubleWidth);
 
         // Act - Reset the terminal (simulates 'reset' command which sends ESC c / RIS)
         terminal.Reset();
@@ -971,12 +973,12 @@ public class TerminalTests
             var line = terminal.Buffer.Lines[i];
             if (line != null)
             {
-                Assert.Equal(LineAttribute.Normal, line.LineAttribute);
+                line.LineAttribute.Should().Be(LineAttribute.Normal);
             }
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void Reset_ClearsLineAttributesInScrollback()
     {
         // Arrange
@@ -1010,7 +1012,7 @@ public class TerminalTests
                     foundDoubleWidth = true;
             }
         }
-        Assert.True(foundDoubleHeight || foundDoubleWidth, "Expected to find at least one line with non-normal attribute");
+        ((foundDoubleHeight || foundDoubleWidth)).Should().BeTrue("Expected to find at least one line with non-normal attribute");
 
         // Act - Reset the terminal (simulates 'reset' command which sends ESC c / RIS)
         terminal.Reset();
@@ -1021,7 +1023,7 @@ public class TerminalTests
             var line = terminal.Buffer.Lines[i];
             if (line != null)
             {
-                Assert.Equal(LineAttribute.Normal, line.LineAttribute);
+                line.LineAttribute.Should().Be(LineAttribute.Normal);
             }
         }
     }

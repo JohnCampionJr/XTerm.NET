@@ -4,36 +4,38 @@ using XTerm.Options;
 
 namespace XTerm.Tests.Buffer;
 
+[TestClass]
+
 public class BufferTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_InitializesBuffer()
     {
         // Arrange & Act
         var buffer = new TerminalBuffer(80, 24, 1000);
 
         // Assert
-        Assert.Equal(0, buffer.YDisp);
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.Y);
-        Assert.Equal(0, buffer.X);
-        Assert.Equal(0, buffer.ScrollTop);
-        Assert.Equal(23, buffer.ScrollBottom);
-        Assert.NotNull(buffer.Lines);
-        Assert.NotNull(buffer.SavedCursorState);
+        buffer.YDisp.Should().Be(0);
+        buffer.YBase.Should().Be(0);
+        buffer.Y.Should().Be(0);
+        buffer.X.Should().Be(0);
+        buffer.ScrollTop.Should().Be(0);
+        buffer.ScrollBottom.Should().Be(23);
+        buffer.Lines.Should().NotBeNull();
+        buffer.SavedCursorState.Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_CreatesLinesForRows()
     {
         // Arrange & Act
         var buffer = new TerminalBuffer(80, 24, 1000);
 
         // Assert
-        Assert.True(buffer.Lines.Length >= 24);
+        ((buffer.Lines.Length >= 24)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetCursor_SetsCursorPosition()
     {
         // Arrange
@@ -43,11 +45,11 @@ public class BufferTests
         buffer.SetCursor(10, 5);
 
         // Assert
-        Assert.Equal(10, buffer.X);
-        Assert.Equal(5, buffer.Y);
+        buffer.X.Should().Be(10);
+        buffer.Y.Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetCursor_ClampsToBufferBounds()
     {
         // Arrange
@@ -57,18 +59,18 @@ public class BufferTests
         buffer.SetCursor(-5, -3);
 
         // Assert
-        Assert.Equal(0, buffer.X);
-        Assert.Equal(0, buffer.Y);
+        buffer.X.Should().Be(0);
+        buffer.Y.Should().Be(0);
 
         // Act
         buffer.SetCursor(100, 50);
 
         // Assert
-        Assert.Equal(79, buffer.X);
-        Assert.Equal(23, buffer.Y);
+        buffer.X.Should().Be(79);
+        buffer.Y.Should().Be(23);
     }
 
-    [Fact]
+    [TestMethod]
     public void MoveCursor_MovesCursorWithoutClamping()
     {
         // Arrange
@@ -78,11 +80,11 @@ public class BufferTests
         buffer.SetCursorRaw(10, 5);
 
         // Assert
-        Assert.Equal(10, buffer.X);
-        Assert.Equal(5, buffer.Y);
+        buffer.X.Should().Be(10);
+        buffer.Y.Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetLine_ReturnsLine()
     {
         // Arrange
@@ -92,11 +94,11 @@ public class BufferTests
         var line = buffer.GetLine(0);
 
         // Assert
-        Assert.NotNull(line);
-        Assert.Equal(80, line.Length);
+        line.Should().NotBeNull();
+        line.Length.Should().Be(80);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetBlankLine_ReturnsBlankLine()
     {
         // Arrange
@@ -107,12 +109,12 @@ public class BufferTests
         var line = buffer.GetBlankLine(attr);
 
         // Assert
-        Assert.NotNull(line);
-        Assert.Equal(80, line.Length);
-        Assert.False(line.IsWrapped);
+        line.Should().NotBeNull();
+        line.Length.Should().Be(80);
+        line.IsWrapped.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void GetBlankLine_WithWrapped_SetsWrapped()
     {
         // Arrange
@@ -123,10 +125,10 @@ public class BufferTests
         var line = buffer.GetBlankLine(attr, isWrapped: true);
 
         // Assert
-        Assert.True(line.IsWrapped);
+        line.IsWrapped.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_ScrollsBuffer()
     {
         // Arrange
@@ -137,10 +139,10 @@ public class BufferTests
         buffer.ScrollUp(1);
 
         // Assert
-        Assert.True(buffer.YBase >= initialYBase);
+        ((buffer.YBase >= initialYBase)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_MultipleLines_ScrollsMultipleTimes()
     {
         // Arrange
@@ -151,10 +153,10 @@ public class BufferTests
         buffer.ScrollUp(3);
 
         // Assert
-        Assert.True(buffer.YBase >= initialYBase);
+        ((buffer.YBase >= initialYBase)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollDown_ScrollsBufferDown()
     {
         // Arrange
@@ -165,10 +167,10 @@ public class BufferTests
         buffer.ScrollDown(1);
 
         // Assert - Should have lines in buffer
-        Assert.NotNull(buffer.Lines);
+        buffer.Lines.Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollDisp_ScrollsDisplay()
     {
         // Arrange
@@ -180,10 +182,10 @@ public class BufferTests
         buffer.ScrollDisp(2);
 
         // Assert
-        Assert.True(buffer.YDisp >= initialYDisp);
+        ((buffer.YDisp >= initialYDisp)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollDisp_ClampsToYBase()
     {
         // Arrange
@@ -194,10 +196,10 @@ public class BufferTests
         buffer.ScrollDisp(100); // Try to scroll way beyond
 
         // Assert
-        Assert.Equal(buffer.YBase, buffer.YDisp);
+        buffer.YDisp.Should().Be(buffer.YBase);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollDisp_ClampsToZero()
     {
         // Arrange
@@ -209,10 +211,10 @@ public class BufferTests
         buffer.ScrollDisp(-100); // Try to scroll way before
 
         // Assert
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToBottom_ScrollsToBottom()
     {
         // Arrange
@@ -224,10 +226,10 @@ public class BufferTests
         buffer.ScrollToBottom();
 
         // Assert
-        Assert.Equal(buffer.YBase, buffer.YDisp);
+        buffer.YDisp.Should().Be(buffer.YBase);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToTop_ScrollsToTop()
     {
         // Arrange
@@ -238,10 +240,10 @@ public class BufferTests
         buffer.ScrollToTop();
 
         // Assert
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetScrollRegion_SetsRegion()
     {
         // Arrange
@@ -251,11 +253,11 @@ public class BufferTests
         buffer.SetScrollRegion(5, 20);
 
         // Assert
-        Assert.Equal(5, buffer.ScrollTop);
-        Assert.Equal(20, buffer.ScrollBottom);
+        buffer.ScrollTop.Should().Be(5);
+        buffer.ScrollBottom.Should().Be(20);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetScrollRegion_ClampsToBufferBounds()
     {
         // Arrange
@@ -265,11 +267,11 @@ public class BufferTests
         buffer.SetScrollRegion(-5, 100);
 
         // Assert
-        Assert.Equal(0, buffer.ScrollTop);
-        Assert.Equal(23, buffer.ScrollBottom);
+        buffer.ScrollTop.Should().Be(0);
+        buffer.ScrollBottom.Should().Be(23);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetScrollRegion_TopGreaterThanBottom_ClampsCorrectly()
     {
         // Arrange
@@ -279,11 +281,11 @@ public class BufferTests
         buffer.SetScrollRegion(20, 5);
 
         // Assert
-        Assert.Equal(20, buffer.ScrollTop);
-        Assert.True(buffer.ScrollBottom >= buffer.ScrollTop);
+        buffer.ScrollTop.Should().Be(20);
+        ((buffer.ScrollBottom >= buffer.ScrollTop)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetScrollRegion_ResetsToFullScreen()
     {
         // Arrange
@@ -294,11 +296,11 @@ public class BufferTests
         buffer.ResetScrollRegion();
 
         // Assert
-        Assert.Equal(0, buffer.ScrollTop);
-        Assert.Equal(23, buffer.ScrollBottom);
+        buffer.ScrollTop.Should().Be(0);
+        buffer.ScrollBottom.Should().Be(23);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetAbsoluteY_ReturnsAbsolutePosition()
     {
         // Arrange
@@ -309,10 +311,10 @@ public class BufferTests
         var absolute = buffer.GetAbsoluteY(10);
 
         // Assert
-        Assert.Equal(buffer.YBase + 10, absolute);
+        absolute.Should().Be(buffer.YBase + 10);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_ResizesBuffer()
     {
         // Arrange
@@ -326,11 +328,11 @@ public class BufferTests
         for (int i = 0; i < 30; i++)
         {
             var line = buffer.Lines[i];
-            Assert.NotNull(line);
+            line.Should().NotBeNull();
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_GrowsColumns_UpdatesLineLengths()
     {
         // Arrange
@@ -343,12 +345,12 @@ public class BufferTests
         for (int i = 0; i < buffer.Lines.Length; i++)
         {
             var line = buffer.Lines[i];
-            Assert.NotNull(line);
-            Assert.Equal(120, line!.Length);
+            line.Should().NotBeNull();
+            (line!.Length).Should().Be(120);
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_ShrinksColumns_UpdatesLineLengths()
     {
         // Arrange
@@ -361,26 +363,26 @@ public class BufferTests
         for (int i = 0; i < buffer.Lines.Length; i++)
         {
             var line = buffer.Lines[i];
-            Assert.NotNull(line);
-            Assert.Equal(60, line!.Length);
+            line.Should().NotBeNull();
+            (line!.Length).Should().Be(60);
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void SavedCursorState_InitializesCorrectly()
     {
         // Arrange
         var buffer = new TerminalBuffer(80, 24, 1000);
 
         // Assert
-        Assert.NotNull(buffer.SavedCursorState);
-        Assert.Equal(0, buffer.SavedCursorState.X);
-        Assert.Equal(0, buffer.SavedCursorState.Y);
-        Assert.Equal(AttributeData.Default, buffer.SavedCursorState.Attr);
-        Assert.Equal(CharsetMode.G0, buffer.SavedCursorState.Charset);
+        buffer.SavedCursorState.Should().NotBeNull();
+        buffer.SavedCursorState.X.Should().Be(0);
+        buffer.SavedCursorState.Y.Should().Be(0);
+        buffer.SavedCursorState.Attr.Should().Be(AttributeData.Default);
+        buffer.SavedCursorState.Charset.Should().Be(CharsetMode.G0);
     }
 
-    [Fact]
+    [TestMethod]
     public void SavedCursorState_CanBeModified()
     {
         // Arrange
@@ -398,28 +400,28 @@ public class BufferTests
         buffer.SavedCursorState.Charset = CharsetMode.G1;
 
         // Assert
-        Assert.Equal(10, buffer.SavedCursorState.X);
-        Assert.Equal(5, buffer.SavedCursorState.Y);
-        Assert.True(buffer.SavedCursorState.Attr.IsBold());
-        Assert.Equal(CharsetMode.G1, buffer.SavedCursorState.Charset);
+        buffer.SavedCursorState.X.Should().Be(10);
+        buffer.SavedCursorState.Y.Should().Be(5);
+        buffer.SavedCursorState.Attr.IsBold().Should().BeTrue();
+        buffer.SavedCursorState.Charset.Should().Be(CharsetMode.G1);
     }
 
-    [Theory]
-    [InlineData(20, 10, 0)]
-    [InlineData(40, 20, 500)]
-    [InlineData(100, 50, 2000)]
+    [TestMethod]
+    [DataRow(20, 10, 0)]
+    [DataRow(40, 20, 500)]
+    [DataRow(100, 50, 2000)]
     public void Constructor_VariousSizes_WorksCorrectly(int cols, int rows, int scrollback)
     {
         // Act
         var buffer = new TerminalBuffer(cols, rows, scrollback);
 
         // Assert
-        Assert.NotNull(buffer);
-        Assert.Equal(0, buffer.ScrollTop);
-        Assert.Equal(rows - 1, buffer.ScrollBottom);
+        buffer.Should().NotBeNull();
+        buffer.ScrollTop.Should().Be(0);
+        buffer.ScrollBottom.Should().Be(rows - 1);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_WithWrapped_SetsWrappedFlag()
     {
         // Arrange
@@ -434,11 +436,11 @@ public class BufferTests
         // Since YBase becomes 1 after scroll (when scrollTop is 0), the new line is at index 24 (1 + 24 - 1).
         var lastActiveRow = buffer.YBase + buffer.Rows - 1;
         var bottomLine = buffer.Lines[lastActiveRow];
-        Assert.NotNull(bottomLine);
-        Assert.True(bottomLine.IsWrapped);
+        bottomLine.Should().NotBeNull();
+        bottomLine.IsWrapped.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Lines_Property_IsAccessible()
     {
         // Arrange
@@ -448,11 +450,11 @@ public class BufferTests
         var lines = buffer.Lines;
 
         // Assert
-        Assert.NotNull(lines);
-        Assert.True(lines.Length > 0);
+        lines.Should().NotBeNull();
+        (lines.Length > 0).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void MultipleScrollOperations_MaintainConsistency()
     {
         // Arrange
@@ -466,11 +468,11 @@ public class BufferTests
         buffer.ScrollToBottom();
 
         // Assert
-        Assert.Equal(buffer.YBase, buffer.YDisp);
-        Assert.True(buffer.YBase >= 0);
+        buffer.YDisp.Should().Be(buffer.YBase);
+        ((buffer.YBase >= 0)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void CursorMovement_ComplexScenario()
     {
         // Arrange
@@ -490,15 +492,15 @@ public class BufferTests
         var y3 = buffer.Y;
 
         // Assert
-        Assert.Equal(40, x1);
-        Assert.Equal(12, y1);
-        Assert.Equal(50, x2);
-        Assert.Equal(20, y2);
-        Assert.Equal(0, x3);
-        Assert.Equal(0, y3);
+        x1.Should().Be(40);
+        y1.Should().Be(12);
+        x2.Should().Be(50);
+        y2.Should().Be(20);
+        x3.Should().Be(0);
+        y3.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollRegion_AffectsScrolling()
     {
         // Arrange
@@ -512,28 +514,28 @@ public class BufferTests
         buffer.ScrollUp(1);
 
         // Assert
-        Assert.Equal(5, scrollTop);
-        Assert.Equal(15, scrollBottom);
+        scrollTop.Should().Be(5);
+        scrollBottom.Should().Be(15);
     }
 
     #region Scrolling Beyond Viewport Tests
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_BeyondViewport_IncrementsYBase()
     {
         // Arrange
         var buffer = new TerminalBuffer(80, 24, 1000);
-        Assert.Equal(0, buffer.YBase);
+        buffer.YBase.Should().Be(0);
 
         // Act - Scroll up 10 times (simulating 10 new lines at bottom of screen)
         buffer.ScrollUp(10);
 
         // Assert
-        Assert.Equal(10, buffer.YBase);
-        Assert.Equal(10, buffer.YDisp); // Should auto-scroll to bottom
+        buffer.YBase.Should().Be(10);
+        buffer.YDisp.Should().Be(10); // Should auto-scroll to bottom
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_YDispFollowsYBase_WhenAtBottom()
     {
         // Arrange
@@ -543,11 +545,11 @@ public class BufferTests
         buffer.ScrollUp(5);
 
         // Assert - yDisp should follow yBase when user hasn't scrolled up
-        Assert.Equal(buffer.YBase, buffer.YDisp);
-        Assert.True(buffer.IsAtBottom);
+        buffer.YDisp.Should().Be(buffer.YBase);
+        buffer.IsAtBottom.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_YDispDoesNotFollow_WhenScrolledUp()
     {
         // Arrange
@@ -559,27 +561,27 @@ public class BufferTests
         buffer.ScrollUp(5); // More content added
 
         // Assert - yDisp should stay at 0 (user scrolled up)
-        Assert.Equal(0, buffer.YDisp);
-        Assert.Equal(15, buffer.YBase);
-        Assert.False(buffer.IsAtBottom);
+        buffer.YDisp.Should().Be(0);
+        buffer.YBase.Should().Be(15);
+        buffer.IsAtBottom.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_BufferLengthGrows_UntilMaxCapacity()
     {
         // Arrange - Small buffer with 10 row viewport and 20 scrollback (30 total)
         var buffer = new TerminalBuffer(80, 10, 20);
-        Assert.Equal(10, buffer.Lines.Length); // Initially just viewport rows
+        buffer.Lines.Length.Should().Be(10); // Initially just viewport rows
 
         // Act - Scroll up 15 times
         buffer.ScrollUp(15);
 
         // Assert - Buffer should have grown
-        Assert.Equal(25, buffer.Lines.Length); // 10 initial + 15 scrolled
-        Assert.Equal(15, buffer.YBase);
+        buffer.Lines.Length.Should().Be(25); // 10 initial + 15 scrolled
+        buffer.YBase.Should().Be(15);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_AtMaxCapacity_RecyclesOldestLines()
     {
         // Arrange - Small buffer: 5 rows viewport, 5 scrollback = 10 max
@@ -587,18 +589,18 @@ public class BufferTests
         
         // Fill buffer to capacity
         buffer.ScrollUp(5); // Now at 10 lines (max)
-        Assert.Equal(10, buffer.Lines.Length);
-        Assert.Equal(5, buffer.YBase);
+        buffer.Lines.Length.Should().Be(10);
+        buffer.YBase.Should().Be(5);
 
         // Act - Scroll more, should recycle
         buffer.ScrollUp(3);
 
         // Assert - Length should stay at max, yBase should still be 5 (recycled)
-        Assert.Equal(10, buffer.Lines.Length);
-        Assert.Equal(5, buffer.YBase); // Stays at 5 because oldest lines are recycled
+        buffer.Lines.Length.Should().Be(10);
+        buffer.YBase.Should().Be(5); // Stays at 5 because oldest lines are recycled
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_ContentPlacedCorrectly_InActiveArea()
     {
         // Arrange
@@ -615,16 +617,16 @@ public class BufferTests
         // Assert - Original line 0 is now in scrollback (at index 0)
         // Active area starts at yBase (1), new blank line is at yBase + rows - 1 (5)
         var scrollbackLine = buffer.Lines[0];
-        Assert.NotNull(scrollbackLine);
-        Assert.Equal("A", scrollbackLine[0].Content);
+        scrollbackLine.Should().NotBeNull();
+        scrollbackLine[0].Content.Should().Be("A");
 
         // The active area's last line should be blank
         var lastActiveLine = buffer.Lines[buffer.YBase + buffer.Rows - 1];
-        Assert.NotNull(lastActiveLine);
-        Assert.True(lastActiveLine[0].IsSpace() || lastActiveLine[0].Content == " ");
+        lastActiveLine.Should().NotBeNull();
+        ((lastActiveLine[0].IsSpace() || lastActiveLine[0].Content == " ")).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_PreservesScrollbackContent()
     {
         // Arrange
@@ -642,16 +644,16 @@ public class BufferTests
         buffer.ScrollUp(3);
 
         // Assert - First 3 original lines should be in scrollback
-        Assert.Equal("A", buffer.Lines[0]?[0].Content);
-        Assert.Equal("B", buffer.Lines[1]?[0].Content);
-        Assert.Equal("C", buffer.Lines[2]?[0].Content);
+        (buffer.Lines[0]?[0].Content).Should().Be("A");
+        (buffer.Lines[1]?[0].Content).Should().Be("B");
+        (buffer.Lines[2]?[0].Content).Should().Be("C");
         
         // Lines D and E should now be in active area (at yBase + 0 and yBase + 1)
-        Assert.Equal("D", buffer.Lines[buffer.YBase]?[0].Content);
-        Assert.Equal("E", buffer.Lines[buffer.YBase + 1]?[0].Content);
+        (buffer.Lines[buffer.YBase]?[0].Content).Should().Be("D");
+        (buffer.Lines[buffer.YBase + 1]?[0].Content).Should().Be("E");
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToTop_ShowsScrollbackContent()
     {
         // Arrange
@@ -663,47 +665,47 @@ public class BufferTests
         
         // Scroll up to create scrollback
         buffer.ScrollUp(10);
-        Assert.Equal(10, buffer.YBase);
-        Assert.Equal(10, buffer.YDisp);
+        buffer.YBase.Should().Be(10);
+        buffer.YDisp.Should().Be(10);
 
         // Act
         buffer.ScrollToTop();
 
         // Assert
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YDisp.Should().Be(0);
         // Line at yDisp (0) should be the original line with "X"
         var visibleLine = buffer.Lines[buffer.YDisp];
-        Assert.Equal("X", visibleLine?[0].Content);
+        (visibleLine?[0].Content).Should().Be("X");
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollToBottom_AfterScrollingUp_ReturnsToActiveArea()
     {
         // Arrange
         var buffer = new TerminalBuffer(80, 5, 100);
         buffer.ScrollUp(20);
         buffer.ScrollToTop();
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YDisp.Should().Be(0);
 
         // Act
         buffer.ScrollToBottom();
 
         // Assert
-        Assert.Equal(buffer.YBase, buffer.YDisp);
-        Assert.True(buffer.IsAtBottom);
+        buffer.YDisp.Should().Be(buffer.YBase);
+        buffer.IsAtBottom.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void IsAtBottom_TrueInitially()
     {
         // Arrange & Act
         var buffer = new TerminalBuffer(80, 24, 1000);
 
         // Assert
-        Assert.True(buffer.IsAtBottom);
+        buffer.IsAtBottom.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void IsAtBottom_TrueAfterScrollUp()
     {
         // Arrange
@@ -713,10 +715,10 @@ public class BufferTests
         buffer.ScrollUp(10);
 
         // Assert - Should still be at bottom (auto-followed)
-        Assert.True(buffer.IsAtBottom);
+        buffer.IsAtBottom.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void IsAtBottom_FalseAfterScrollToTop()
     {
         // Arrange
@@ -727,32 +729,32 @@ public class BufferTests
         buffer.ScrollToTop();
 
         // Assert
-        Assert.False(buffer.IsAtBottom);
+        buffer.IsAtBottom.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollLines_RelativeScrolling_Works()
     {
         // Arrange
         var buffer = new TerminalBuffer(80, 10, 100);
         buffer.ScrollUp(50); // Create lots of scrollback
         buffer.ScrollToTop();
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YDisp.Should().Be(0);
 
         // Act - Scroll down 25 lines
         buffer.ScrollLines(25);
 
         // Assert
-        Assert.Equal(25, buffer.YDisp);
+        buffer.YDisp.Should().Be(25);
 
         // Act - Scroll up 10 lines
         buffer.ScrollLines(-10);
 
         // Assert
-        Assert.Equal(15, buffer.YDisp);
+        buffer.YDisp.Should().Be(15);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollLines_ClampsToValidRange()
     {
         // Arrange
@@ -763,16 +765,16 @@ public class BufferTests
         buffer.ScrollLines(1000);
 
         // Assert - Should be clamped to yBase
-        Assert.Equal(buffer.YBase, buffer.YDisp);
+        buffer.YDisp.Should().Be(buffer.YBase);
 
         // Act - Try to scroll way past top
         buffer.ScrollLines(-1000);
 
         // Assert - Should be clamped to 0
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void ViewportY_Property_ReadsAndWritesYDisp()
     {
         // Arrange
@@ -780,17 +782,17 @@ public class BufferTests
         buffer.ScrollUp(30);
 
         // Act & Assert - Read
-        Assert.Equal(buffer.YDisp, buffer.ViewportY);
+        buffer.ViewportY.Should().Be(buffer.YDisp);
 
         // Act - Write
         buffer.ViewportY = 15;
 
         // Assert
-        Assert.Equal(15, buffer.YDisp);
-        Assert.Equal(15, buffer.ViewportY);
+        buffer.YDisp.Should().Be(15);
+        buffer.ViewportY.Should().Be(15);
     }
 
-    [Fact]
+    [TestMethod]
     public void ViewportY_ClampedToValidRange()
     {
         // Arrange
@@ -801,16 +803,16 @@ public class BufferTests
         buffer.ViewportY = 100;
 
         // Assert
-        Assert.Equal(buffer.YBase, buffer.ViewportY);
+        buffer.ViewportY.Should().Be(buffer.YBase);
 
         // Act - Try to set negative
         buffer.ViewportY = -10;
 
         // Assert
-        Assert.Equal(0, buffer.ViewportY);
+        buffer.ViewportY.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetAbsoluteY_CorrectAfterScrolling()
     {
         // Arrange
@@ -820,26 +822,26 @@ public class BufferTests
         // Act & Assert
         // GetAbsoluteY converts viewport-relative Y to buffer-absolute Y
         // For viewport row 0, absolute should be yBase + 0 = 25
-        Assert.Equal(25, buffer.GetAbsoluteY(0));
-        Assert.Equal(30, buffer.GetAbsoluteY(5));
-        Assert.Equal(34, buffer.GetAbsoluteY(9)); // Last viewport row
+        buffer.GetAbsoluteY(0).Should().Be(25);
+        buffer.GetAbsoluteY(5).Should().Be(30);
+        buffer.GetAbsoluteY(9).Should().Be(34); // Last viewport row
     }
 
-    [Fact]
+    [TestMethod]
     public void BufferLength_MatchesExpectedSize()
     {
         // Arrange
         var buffer = new TerminalBuffer(80, 10, 100);
-        Assert.Equal(10, buffer.Length); // Initially just viewport rows
+        buffer.Length.Should().Be(10); // Initially just viewport rows
 
         // Act
         buffer.ScrollUp(50);
 
         // Assert - Should have grown to rows + scrollback used
-        Assert.Equal(60, buffer.Length); // 10 initial + 50 scrolled
+        buffer.Length.Should().Be(60); // 10 initial + 50 scrolled
     }
 
-    [Fact]
+    [TestMethod]
     public void LargeScrollback_HandlesCorrectly()
     {
         // Arrange
@@ -849,13 +851,13 @@ public class BufferTests
         buffer.ScrollUp(5000);
 
         // Assert
-        Assert.Equal(5000, buffer.YBase);
-        Assert.Equal(5000, buffer.YDisp);
-        Assert.Equal(5024, buffer.Length); // 24 rows + 5000 scrollback
-        Assert.True(buffer.IsAtBottom);
+        buffer.YBase.Should().Be(5000);
+        buffer.YDisp.Should().Be(5000);
+        buffer.Length.Should().Be(5024); // 24 rows + 5000 scrollback
+        buffer.IsAtBottom.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_WithScrollRegion_DoesNotAffectYBase()
     {
         // Arrange
@@ -866,11 +868,11 @@ public class BufferTests
         buffer.ScrollUp(3);
 
         // Assert - yBase should not change when scroll region is set
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YBase.Should().Be(0);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollDown_WithScrollRegion_DoesNotAffectYBase()
     {
         // Arrange
@@ -881,22 +883,22 @@ public class BufferTests
         buffer.ScrollDown(3);
 
         // Assert
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YBase.Should().Be(0);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Cols_And_Rows_Properties_ReturnCorrectValues()
     {
         // Arrange
         var buffer = new TerminalBuffer(100, 50, 500);
 
         // Assert
-        Assert.Equal(100, buffer.Cols);
-        Assert.Equal(50, buffer.Rows);
+        buffer.Cols.Should().Be(100);
+        buffer.Rows.Should().Be(50);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_UpdatesColsAndRows()
     {
         // Arrange
@@ -906,28 +908,28 @@ public class BufferTests
         buffer.Resize(120, 40);
 
         // Assert
-        Assert.Equal(120, buffer.Cols);
-        Assert.Equal(40, buffer.Rows);
+        buffer.Cols.Should().Be(120);
+        buffer.Rows.Should().Be(40);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_AdjustsScrollBottom()
     {
         // Arrange
         var buffer = new TerminalBuffer(80, 24, 1000);
-        Assert.Equal(23, buffer.ScrollBottom);
+        buffer.ScrollBottom.Should().Be(23);
 
         // Act
         buffer.Resize(80, 30);
 
         // Assert - ScrollBottom should be updated to new rows - 1
-        Assert.Equal(29, buffer.ScrollBottom);
+        buffer.ScrollBottom.Should().Be(29);
     }
 
     #endregion
     #region Alternate Buffer (No Scrollback) Tests
 
-    [Fact]
+    [TestMethod]
     public void AlternateBuffer_NoScrollback_YBaseRemainsZero()
     {
         // Arrange - Create buffer with NO scrollback (like alternate buffer)
@@ -937,11 +939,11 @@ public class BufferTests
         buffer.ScrollUp(10);
 
         // Assert - YBase should remain 0 since there's no scrollback
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YBase.Should().Be(0);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void AlternateBuffer_NoScrollback_ViewportYRemainsZero()
     {
         // Arrange - Create buffer with NO scrollback (like alternate buffer)
@@ -951,10 +953,10 @@ public class BufferTests
         buffer.ScrollUp(5);
 
         // Assert - ViewportY should remain 0
-        Assert.Equal(0, buffer.ViewportY);
+        buffer.ViewportY.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void AlternateBuffer_NoScrollback_ScrollUpWithScrollRegion_YBaseRemainsZero()
     {
         // Arrange - Create buffer with NO scrollback (like alternate buffer)
@@ -967,12 +969,12 @@ public class BufferTests
         buffer.ScrollUp(3);
 
         // Assert - YBase and YDisp should remain 0
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.YDisp);
-        Assert.Equal(0, buffer.ViewportY);
+        buffer.YBase.Should().Be(0);
+        buffer.YDisp.Should().Be(0);
+        buffer.ViewportY.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void AlternateBuffer_NoScrollback_ScrollUpAtTopOfScreen_YBaseRemainsZero()
     {
         // Arrange - Create buffer with NO scrollback (like alternate buffer)
@@ -986,11 +988,11 @@ public class BufferTests
         buffer.ScrollUp(1);
 
         // Assert - YBase should NOT increment because there's no scrollback capacity
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YBase.Should().Be(0);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void ScrollUp_TopAnchoredPartialRegion_PreservesRowsBelowRegion()
     {
         var buffer = new TerminalBuffer(10, 5, 100);
@@ -1004,15 +1006,15 @@ public class BufferTests
         buffer.SetScrollRegion(0, 3);
         buffer.ScrollUp(1);
 
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal("B", buffer.GetLine(0)?[0].Content);
-        Assert.Equal("C", buffer.GetLine(1)?[0].Content);
-        Assert.Equal("D", buffer.GetLine(2)?[0].Content);
-        Assert.True(buffer.GetLine(3)?[0].IsSpace() ?? false);
-        Assert.Equal(">", buffer.GetLine(4)?[0].Content);
+        buffer.YBase.Should().Be(0);
+        (buffer.GetLine(0)?[0].Content).Should().Be("B");
+        (buffer.GetLine(1)?[0].Content).Should().Be("C");
+        (buffer.GetLine(2)?[0].Content).Should().Be("D");
+        (buffer.GetLine(3)?[0].IsSpace() ?? false).Should().BeTrue();
+        (buffer.GetLine(4)?[0].Content).Should().Be(">");
     }
 
-    [Fact]
+    [TestMethod]
     public void InsertLines_WithScrollback_UsesActiveBufferCoordinates()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 10, Rows = 5, Scrollback = 100 });
@@ -1028,15 +1030,15 @@ public class BufferTests
 
         terminal.Write("\x1b[1;4r\x1b[1;1H\x1b[1L");
 
-        Assert.Equal(yBase, terminal.Buffer.YBase);
-        Assert.True(terminal.Buffer.GetLine(yBase + 0)?[0].IsSpace() ?? false);
-        Assert.Equal("A", terminal.Buffer.GetLine(yBase + 1)?[0].Content);
-        Assert.Equal("B", terminal.Buffer.GetLine(yBase + 2)?[0].Content);
-        Assert.Equal("C", terminal.Buffer.GetLine(yBase + 3)?[0].Content);
-        Assert.Equal(">", terminal.Buffer.GetLine(yBase + 4)?[0].Content);
+        terminal.Buffer.YBase.Should().Be(yBase);
+        (terminal.Buffer.GetLine(yBase + 0)?[0].IsSpace() ?? false).Should().BeTrue();
+        (terminal.Buffer.GetLine(yBase + 1)?[0].Content).Should().Be("A");
+        (terminal.Buffer.GetLine(yBase + 2)?[0].Content).Should().Be("B");
+        (terminal.Buffer.GetLine(yBase + 3)?[0].Content).Should().Be("C");
+        (terminal.Buffer.GetLine(yBase + 4)?[0].Content).Should().Be(">");
     }
 
-    [Fact]
+    [TestMethod]
     public void DeleteLines_WithScrollback_UsesActiveBufferCoordinates()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 10, Rows = 5, Scrollback = 100 });
@@ -1052,15 +1054,15 @@ public class BufferTests
 
         terminal.Write("\x1b[1;4r\x1b[1;1H\x1b[1M");
 
-        Assert.Equal(yBase, terminal.Buffer.YBase);
-        Assert.Equal("B", terminal.Buffer.GetLine(yBase + 0)?[0].Content);
-        Assert.Equal("C", terminal.Buffer.GetLine(yBase + 1)?[0].Content);
-        Assert.Equal("D", terminal.Buffer.GetLine(yBase + 2)?[0].Content);
-        Assert.True(terminal.Buffer.GetLine(yBase + 3)?[0].IsSpace() ?? false);
-        Assert.Equal(">", terminal.Buffer.GetLine(yBase + 4)?[0].Content);
+        terminal.Buffer.YBase.Should().Be(yBase);
+        (terminal.Buffer.GetLine(yBase + 0)?[0].Content).Should().Be("B");
+        (terminal.Buffer.GetLine(yBase + 1)?[0].Content).Should().Be("C");
+        (terminal.Buffer.GetLine(yBase + 2)?[0].Content).Should().Be("D");
+        (terminal.Buffer.GetLine(yBase + 3)?[0].IsSpace() ?? false).Should().BeTrue();
+        (terminal.Buffer.GetLine(yBase + 4)?[0].Content).Should().Be(">");
     }
 
-    [Fact]
+    [TestMethod]
     public void DeleteLines_OutsideScrollRegion_PreservesReservedPromptRow()
     {
         var terminal = new Terminal(new TerminalOptions { Cols = 10, Rows = 5, Scrollback = 100 });
@@ -1076,15 +1078,15 @@ public class BufferTests
 
         terminal.Write("\x1b[1;4r\x1b[5;1H\x1b[1M");
 
-        Assert.Equal(yBase, terminal.Buffer.YBase);
-        Assert.Equal("A", terminal.Buffer.GetLine(yBase + 0)?[0].Content);
-        Assert.Equal("B", terminal.Buffer.GetLine(yBase + 1)?[0].Content);
-        Assert.Equal("C", terminal.Buffer.GetLine(yBase + 2)?[0].Content);
-        Assert.Equal("D", terminal.Buffer.GetLine(yBase + 3)?[0].Content);
-        Assert.Equal(">", terminal.Buffer.GetLine(yBase + 4)?[0].Content);
+        terminal.Buffer.YBase.Should().Be(yBase);
+        (terminal.Buffer.GetLine(yBase + 0)?[0].Content).Should().Be("A");
+        (terminal.Buffer.GetLine(yBase + 1)?[0].Content).Should().Be("B");
+        (terminal.Buffer.GetLine(yBase + 2)?[0].Content).Should().Be("C");
+        (terminal.Buffer.GetLine(yBase + 3)?[0].Content).Should().Be("D");
+        (terminal.Buffer.GetLine(yBase + 4)?[0].Content).Should().Be(">");
     }
 
-    [Fact]
+    [TestMethod]
     public void AlternateBuffer_NoScrollback_MultipleScrollOperations_YBaseRemainsZero()
     {
         // Arrange
@@ -1102,11 +1104,11 @@ public class BufferTests
         buffer.ScrollUp(5);
 
         // Assert - YBase should still be 0
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YBase.Should().Be(0);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void AlternateBuffer_NoScrollback_LinesStillShift()
     {
         // Arrange
@@ -1126,13 +1128,13 @@ public class BufferTests
 
         // Assert - Line with "B" should now be at position 0
         var newLine0 = buffer.GetLine(0);
-        Assert.Equal("B", newLine0?[0].Content);
+        (newLine0?[0].Content).Should().Be("B");
         
         // YBase should remain 0
-        Assert.Equal(0, buffer.YBase);
+        buffer.YBase.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void AlternateBuffer_NoScrollback_ScrollRegionAtTop_ContentScrollsCorrectly()
     {
         // Arrange - This tests the DECSTBM case like [1;5r
@@ -1158,21 +1160,21 @@ public class BufferTests
         buffer.ScrollUp(1);
 
         // Assert - Content should have scrolled within the region
-        Assert.Equal("B", buffer.GetLine(0)?[0].Content); // A scrolled out
-        Assert.Equal("C", buffer.GetLine(1)?[0].Content);
-        Assert.Equal("D", buffer.GetLine(2)?[0].Content);
-        Assert.Equal("E", buffer.GetLine(3)?[0].Content);
+        (buffer.GetLine(0)?[0].Content).Should().Be("B"); // A scrolled out
+        (buffer.GetLine(1)?[0].Content).Should().Be("C");
+        (buffer.GetLine(2)?[0].Content).Should().Be("D");
+        (buffer.GetLine(3)?[0].Content).Should().Be("E");
         // Line 4 should be blank (new line inserted at bottom of scroll region)
         
         // Content below scroll region should be unchanged
-        Assert.Equal("X", buffer.GetLine(5)?[0].Content);
+        (buffer.GetLine(5)?[0].Content).Should().Be("X");
         
         // YBase should remain 0
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal(0, buffer.YDisp);
+        buffer.YBase.Should().Be(0);
+        buffer.YDisp.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void NormalBuffer_WithScrollback_ScrollUpAtTop_YBaseIncrements()
     {
         // Arrange - Create buffer WITH scrollback (normal buffer)
@@ -1183,15 +1185,15 @@ public class BufferTests
         buffer.ScrollUp(5);
 
         // Assert - YBase SHOULD increment because we have scrollback
-        Assert.Equal(5, buffer.YBase);
-        Assert.Equal(5, buffer.YDisp);
+        buffer.YBase.Should().Be(5);
+        buffer.YDisp.Should().Be(5);
     }
 
     #endregion
 
     #region Reflow Tests
 
-    [Fact]
+    [TestMethod]
     public void Reflow_DoesNotWrapEmptyLines()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1199,10 +1201,10 @@ public class BufferTests
 
         buffer.Resize(75, 24);
 
-        Assert.Equal(initialLength, buffer.Lines.Length);
+        buffer.Lines.Length.Should().Be(initialLength);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_ShrinksRowLength()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1210,11 +1212,11 @@ public class BufferTests
 
         for (var i = 0; i < 10; i++)
         {
-            Assert.Equal(5, buffer.Lines[i]!.Length);
+            (buffer.Lines[i]!.Length).Should().Be(5);
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_WrapsAndUnwrapsLines()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1227,20 +1229,20 @@ public class BufferTests
         }
 
         buffer.SetCursorRaw(0, 1);
-        Assert.Equal("abcde", buffer.Lines[0]!.TranslateToString());
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("abcde");
 
         buffer.Resize(1, 10);
-        Assert.Equal("a", buffer.Lines[0]!.TranslateToString());
-        Assert.Equal("b", buffer.Lines[1]!.TranslateToString());
-        Assert.Equal("c", buffer.Lines[2]!.TranslateToString());
-        Assert.Equal("d", buffer.Lines[3]!.TranslateToString());
-        Assert.Equal("e", buffer.Lines[4]!.TranslateToString());
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("a");
+        (buffer.Lines[1]!.TranslateToString()).Should().Be("b");
+        (buffer.Lines[2]!.TranslateToString()).Should().Be("c");
+        (buffer.Lines[3]!.TranslateToString()).Should().Be("d");
+        (buffer.Lines[4]!.TranslateToString()).Should().Be("e");
 
         buffer.Resize(5, 10);
-        Assert.Equal("abcde", buffer.Lines[0]!.TranslateToString());
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("abcde");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_RemovesCorrectRowsWhenGrowingLarger()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1254,23 +1256,23 @@ public class BufferTests
         }
 
         buffer.Resize(2, 10);
-        Assert.Equal("ab", buffer.Lines[0]!.TranslateToString());
-        Assert.Equal("cd", buffer.Lines[1]!.TranslateToString());
-        Assert.Equal("ef", buffer.Lines[2]!.TranslateToString());
-        Assert.Equal("gh", buffer.Lines[3]!.TranslateToString());
-        Assert.Equal("ij", buffer.Lines[4]!.TranslateToString());
-        Assert.Equal("01", buffer.Lines[5]!.TranslateToString());
-        Assert.Equal("23", buffer.Lines[6]!.TranslateToString());
-        Assert.Equal("45", buffer.Lines[7]!.TranslateToString());
-        Assert.Equal("67", buffer.Lines[8]!.TranslateToString());
-        Assert.Equal("89", buffer.Lines[9]!.TranslateToString());
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("ab");
+        (buffer.Lines[1]!.TranslateToString()).Should().Be("cd");
+        (buffer.Lines[2]!.TranslateToString()).Should().Be("ef");
+        (buffer.Lines[3]!.TranslateToString()).Should().Be("gh");
+        (buffer.Lines[4]!.TranslateToString()).Should().Be("ij");
+        (buffer.Lines[5]!.TranslateToString()).Should().Be("01");
+        (buffer.Lines[6]!.TranslateToString()).Should().Be("23");
+        (buffer.Lines[7]!.TranslateToString()).Should().Be("45");
+        (buffer.Lines[8]!.TranslateToString()).Should().Be("67");
+        (buffer.Lines[9]!.TranslateToString()).Should().Be("89");
 
         buffer.Resize(10, 10);
-        Assert.Equal("abcdefghij", buffer.Lines[0]!.TranslateToString());
-        Assert.Equal("0123456789", buffer.Lines[1]!.TranslateToString());
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("abcdefghij");
+        (buffer.Lines[1]!.TranslateToString()).Should().Be("0123456789");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_TransfersCombinedCharData()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1283,11 +1285,11 @@ public class BufferTests
         SetCell(buffer.Lines[0]!, 3, "😁");
 
         buffer.Resize(2, 3);
-        Assert.Equal("ab", buffer.Lines[0]!.TranslateToString());
-        Assert.Equal("c😁", buffer.Lines[1]!.TranslateToString());
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("ab");
+        (buffer.Lines[1]!.TranslateToString()).Should().Be("c😁");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_WideCharactersWhenShrinking()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1307,18 +1309,18 @@ public class BufferTests
         buffer.Lines[1]!.IsWrapped = true;
 
         buffer.Resize(11, 10);
-        Assert.Equal("汉语汉语汉", buffer.Lines[0]!.TranslateToString(trimRight: true));
-        Assert.Equal("语汉语汉语", buffer.Lines[1]!.TranslateToString(trimRight: true));
-        Assert.Equal("汉语", buffer.Lines[2]!.TranslateToString(trimRight: true));
+        (buffer.Lines[0]!.TranslateToString(trimRight: true)).Should().Be("汉语汉语汉");
+        (buffer.Lines[1]!.TranslateToString(trimRight: true)).Should().Be("语汉语汉语");
+        (buffer.Lines[2]!.TranslateToString(trimRight: true)).Should().Be("汉语");
 
         buffer.Resize(7, 10);
-        Assert.Equal("汉语汉", buffer.Lines[0]!.TranslateToString(trimRight: true));
-        Assert.Equal("语汉语", buffer.Lines[1]!.TranslateToString(trimRight: true));
-        Assert.Equal("汉语汉", buffer.Lines[2]!.TranslateToString(trimRight: true));
-        Assert.Equal("语汉语", buffer.Lines[3]!.TranslateToString(trimRight: true));
+        (buffer.Lines[0]!.TranslateToString(trimRight: true)).Should().Be("汉语汉");
+        (buffer.Lines[1]!.TranslateToString(trimRight: true)).Should().Be("语汉语");
+        (buffer.Lines[2]!.TranslateToString(trimRight: true)).Should().Be("汉语汉");
+        (buffer.Lines[3]!.TranslateToString(trimRight: true)).Should().Be("语汉语");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_SkipsGroupsWithNonNormalLineAttribute()
     {
         var buffer = new TerminalBuffer(10, 5, 100);
@@ -1337,12 +1339,12 @@ public class BufferTests
 
         buffer.Resize(2, 5);
 
-        Assert.Equal("ab", buffer.Lines[0]!.TranslateToString());
-        Assert.Equal("ef", buffer.Lines[1]!.TranslateToString(trimRight: false));
-        Assert.Equal(LineAttribute.DoubleWidth, buffer.Lines[1]!.LineAttribute);
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("ab");
+        (buffer.Lines[1]!.TranslateToString(trimRight: false)).Should().Be("ef");
+        (buffer.Lines[1]!.LineAttribute).Should().Be(LineAttribute.DoubleWidth);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_RaisesTrimmedWhenLinesRemovedFromTop()
     {
         var buffer = new TerminalBuffer(80, 5, 1);
@@ -1359,10 +1361,10 @@ public class BufferTests
 
         buffer.Resize(2, 5);
 
-        Assert.True(trimmedTotal > 0);
+        (trimmedTotal > 0).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_CursorStaysOnSameCharacterThroughShrinkGrow()
     {
         var buffer = new TerminalBuffer(20, 5, 100);
@@ -1377,12 +1379,12 @@ public class BufferTests
         buffer.Resize(10, 5);
         buffer.Resize(20, 5);
 
-        Assert.Equal(9, buffer.X);
-        Assert.Equal(2, buffer.Y);
-        Assert.Equal("abcdefghijklmnopqrst", buffer.Lines[0]!.TranslateToString(trimRight: true));
+        buffer.X.Should().Be(9);
+        buffer.Y.Should().Be(2);
+        (buffer.Lines[0]!.TranslateToString(trimRight: true)).Should().Be("abcdefghijklmnopqrst");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_PendingWrapXEqualsColsDoesNotCrash()
     {
         var buffer = new TerminalBuffer(10, 5, 100);
@@ -1392,25 +1394,25 @@ public class BufferTests
         buffer.Resize(5, 5);
         buffer.Resize(10, 5);
 
-        Assert.True(buffer.X >= 0);
+        ((buffer.X >= 0)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_AtCapacityShrinkingRows_KeepsNewestLines()
     {
         var buffer = new TerminalBuffer(10, 5, 5);
         buffer.ScrollUp(5);
-        Assert.Equal(10, buffer.Lines.Length);
+        buffer.Lines.Length.Should().Be(10);
 
         SetCell(buffer.Lines[buffer.YBase + 4]!, 0, ">");
         buffer.SetCursorRaw(0, 4);
 
         buffer.Resize(10, 3);
 
-        Assert.Equal(">", buffer.Lines[7]![0].Content);
+        (buffer.Lines[7]![0].Content).Should().Be(">");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_AltBufferTruncatesWithoutReflow()
     {
         var buffer = new TerminalBuffer(10, 5, 0, hasScrollback: false);
@@ -1421,11 +1423,11 @@ public class BufferTests
 
         buffer.Resize(5, 5);
 
-        Assert.Equal("abcde", buffer.Lines[0]!.TranslateToString(trimRight: true));
-        Assert.Equal(5, buffer.Lines.Length);
+        (buffer.Lines[0]!.TranslateToString(trimRight: true)).Should().Be("abcde");
+        buffer.Lines.Length.Should().Be(5);
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_GrowWhenLastBufferRowIsWrappedContinuation()
     {
         var buffer = new TerminalBuffer(5, 4, 100);
@@ -1440,10 +1442,10 @@ public class BufferTests
 
         buffer.Resize(10, 4);
 
-        Assert.Equal("abcdeABCDE", buffer.Lines[2]!.TranslateToString(trimRight: true));
+        (buffer.Lines[2]!.TranslateToString(trimRight: true)).Should().Be("abcdeABCDE");
     }
 
-    [Fact]
+    [TestMethod]
     public void Reflow_WideCharactersWhenGrowing()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1462,10 +1464,10 @@ public class BufferTests
         buffer.Lines[2]!.IsWrapped = true;
         buffer.Lines[3]!.IsWrapped = true;
 
-        Assert.Equal("汉语測", buffer.Lines[0]!.TranslateToString(trimRight: true));
-        Assert.Equal("試汉语", buffer.Lines[1]!.TranslateToString(trimRight: true));
-        Assert.Equal("測試汉", buffer.Lines[2]!.TranslateToString(trimRight: true));
-        Assert.Equal("语測試", buffer.Lines[3]!.TranslateToString(trimRight: true));
+        (buffer.Lines[0]!.TranslateToString(trimRight: true)).Should().Be("汉语測");
+        (buffer.Lines[1]!.TranslateToString(trimRight: true)).Should().Be("試汉语");
+        (buffer.Lines[2]!.TranslateToString(trimRight: true)).Should().Be("測試汉");
+        (buffer.Lines[3]!.TranslateToString(trimRight: true)).Should().Be("语測試");
 
         buffer.SetCursorRaw(0, 5);
 
@@ -1475,10 +1477,10 @@ public class BufferTests
             + buffer.Lines[1]!.TranslateToString(trimRight: true)
             + buffer.Lines[2]!.TranslateToString(trimRight: true)
             + buffer.Lines[3]!.TranslateToString(trimRight: true);
-        Assert.Equal("汉语測試汉语測試汉语測試", combined);
+        combined.Should().Be("汉语測試汉语測試汉语測試");
     }
 
-    [Fact]
+    [TestMethod]
     public void ReflowSmaller_MovesCursorDownWhenViewportNotFilled()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1501,18 +1503,18 @@ public class BufferTests
         buffer.SetCursorRaw(0, 3);
         buffer.Resize(2, 10);
 
-        Assert.Equal(6, buffer.Y);
-        Assert.Equal(0, buffer.YDisp);
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal("ab", buffer.Lines[0]!.TranslateToString());
-        Assert.Equal("cd", buffer.Lines[1]!.TranslateToString());
-        Assert.Equal("ef", buffer.Lines[2]!.TranslateToString());
-        Assert.Equal("gh", buffer.Lines[3]!.TranslateToString());
-        Assert.True(buffer.Lines[1]!.IsWrapped);
-        Assert.True(buffer.Lines[3]!.IsWrapped);
+        buffer.Y.Should().Be(6);
+        buffer.YDisp.Should().Be(0);
+        buffer.YBase.Should().Be(0);
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("ab");
+        (buffer.Lines[1]!.TranslateToString()).Should().Be("cd");
+        (buffer.Lines[2]!.TranslateToString()).Should().Be("ef");
+        (buffer.Lines[3]!.TranslateToString()).Should().Be("gh");
+        (buffer.Lines[1]!.IsWrapped).Should().BeTrue();
+        (buffer.Lines[3]!.IsWrapped).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ReflowLarger_MovesCursorUpWhenViewportNotFilled()
     {
         var buffer = new TerminalBuffer(80, 24, 1000);
@@ -1537,12 +1539,12 @@ public class BufferTests
         buffer.SetCursorRaw(0, 6);
         buffer.Resize(4, 10);
 
-        Assert.Equal(3, buffer.Y);
-        Assert.Equal(0, buffer.YDisp);
-        Assert.Equal(0, buffer.YBase);
-        Assert.Equal("abcd", buffer.Lines[0]!.TranslateToString());
-        Assert.Equal("efgh", buffer.Lines[1]!.TranslateToString());
-        Assert.Equal("ijkl", buffer.Lines[2]!.TranslateToString());
+        buffer.Y.Should().Be(3);
+        buffer.YDisp.Should().Be(0);
+        buffer.YBase.Should().Be(0);
+        (buffer.Lines[0]!.TranslateToString()).Should().Be("abcd");
+        (buffer.Lines[1]!.TranslateToString()).Should().Be("efgh");
+        (buffer.Lines[2]!.TranslateToString()).Should().Be("ijkl");
     }
 
     private static void SetCell(TerminalBuffer buffer, int row, string content)

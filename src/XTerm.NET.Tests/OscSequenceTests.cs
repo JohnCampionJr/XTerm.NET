@@ -5,6 +5,8 @@ using XTerm.Options;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class OscSequenceTests
 {
     private Terminal CreateTerminal(int cols = 80, int rows = 24)
@@ -13,7 +15,7 @@ public class OscSequenceTests
         return new Terminal(options);
     }
 
-    [Fact]
+    [TestMethod]
     public void OscSetTitle_SetsTerminalTitle()
     {
         // Arrange
@@ -30,12 +32,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]0;My Terminal Title\x07");
 
         // Assert
-        Assert.Equal("My Terminal Title", terminal.Title);
-        Assert.True(titleChanged);
-        Assert.Equal("My Terminal Title", newTitle);
+        terminal.Title.Should().Be("My Terminal Title");
+        titleChanged.Should().BeTrue();
+        newTitle.Should().Be("My Terminal Title");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscSetWindowTitle_SetsTerminalTitle()
     {
         // Arrange
@@ -45,10 +47,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]2;Window Title\x07");
 
         // Assert
-        Assert.Equal("Window Title", terminal.Title);
+        terminal.Title.Should().Be("Window Title");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscSetWindowTitle_WithEscTerminator_Works()
     {
         // Arrange
@@ -58,10 +60,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]2;Title with ESC terminator\x1B\\");
 
         // Assert
-        Assert.Equal("Title with ESC terminator", terminal.Title);
+        terminal.Title.Should().Be("Title with ESC terminator");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscSetTitle_EmptyTitle_ClearsTitle()
     {
         // Arrange
@@ -72,10 +74,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]0;\x07");
 
         // Assert
-        Assert.Equal("", terminal.Title);
+        terminal.Title.Should().Be("");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscCurrentDirectory_SetsDirectory()
     {
         // Arrange
@@ -92,12 +94,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]7;file://localhost/home/user/projects\x07");
 
         // Assert
-        Assert.Equal("/home/user/projects", terminal.CurrentDirectory);
-        Assert.True(directoryChanged);
-        Assert.Equal("/home/user/projects", newDirectory);
+        terminal.CurrentDirectory.Should().Be("/home/user/projects");
+        directoryChanged.Should().BeTrue();
+        newDirectory.Should().Be("/home/user/projects");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscCurrentDirectory_WindowsPath_Works()
     {
         // Arrange
@@ -107,10 +109,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]7;file://localhost/C:/Users/Test\x07");
 
         // Assert
-        Assert.Equal("/C:/Users/Test", terminal.CurrentDirectory);
+        terminal.CurrentDirectory.Should().Be("/C:/Users/Test");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscCurrentDirectory_UrlEncoded_Decodes()
     {
         // Arrange
@@ -120,10 +122,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]7;file://localhost/home/user/my%20folder\x07");
 
         // Assert
-        Assert.Equal("/home/user/my folder", terminal.CurrentDirectory);
+        terminal.CurrentDirectory.Should().Be("/home/user/my folder");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscHyperlink_StartLink_SetsHyperlink()
     {
         // Arrange
@@ -137,12 +139,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]8;;http://example.com\x07");
 
         // Assert
-        Assert.Equal("http://example.com", terminal.CurrentHyperlink);
-        Assert.Equal("http://example.com", changedUrl);
-        Assert.False(isCleared);
+        terminal.CurrentHyperlink.Should().Be("http://example.com");
+        changedUrl.Should().Be("http://example.com");
+        isCleared.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscHyperlink_EndLink_ClearsHyperlink()
     {
         // Arrange
@@ -162,13 +164,13 @@ public class OscSequenceTests
         terminal.Write("\x1B]8;;\x07");
 
         // Assert
-        Assert.Null(terminal.CurrentHyperlink);
-        Assert.Equal(1, eventCount);
-        Assert.Equal(string.Empty, changedUrl);
-        Assert.True(isCleared);
+        terminal.CurrentHyperlink.Should().BeNull();
+        eventCount.Should().Be(1);
+        changedUrl.Should().Be(string.Empty);
+        isCleared.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscHyperlink_WithId_SetsHyperlinkId()
     {
         // Arrange
@@ -178,11 +180,11 @@ public class OscSequenceTests
         terminal.Write("\x1B]8;id=link123;http://example.com\x07");
 
         // Assert
-        Assert.Equal("http://example.com", terminal.CurrentHyperlink);
-        Assert.Equal("link123", terminal.HyperlinkId);
+        terminal.CurrentHyperlink.Should().Be("http://example.com");
+        terminal.HyperlinkId.Should().Be("link123");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscHyperlink_CompleteSequence_Works()
     {
         // Arrange
@@ -194,12 +196,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]8;;\x07");
 
         // Assert
-        Assert.Null(terminal.CurrentHyperlink);
+        terminal.CurrentHyperlink.Should().BeNull();
         var line = terminal.GetLine(0);
-        Assert.Contains("GitHub", line);
+        line.Should().Contain("GitHub");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscColorQuery_Foreground_RespondsWithColor()
     {
         // Arrange
@@ -211,12 +213,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]10;?\x07");
 
         // Assert
-        Assert.NotNull(response);
-        Assert.Contains("rgb:", response);
-        Assert.Contains("]10;", response);
+        response.Should().NotBeNull();
+        response.Should().Contain("rgb:");
+        response.Should().Contain("]10;");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscColorQuery_Background_RespondsWithColor()
     {
         // Arrange
@@ -228,12 +230,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]11;?\x07");
 
         // Assert
-        Assert.NotNull(response);
-        Assert.Contains("rgb:", response);
-        Assert.Contains("]11;", response);
+        response.Should().NotBeNull();
+        response.Should().Contain("rgb:");
+        response.Should().Contain("]11;");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscColorQuery_Cursor_RespondsWithColor()
     {
         // Arrange
@@ -245,12 +247,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]12;?\x07");
 
         // Assert
-        Assert.NotNull(response);
-        Assert.Contains("rgb:", response);
-        Assert.Contains("]12;", response);
+        response.Should().NotBeNull();
+        response.Should().Contain("rgb:");
+        response.Should().Contain("]12;");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_Query_ReturnsHostDataWhenEnabled()
     {
         // Arrange
@@ -266,11 +268,11 @@ public class OscSequenceTests
         terminal.Write("\x1B]52;c;?\x07");
 
         // Assert
-        Assert.NotNull(response);
-        Assert.Equal("\x1B]52;c;SGVsbG8=\x07", response);
+        response.Should().NotBeNull();
+        response.Should().Be("\x1B]52;c;SGVsbG8=\x07");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_Query_IsIgnoredByDefault()
     {
         // Reads are opt-in, and a disabled read answers NOTHING — the host is not even asked.
@@ -284,11 +286,11 @@ public class OscSequenceTests
         terminal.Write("\x1B]52;c;?\x07");
 
         // Assert
-        Assert.Null(response);
-        Assert.False(readRequested);
+        response.Should().BeNull();
+        readRequested.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_SetData_RaisesWriteRequest()
     {
         // Arrange
@@ -301,12 +303,12 @@ public class OscSequenceTests
         terminal.Write($"\x1B]52;c;{base64Data}\x07");
 
         // Assert
-        Assert.NotNull(request);
-        Assert.Equal("c", request.Target);
-        Assert.Equal("Hello, World!", request.Text);
+        request.Should().NotBeNull();
+        request.Target.Should().Be("c");
+        request.Text.Should().Be("Hello, World!");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_Query_WhenEnabledAndHandled_ReturnsClipboardText()
     {
         // Arrange
@@ -315,7 +317,7 @@ public class OscSequenceTests
         string? response = null;
         terminal.ClipboardReadRequested += (_, e) =>
         {
-            Assert.Equal("p", e.Target);
+            e.Target.Should().Be("p");
             e.Text = "Hello, World!";
         };
         terminal.DataReceived += (_, e) => response = e.Data;
@@ -324,10 +326,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]52;p;?\x07");
 
         // Assert
-        Assert.Equal("\x1B]52;p;SGVsbG8sIFdvcmxkIQ==\x07", response);
+        response.Should().Be("\x1B]52;p;SGVsbG8sIFdvcmxkIQ==\x07");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_Query_CanBeAnsweredAfterTheHandlerReturns()
     {
         // The async-host path: an Avalonia clipboard is awaited, so the handler returns first
@@ -339,16 +341,16 @@ public class OscSequenceTests
         terminal.ClipboardReadRequested += (_, e) => { e.Defer(); pending = e; };
 
         terminal.Write("\u001b]52;c;?\u0007");
-        Assert.Null(response);                        // nothing answered yet...
+        response.Should().BeNull();                        // nothing answered yet...
         pending!.Respond("deferred");
-        Assert.Equal("\u001b]52;c;ZGVmZXJyZWQ=\u0007", response);
+        response.Should().Be("\u001b]52;c;ZGVmZXJyZWQ=\u0007");
 
         response = null;
         pending.Respond("again");                     // a second call is ignored
-        Assert.Null(response);
+        response.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_DeferredDecline_StaysSilent()
     {
         var terminal = new Terminal(new TerminalOptions { ClipboardReadEnabled = true });
@@ -359,10 +361,10 @@ public class OscSequenceTests
 
         terminal.Write("\u001b]52;c;?\u0007");
         pending!.Respond((string?)null);
-        Assert.Null(response);
+        response.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_RespondInsideTheHandlerPlusHandled_EmitsOnce()
     {
         // Off-contract but easy to write: a handler that serves from a cache calls Respond
@@ -379,11 +381,11 @@ public class OscSequenceTests
 
         terminal.Write("\u001b]52;c;?\u0007");
 
-        Assert.Single(responses);
-        Assert.Equal("\u001b]52;c;Y2FjaGVk\u0007", responses[0]);
+        responses.Should().ContainSingle();
+        responses[0].Should().Be("\u001b]52;c;Y2FjaGVk\u0007");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_SyncAnswerDisarmsRespond()
     {
         // Handled synchronously answers as the handler returns; Respond afterwards must not
@@ -396,11 +398,11 @@ public class OscSequenceTests
 
         terminal.Write("\u001b]52;c;?\u0007");
         pending!.Respond("late");
-        Assert.Single(responses);
-        Assert.Equal("\u001b]52;c;c3luYw==\u0007", responses[0]);
+        responses.Should().ContainSingle();
+        responses[0].Should().Be("\u001b]52;c;c3luYw==\u0007");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_Query_WhenEnabledAndDeclined_DoesNotRespond()
     {
         // Arrange
@@ -411,7 +413,7 @@ public class OscSequenceTests
         terminal.ClipboardReadRequested += (_, e) =>
         {
             raised = true;
-            Assert.Equal("s", e.Target);
+            e.Target.Should().Be("s");
         };
         terminal.DataReceived += (_, e) => response = e.Data;
 
@@ -419,11 +421,11 @@ public class OscSequenceTests
         terminal.Write("\x1B]52;s;?\x07");
 
         // Assert
-        Assert.True(raised);
-        Assert.Null(response);
+        raised.Should().BeTrue();
+        response.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_SetInvalidData_RaisesClearRequest()
     {
         // Arrange
@@ -435,12 +437,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]52;c;!\x07");
 
         // Assert
-        Assert.NotNull(request);
-        Assert.Equal("c", request.Target);
-        Assert.Equal(string.Empty, request.Text);
+        request.Should().NotBeNull();
+        request.Target.Should().Be("c");
+        request.Text.Should().Be(string.Empty);
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_EmptyTarget_DefaultsToSelectionZero()
     {
         // Arrange
@@ -453,11 +455,11 @@ public class OscSequenceTests
         terminal.Write($"\x1B]52;;{base64Data}\x07");
 
         // Assert
-        Assert.NotNull(request);
-        Assert.Equal("s0", request.Target);
+        request.Should().NotBeNull();
+        request.Target.Should().Be("s0");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_InvalidTarget_IsIgnored()
     {
         // Arrange
@@ -470,10 +472,10 @@ public class OscSequenceTests
         terminal.Write($"\x1B]52;x;{base64Data}\x07");
 
         // Assert
-        Assert.False(raised);
+        raised.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_SetData_PropagatesHostExceptions()
     {
         // Arrange
@@ -482,10 +484,10 @@ public class OscSequenceTests
         var base64Data = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("Hello, World!"));
 
         // Act & Assert
-        Assert.Throws<InvalidOperationException>(() => terminal.Write($"\x1B]52;c;{base64Data}\x07"));
+        Assert.ThrowsExactly<InvalidOperationException>(() => terminal.Write($"\x1B]52;c;{base64Data}\x07"));
     }
 
-    [Fact]
+    [TestMethod]
     public void OscClipboard_SetData_WhenDisabled_IsIgnored()
     {
         // Arrange
@@ -499,10 +501,10 @@ public class OscSequenceTests
         terminal.Write($"\x1B]52;s;{base64Data}\x07");
 
         // Assert
-        Assert.False(raised);
+        raised.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_WriteChunks_RaisesClipboardWriteRequested()
     {
         // Arrange
@@ -518,14 +520,14 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=wdata\x1B\\");
 
         // Assert
-        Assert.NotNull(request);
-        Assert.Equal("c", request!.Target);
-        Assert.Equal("text/plain", request.MimeType);
-        Assert.Equal("hello", request.Text);
-        Assert.Equal("\x1B]5522;type=write:status=DONE\x1B\\", response);
+        request.Should().NotBeNull();
+        (request!.Target).Should().Be("c");
+        request.MimeType.Should().Be("text/plain");
+        request.Text.Should().Be("hello");
+        response.Should().Be("\x1B]5522;type=write:status=DONE\x1B\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_Write_PreservesMimeTypeAndBinaryData()
     {
         // Arrange
@@ -539,12 +541,12 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=wdata\x1B\\");
 
         // Assert
-        Assert.NotNull(request);
-        Assert.Equal("image/png", request!.MimeType);
-        Assert.Equal([0x00, 0xFF, 0x80], request.Data);
+        request.Should().NotBeNull();
+        (request!.MimeType).Should().Be("image/png");
+        request.Data.Should().Equal([0x00, 0xFF, 0x80]);
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_WriteStart_ReplacesAbandonedTransfer()
     {
         // Arrange
@@ -560,10 +562,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=wdata\x1B\\");
 
         // Assert
-        Assert.Equal("new", text);
+        text.Should().Be("new");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_Write_CommitsEveryMimeTypeInOneEvent()
     {
         // Platform clipboards replace their contents on each set, so the transfer arrives as ONE
@@ -581,17 +583,17 @@ public class OscSequenceTests
         terminal.Write($"\u001b]5522;type=wdata:mime={htmlMime};{Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("<b>hello</b>"))}\u001b\\");
         terminal.Write("\u001b]5522;type=wdata\u001b\\");
 
-        var e = Assert.Single(events);
-        Assert.Equal(2, e.Formats.Count);
-        Assert.Equal("text/plain", e.Formats[0].MimeType);
-        Assert.Equal("hello", System.Text.Encoding.UTF8.GetString(e.Formats[0].Data));
-        Assert.Equal("text/html", e.Formats[1].MimeType);
-        Assert.Equal("<b>hello</b>", System.Text.Encoding.UTF8.GetString(e.Formats[1].Data));
-        Assert.Equal("hello", e.Text);                       // the text/* convenience
-        Assert.Equal("\u001b]5522;type=write:status=DONE:id=w1\u001b\\", response);
+        var e = events.Should().ContainSingle().Which;
+        e.Formats.Count.Should().Be(2);
+        e.Formats[0].MimeType.Should().Be("text/plain");
+        System.Text.Encoding.UTF8.GetString(e.Formats[0].Data).Should().Be("hello");
+        e.Formats[1].MimeType.Should().Be("text/html");
+        System.Text.Encoding.UTF8.GetString(e.Formats[1].Data).Should().Be("<b>hello</b>");
+        e.Text.Should().Be("hello");                       // the text/* convenience
+        response.Should().Be("\u001b]5522;type=write:status=DONE:id=w1\u001b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_WriteAlias_RidesTheSameEventWithTargetData()
     {
         var terminal = new Terminal(new TerminalOptions());
@@ -605,14 +607,14 @@ public class OscSequenceTests
         terminal.Write($"\u001b]5522;type=walias:mime={plainMime};{aliasList}\u001b\\");
         terminal.Write("\u001b]5522;type=wdata\u001b\\");
 
-        var e = Assert.Single(events);
-        Assert.Equal(2, e.Formats.Count);
-        Assert.Equal("text/plain", e.Formats[0].MimeType);
-        Assert.Equal("UTF8_STRING", e.Formats[1].MimeType);
-        Assert.Equal(e.Formats[0].Data, e.Formats[1].Data);  // the alias shares the target's bytes
+        var e = events.Should().ContainSingle().Which;
+        e.Formats.Count.Should().Be(2);
+        e.Formats[0].MimeType.Should().Be("text/plain");
+        e.Formats[1].MimeType.Should().Be("UTF8_STRING");
+        e.Formats[1].Data.Should().Equal(e.Formats[0].Data);  // the alias shares the target's bytes
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_WriteError_EchoesIdAndIgnoresStrayData()
     {
         // Arrange
@@ -626,10 +628,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=wdata:mime=dGV4dC9wbGFpbg==;dGV4dA==\x1B\\");
 
         // Assert
-        Assert.Equal(["\x1B]5522;type=write:status=EINVAL:id=w1\x1B\\"], responses);
+        responses.Should().Equal(["\x1B]5522;type=write:status=EINVAL:id=w1\x1B\\"]);
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_WriteHonorsConfiguredSizeLimit()
     {
         // Arrange
@@ -642,10 +644,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=wdata:mime=dGV4dC9wbGFpbg==;dHc=\x1B\\");
 
         // Assert
-        Assert.Equal("\x1B]5522;type=write:status=EIO:id=w1\x1B\\", response);
+        response.Should().Be("\x1B]5522;type=write:status=EIO:id=w1\x1B\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_AliasLimitReturnsEfbig()
     {
         // Arrange
@@ -658,10 +660,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=walias:mime=dGV4dC9wbGFpbg==;VVRGOF9TVFJJTkc=\x1B\\");
 
         // Assert
-        Assert.Equal("\x1B]5522;type=write:status=EIO:id=w1\x1B\\", response);
+        response.Should().Be("\x1B]5522;type=write:status=EIO:id=w1\x1B\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_MimeEntriesCountAgainstTransferLimit()
     {
         // Arrange
@@ -676,10 +678,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=wdata:mime=dGV4dC9j;\x1B\\");
 
         // Assert
-        Assert.Equal("\x1B]5522;type=write:status=EIO:id=w1\x1B\\", response);
+        response.Should().Be("\x1B]5522;type=write:status=EIO:id=w1\x1B\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_Read_RequiresOptInAndReturnsHostData()
     {
         // Arrange
@@ -700,17 +702,15 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=read:loc=primary:id=r1;dGV4dC9wbGFpbg==\x1B\\");
 
         // Assert
-        Assert.Equal(
-            [
+        responses.Should().Equal([
                 "\x1B]5522;type=read:status=OK:id=r1\x1B\\",
                 "\x1B]5522;type=read:status=DATA:mime=dGV4dC9wbGFpbg==:id=r1;aGVsbG8=\x1B\\",
                 "\x1B]5522;type=read:status=DONE:id=r1\x1B\\"
-            ],
-            responses);
-        Assert.Equal("p", target);
+            ]);
+        target.Should().Be("p");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_Read_UsesAnyRequestedMimeType()
     {
         // Arrange
@@ -727,10 +727,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=read;dGV4dC9odG1sIHRleHQvcGxhaW4=\x1B\\");
 
         // Assert
-        Assert.Contains("\x1B]5522;type=read:status=DATA:mime=dGV4dC9wbGFpbg==;dGV4dA==\x1B\\", responses);
+        responses.Should().Contain("\x1B]5522;type=read:status=DATA:mime=dGV4dC9wbGFpbg==;dGV4dA==\x1B\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_ReadTypeList_DecodesDotPayload()
     {
         // Arrange
@@ -746,10 +746,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=read;Lg==\x1B\\");
 
         // Assert
-        Assert.Equal(".", requestedMimeType);
+        requestedMimeType.Should().Be(".");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_ReadDisabled_DoesNotRequestOrRespond()
     {
         // Arrange
@@ -763,11 +763,11 @@ public class OscSequenceTests
         terminal.Write("\x1B]5522;type=read;dGV4dC9wbGFpbg==\x07");
 
         // Assert
-        Assert.False(requested);
-        Assert.Equal("\x1B]5522;type=read:status=EPERM\x1B\\", response);
+        requested.Should().BeFalse();
+        response.Should().Be("\x1B]5522;type=read:status=EPERM\x1B\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_Read_CanBeAnsweredAfterTheHandlerReturns()
     {
         // The async-host path: the reply cannot begin until every requested mime resolves, so a
@@ -790,18 +790,18 @@ public class OscSequenceTests
 
         var mimes = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("text/plain text/html"));
         terminal.Write($"\u001b]5522;type=read:id=r1;{mimes}\u001b\\");
-        Assert.Empty(responses);
+        responses.Should().BeEmpty();
 
         pending!.Respond("<b>late</b>");
 
-        Assert.Equal("\u001b]5522;type=read:status=OK:id=r1\u001b\\", responses[0]);
-        Assert.Contains("status=DATA", responses[1]);
-        Assert.Contains("status=DATA", responses[2]);
-        Assert.Equal("\u001b]5522;type=read:status=DONE:id=r1\u001b\\", responses[^1]);
-        Assert.Equal(4, responses.Count);
+        responses[0].Should().Be("\u001b]5522;type=read:status=OK:id=r1\u001b\\");
+        responses[1].Should().Contain("status=DATA");
+        responses[2].Should().Contain("status=DATA");
+        (responses[^1]).Should().Be("\u001b]5522;type=read:status=DONE:id=r1\u001b\\");
+        responses.Count.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void OscKittyClipboard_DeferredDeclineOfEveryMime_AnswersEperm()
     {
         // Unlike OSC 52, 5522 must ANSWER a decline: all-deferred, all-null resolves to EPERM.
@@ -813,14 +813,14 @@ public class OscSequenceTests
 
         var mimes = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("text/plain"));
         terminal.Write($"\u001b]5522;type=read:id=r2;{mimes}\u001b\\");
-        Assert.Empty(responses);
+        responses.Should().BeEmpty();
 
         pending.Single().Respond((byte[]?)null);
 
-        Assert.Equal("\u001b]5522;type=read:status=EPERM:id=r2\u001b\\", responses.Single());
+        responses.Single().Should().Be("\u001b]5522;type=read:status=EPERM:id=r2\u001b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscColorPalette_Change_DoesNotThrow()
     {
         // Arrange
@@ -830,7 +830,7 @@ public class OscSequenceTests
         terminal.Write("\x1B]4;1;rgb:ff/00/00\x07"); // Set color 1 to red
     }
 
-    [Fact]
+    [TestMethod]
     public void OscColorReset_DoesNotThrow()
     {
         // Arrange
@@ -841,7 +841,7 @@ public class OscSequenceTests
         terminal.Write("\x1B]104\x07");   // Reset all colors
     }
 
-    [Fact]
+    [TestMethod]
     public void OscMultipleSequences_AllProcessed()
     {
         // Arrange
@@ -858,13 +858,13 @@ public class OscSequenceTests
         terminal.Write("\x1B]7;file://localhost/path2\x07");
 
         // Assert
-        Assert.Equal("Title2", terminal.Title);
-        Assert.Equal("/path2", terminal.CurrentDirectory);
-        Assert.Equal(2, titleChangeCount);
-        Assert.Equal(2, directoryChangeCount);
+        terminal.Title.Should().Be("Title2");
+        terminal.CurrentDirectory.Should().Be("/path2");
+        titleChangeCount.Should().Be(2);
+        directoryChangeCount.Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void OscWithText_InterleavedCorrectly()
     {
         // Arrange
@@ -876,12 +876,12 @@ public class OscSequenceTests
         terminal.Write("After");
 
         // Assert
-        Assert.Equal("Test Title", terminal.Title);
+        terminal.Title.Should().Be("Test Title");
         var line = terminal.GetLine(0);
-        Assert.Contains("Before After", line);
+        line.Should().Contain("Before After");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscInvalidSequence_DoesNotCrash()
     {
         // Arrange
@@ -893,7 +893,7 @@ public class OscSequenceTests
         terminal.Write("\x1B];\x07");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscHyperlink_MultipleParams_ParsesCorrectly()
     {
         // Arrange
@@ -903,11 +903,11 @@ public class OscSequenceTests
         terminal.Write("\x1B]8;id=abc:key=value;http://test.com\x07");
 
         // Assert
-        Assert.Equal("http://test.com", terminal.CurrentHyperlink);
-        Assert.Equal("abc", terminal.HyperlinkId);
+        terminal.CurrentHyperlink.Should().Be("http://test.com");
+        terminal.HyperlinkId.Should().Be("abc");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscDirectoryChange_MultipleEvents_FiresEachTime()
     {
         // Arrange
@@ -921,13 +921,13 @@ public class OscSequenceTests
         terminal.Write("\x1B]7;file://localhost/var\x07");
 
         // Assert
-        Assert.Equal(3, paths.Count);
-        Assert.Equal("/home", paths[0]);
-        Assert.Equal("/usr", paths[1]);
-        Assert.Equal("/var", paths[2]);
+        paths.Count.Should().Be(3);
+        paths[0].Should().Be("/home");
+        paths[1].Should().Be("/usr");
+        paths[2].Should().Be("/var");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscTitleChange_SpecialCharacters_HandlesCorrectly()
     {
         // Arrange
@@ -937,10 +937,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]0;Title with émojis 😀 and spëcial chars\x07");
 
         // Assert
-        Assert.Equal("Title with émojis 😀 and spëcial chars", terminal.Title);
+        terminal.Title.Should().Be("Title with émojis 😀 and spëcial chars");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscHyperlink_ComplexUrl_PreservesUrl()
     {
         // Arrange
@@ -950,10 +950,10 @@ public class OscSequenceTests
         terminal.Write("\x1B]8;;https://example.com/path?param=value&other=123#anchor\x07");
 
         // Assert
-        Assert.Equal("https://example.com/path?param=value&other=123#anchor", terminal.CurrentHyperlink);
+        terminal.CurrentHyperlink.Should().Be("https://example.com/path?param=value&other=123#anchor");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscEmptyCommand_DoesNotCrash()
     {
         // Arrange
@@ -963,7 +963,7 @@ public class OscSequenceTests
         terminal.Write("\x1B]\x07");
     }
 
-    [Fact]
+    [TestMethod]
     public void OscColorQueries_Sequential_AllRespond()
     {
         // Arrange
@@ -977,7 +977,7 @@ public class OscSequenceTests
         terminal.Write("\x1B]12;?\x07");
 
         // Assert
-        Assert.Equal(3, responses.Count);
-        Assert.All(responses, r => Assert.Contains("rgb:", r));
+        responses.Count.Should().Be(3);
+        responses.Should().AllSatisfy(r => r.Should().Contain("rgb:"));
     }
 }

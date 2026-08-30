@@ -8,6 +8,7 @@ namespace XTerm.Tests;
 /// here describes a sequence that is protocol-legal and cheap to send, and asserts that the
 /// terminal's response to it stays proportionate. They fail without their guards.
 /// </summary>
+[TestClass]
 public class HostileInputBoundsTests
 {
     private const string Esc = "\u001b";
@@ -15,7 +16,7 @@ public class HostileInputBoundsTests
     private static Terminal NewTerminal() =>
         new(new TerminalOptions { Cols = 80, Rows = 24 });
 
-    [Fact]
+    [TestMethod]
     public void A_cluster_stops_growing_after_a_sane_number_of_marks()
     {
         // One base character and then combining marks forever: without a cap the cell's string
@@ -24,11 +25,10 @@ public class HostileInputBoundsTests
         terminal.Write("e" + new string('\u0301', 5000));
 
         var line = terminal.Buffer.Lines[0]!;
-        Assert.True(line[0].Content.Length <= 64,
-            $"cluster grew to {line[0].Content.Length} chars");
+        ((line[0].Content.Length <= 64)).Should().BeTrue($"cluster grew to {line[0].Content.Length} chars");
     }
 
-    [Fact]
+    [TestMethod]
     public void Repeat_of_a_self_joining_cluster_stays_bounded()
     {
         // REP repeats the preceding character. When that character joins the cell it just landed
@@ -38,18 +38,18 @@ public class HostileInputBoundsTests
         terminal.Write($"{Esc}[32767b");
 
         var line = terminal.Buffer.Lines[0]!;
-        Assert.True(line[0].Content.Length <= 64,
-            $"cluster grew to {line[0].Content.Length} chars under REP");
+        ((line[0].Content.Length <= 64)).Should().BeTrue($"cluster grew to {line[0].Content.Length} chars under REP");
     }
 
     // Timeout, because the failure mode this pins is a HANG: without it a regression stalls the
     // whole run instead of failing this one test, and the Stopwatch assertion below is only
     // reached if Write returns at all.
-    [Theory(Timeout = 30_000)]   // async because xUnit only honours Timeout on async tests
-    [InlineData("S")]   // SU
-    [InlineData("T")]   // SD
-    [InlineData("L")]   // IL
-    [InlineData("M")]   // DL
+    [TestMethod]
+    [Timeout(30_000)]
+    [DataRow("S")]   // SU
+    [DataRow("T")]   // SD
+    [DataRow("L")]   // IL
+    [DataRow("M")]   // DL
     public async Task A_huge_scroll_count_does_not_loop_a_billion_times(string final)
     {
         await Task.Yield();
@@ -63,11 +63,10 @@ public class HostileInputBoundsTests
         terminal.Write($"{Esc}[2000000000{final}");
         sw.Stop();
 
-        Assert.True(sw.ElapsedMilliseconds < 2000,
-            $"CSI 2000000000 {final} took {sw.ElapsedMilliseconds} ms");
+        (sw.ElapsedMilliseconds < 2000).Should().BeTrue($"CSI 2000000000 {final} took {sw.ElapsedMilliseconds} ms");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_chunked_kitty_transmission_is_refused_once_it_exceeds_the_cap()
     {
         // The accumulator spans escape sequences, each of them individually legal, so the
@@ -89,15 +88,15 @@ public class HostileInputBoundsTests
         for (var i = 0; i < 20; i++)
             terminal.Write($"{Esc}_Gm=1;{chunk}{Esc}\\");
 
-        Assert.Contains(replies, r => r.Contains("EFBIG"));
+        replies.Should().Contain(r => r.Contains("EFBIG"));
 
         // And the terminal is still usable: a fresh sequence is not swallowed by the abandoned one.
         terminal.Write("after");
-        Assert.Equal("after", string.Concat(
-            Enumerable.Range(0, 5).Select(i => terminal.Buffer.Lines[0]![i].Content)));
+        string.Concat(
+            Enumerable.Range(0, 5).Select(i => terminal.Buffer.Lines[0]![i].Content)).Should().Be("after");
     }
 
-    [Fact]
+    [TestMethod]
     public void An_oversized_osc_is_not_dispatched_truncated()
     {
         // Refusing to append is not enough: dispatching the prefix that fit would turn an
@@ -111,14 +110,14 @@ public class HostileInputBoundsTests
             terminal.Write(new string('x', 100_000));
         terminal.Write("\u0007");
 
-        Assert.Empty(titles);
+        titles.Should().BeEmpty();
 
         // A well-formed one after it still works -- the flag cleared with the sequence.
         terminal.Write($"{Esc}]0;fine\u0007");
-        Assert.Equal(["fine"], titles);
+        titles.Should().Equal(["fine"]);
     }
 
-    [Fact]
+    [TestMethod]
     public void An_unterminated_osc_does_not_grow_without_bound()
     {
         var terminal = NewTerminal();
@@ -130,11 +129,11 @@ public class HostileInputBoundsTests
         // that matters: the terminal is still responsive and the sequence never completed.
         terminal.Write("\u0007");
         terminal.Write("after");
-        Assert.Equal("after", string.Concat(
-            Enumerable.Range(0, 5).Select(i => terminal.Buffer.Lines[0]![i].Content)));
+        string.Concat(
+            Enumerable.Range(0, 5).Select(i => terminal.Buffer.Lines[0]![i].Content)).Should().Be("after");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_parameter_that_overflows_saturates_instead_of_wrapping()
     {
         // Unchecked multiply turned an absurd parameter into a small or negative one, so a
@@ -143,20 +142,20 @@ public class HostileInputBoundsTests
         terminal.Write("abc");
         terminal.Write($"{Esc}[99999999999999D");   // CUB with a value far past int.MaxValue
 
-        Assert.Equal(0, terminal.Buffer.X);
+        terminal.Buffer.X.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Osc1337_with_invalid_base64_does_not_throw()
     {
         // FormatException is not an ArgumentException, so the guard around this decode missed the
         // one exception the decode actually raises, and it escaped through Write to the read loop.
         var terminal = NewTerminal();
         var ex = Record.Exception(() => terminal.Write($"{Esc}]1337;SetUserVar=name=!!!not base64!!!\u0007"));
-        Assert.Null(ex);
+        ex.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_png_that_inflates_far_past_its_header_is_refused()
     {
         // A decompression bomb: the header declares one pixel, the image data inflates to
@@ -168,18 +167,17 @@ public class HostileInputBoundsTests
                                                out _, out _, out _);
         var after = GC.GetTotalMemory(false);
 
-        Assert.False(ok);
-        Assert.True(after - before < 16 * 1024 * 1024,
-            $"decoding allocated {(after - before) / 1024 / 1024} MB for a 1x1 image");
+        ok.Should().BeFalse();
+        (after - before < 16 * 1024 * 1024).Should().BeTrue($"decoding allocated {(after - before) / 1024 / 1024} MB for a 1x1 image");
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_rejects_negative_but_accepts_zero()
     {
         var terminal = NewTerminal();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => terminal.Resize(-1, 24));
-        Assert.Throws<ArgumentOutOfRangeException>(() => terminal.Resize(80, -1));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => terminal.Resize(-1, 24));
+        Assert.ThrowsExactly<ArgumentOutOfRangeException>(() => terminal.Resize(80, -1));
 
         // Zero is a state a host really reports, before its control has been laid out.
         terminal.Resize(80, 0);

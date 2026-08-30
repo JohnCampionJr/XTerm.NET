@@ -14,6 +14,7 @@ namespace XTerm.Tests.Graphics;
 /// struct and every one of those paths already builds or copies whole cells. These tests exist to
 /// keep it that way.</para>
 /// </summary>
+[TestClass]
 public class ImageCellLifetimeTests
 {
     private const string Esc = "\u001b";
@@ -60,7 +61,7 @@ public class ImageCellLifetimeTests
         return count;
     }
 
-    [Fact]
+    [TestMethod]
     public void Printing_over_a_tile_replaces_it_with_the_character()
     {
         var terminal = Fresh();
@@ -68,15 +69,15 @@ public class ImageCellLifetimeTests
 
         terminal.Write($"{Esc}[1;1HX");
 
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
-        Assert.Equal("X", Cell(terminal, 0, 0).Content);
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
+        (Cell(terminal, 0, 0).Content).Should().Be("X");
 
         // and only that cell
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 1, 0));
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 0, 1));
+        ImageAssertions.ImageAt(terminal, 1, 0).Should().NotBeNull();
+        ImageAssertions.ImageAt(terminal, 0, 1).Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Erase_in_line_clears_the_tiles_on_that_row()
     {
         var terminal = Fresh();
@@ -84,12 +85,12 @@ public class ImageCellLifetimeTests
 
         terminal.Write($"{Esc}[1;1H{Esc}[K");
 
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
-        Assert.Null(ImageAssertions.ImageAt(terminal, 1, 0));
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 0, 1));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
+        ImageAssertions.ImageAt(terminal, 1, 0).Should().BeNull();
+        ImageAssertions.ImageAt(terminal, 0, 1).Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void Erase_in_display_clears_every_tile_on_screen()
     {
         var terminal = Fresh();
@@ -97,10 +98,10 @@ public class ImageCellLifetimeTests
 
         terminal.Write($"{Esc}[2J");
 
-        Assert.Equal(0, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Erase_characters_clears_the_tiles_it_covers()
     {
         var terminal = Fresh();
@@ -108,11 +109,11 @@ public class ImageCellLifetimeTests
 
         terminal.Write($"{Esc}[1;1H{Esc}[1X");
 
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 1, 0));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
+        ImageAssertions.ImageAt(terminal, 1, 0).Should().NotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void A_full_reset_clears_every_tile()
     {
         var terminal = Fresh();
@@ -120,16 +121,16 @@ public class ImageCellLifetimeTests
 
         terminal.Write($"{Esc}c");
 
-        Assert.Equal(0, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Scrolling_carries_the_tiles_with_their_lines()
     {
         var terminal = Fresh();
         WriteSixel(terminal);
         var image = ImageAssertions.ImageAt(terminal, 0, 0);
-        Assert.NotNull(image);
+        image.Should().NotBeNull();
 
         // The absolute line the top of the image went onto. Scrolling moves the viewport over the
         // buffer, so this index is what should stay put while the screen row changes.
@@ -138,36 +139,35 @@ public class ImageCellLifetimeTests
         // Push the screen up by two rows from the bottom.
         terminal.Write($"{Esc}[10;1H\r\n\r\n");
 
-        Assert.Equal(2, terminal.Buffer.YBase - topLine);
+        (terminal.Buffer.YBase - topLine).Should().Be(2);
 
         // Nothing copied the tiles anywhere: the same line object still holds them, unchanged.
         var moved = terminal.Buffer.Lines[topLine]!;
-        Assert.True(moved.TryGetImageAt(0, out var movedImage) && ReferenceEquals(movedImage, image),
-            "the run did not travel with its line");
-        Assert.True(moved.TryGetPlacementAt(0, out var movedPlacement));
-        Assert.Equal(0, movedPlacement.SrcY);
+        (moved.TryGetImageAt(0, out var movedImage) && ReferenceEquals(movedImage, image)).Should().BeTrue("the run did not travel with its line");
+        moved.TryGetPlacementAt(0, out var movedPlacement).Should().BeTrue();
+        movedPlacement.SrcY.Should().Be(0);
 
         // Which puts the top of the picture two rows higher on screen than it was.
-        Assert.True(ReferenceEquals(ImageAssertions.ImageAt(terminal, 0, -2), image));
-        Assert.Equal(8, ImageCellCount(terminal));
+        ReferenceEquals(ImageAssertions.ImageAt(terminal, 0, -2), image).Should().BeTrue();
+        ImageCellCount(terminal).Should().Be(8);
     }
 
     /// <summary>
     /// The disposal story: an image dies with the last cell holding it, so a picture that scrolls
     /// out of a short scrollback leaves nothing behind to evict.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_image_scrolled_out_of_the_scrollback_leaves_no_references()
     {
         var terminal = Fresh(o => o.Scrollback = 4);
         WriteSixel(terminal);
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
 
         terminal.Write($"{Esc}[10;1H");
         for (int i = 0; i < 40; i++)
             terminal.Write("\r\n");
 
-        Assert.Equal(0, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(0);
     }
 
     /// <summary>
@@ -183,40 +183,40 @@ public class ImageCellLifetimeTests
     /// shuffle: the renderer draws as much of the run as the width allows. Narrowing shows less,
     /// widening shows more, and the wrap-chain case is still dropped, on its own, below.</para>
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void A_change_of_width_keeps_the_images()
     {
         var terminal = Fresh();
         WriteSixel(terminal);
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
 
         terminal.Resize(15, 10);
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
 
         terminal.Resize(40, 10);
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
     }
 
     /// <summary>
     /// Narrowing past a picture hides the overhang rather than destroying it, and widening brings it
     /// back — because a run keeps its natural width and only the drawing is clipped.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Narrowing_past_a_picture_hides_it_and_widening_restores_it()
     {
         var terminal = Fresh();
         WriteSixel(terminal);
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
 
         terminal.Resize(1, 10);          // the picture is two columns wide
-        Assert.Equal(4, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(4);
 
         terminal.Resize(20, 10);
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
     }
 
     /// <summary>A change of height moves whole lines, so there is nothing to be confused about.</summary>
-    [Fact]
+    [TestMethod]
     public void A_change_of_height_alone_keeps_the_images()
     {
         var terminal = Fresh();
@@ -224,10 +224,10 @@ public class ImageCellLifetimeTests
 
         terminal.Resize(20, 14);
 
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
     }
 
-    [Fact]
+    [TestMethod]
     public void Clearing_a_dropped_image_leaves_a_blank_rather_than_a_hole()
     {
         var terminal = Fresh();
@@ -236,15 +236,15 @@ public class ImageCellLifetimeTests
         terminal.Resize(15, 10);
 
         var cell = terminal.Buffer.Lines[terminal.Buffer.YBase]![0];
-        Assert.Equal(" ", cell.Content);
-        Assert.Equal(1, cell.Width);
+        cell.Content.Should().Be(" ");
+        cell.Width.Should().Be(1);
     }
 
     /// <summary>
     /// The backstop for the case reference counting cannot reach: a deep scrollback full of
     /// pictures, every one still referenced and every one still in memory.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void The_oldest_images_are_dropped_when_the_budget_is_exceeded()
     {
         // Each image here is 4x12 BGRA -- 192 bytes -- so a 200 byte budget holds exactly one.
@@ -252,18 +252,17 @@ public class ImageCellLifetimeTests
 
         WriteSixel(terminal);
         var first = ImageAssertions.ImageAt(terminal, 0, 0);
-        Assert.NotNull(first);
+        first.Should().NotBeNull();
 
         WriteSixel(terminal);
         var second = ImageAssertions.ImageAt(terminal, 0, 4);
-        Assert.NotNull(second);
+        second.Should().NotBeNull();
 
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
-        Assert.True(ReferenceEquals(ImageAssertions.ImageAt(terminal, 0, 4), second),
-            "the newest image should be the one that survives");
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
+        ReferenceEquals(ImageAssertions.ImageAt(terminal, 0, 4), second).Should().BeTrue("the newest image should be the one that survives");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_generous_budget_keeps_both_images()
     {
         var terminal = Fresh(o => o.MaxImageBytes = 64 * 1024);
@@ -271,8 +270,8 @@ public class ImageCellLifetimeTests
         WriteSixel(terminal);
         WriteSixel(terminal);
 
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 0, 0));
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 0, 4));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().NotBeNull();
+        ImageAssertions.ImageAt(terminal, 0, 4).Should().NotBeNull();
     }
 
     /// <summary>
@@ -283,7 +282,7 @@ public class ImageCellLifetimeTests
     /// the others with it — more destructive than the per-cell code this replaced, and it evicted
     /// images the sweep had just decided to keep.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void Evicting_one_image_leaves_another_on_the_same_line()
     {
         // Two 192-byte images; a 400 byte budget holds both, then a third forces one out.
@@ -294,15 +293,14 @@ public class ImageCellLifetimeTests
         WriteSixel(terminal);
 
         var line = terminal.Buffer.Lines[terminal.Buffer.YBase]!;
-        Assert.Equal(2, line.Images.Count);
+        line.Images.Count.Should().Be(2);
         var newer = line.Images[1];
 
         // A third image pushes past the budget, dooming the oldest — which shares this line.
         terminal.Write($"{Esc}[10;1H");
         WriteSixel(terminal);
 
-        Assert.True(ReferenceEquals(newer, line.Images.SingleOrDefault()),
-            "the line's other picture should survive its neighbour being evicted");
+        ReferenceEquals(newer, line.Images.SingleOrDefault()).Should().BeTrue("the line's other picture should survive its neighbour being evicted");
     }
 
     /// <summary>
@@ -313,7 +311,7 @@ public class ImageCellLifetimeTests
     /// rebuild it — waiting for the run list to empty kept a picture alive that nothing displayed,
     /// and hid it from the budget sweep, which decides what is live by walking runs.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void Overwriting_one_picture_releases_only_that_one()
     {
         var terminal = Fresh();
@@ -323,14 +321,13 @@ public class ImageCellLifetimeTests
         WriteSixel(terminal);
 
         var line = terminal.Buffer.Lines[terminal.Buffer.YBase]!;
-        Assert.Equal(2, line.Images.Count);
+        line.Images.Count.Should().Be(2);
         var survivor = line.Images[1];
 
         // Print across the whole span of the first picture, which covers columns 0..1.
         terminal.Write($"{Esc}[1;1HXX");
 
-        Assert.True(ReferenceEquals(survivor, line.Images.SingleOrDefault()),
-            "the overwritten picture should be released and the other kept");
+        ReferenceEquals(survivor, line.Images.SingleOrDefault()).Should().BeTrue("the overwritten picture should be released and the other kept");
     }
 
     /// <summary>
@@ -344,23 +341,23 @@ public class ImageCellLifetimeTests
     /// nothing about a picture is drawn from cells — so cells beneath one should coalesce exactly
     /// like the spaces they are, and the distinction has no work left to do.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void A_cell_under_a_picture_is_an_ordinary_space()
     {
         var terminal = Fresh();
         WriteSixel(terminal);
 
-        Assert.Equal(BufferCell.Space, Cell(terminal, 0, 0));
-        Assert.Equal(Cell(terminal, 0, 0), Cell(terminal, 1, 0));
+        Cell(terminal, 0, 0).Should().Be(BufferCell.Space);
+        Cell(terminal, 1, 0).Should().Be(Cell(terminal, 0, 0));
 
         // And the picture is still there — held by the line, which is the whole point.
-        Assert.NotNull(ImageAssertions.ImageAt(terminal, 0, 0));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().NotBeNull();
     }
 
     /// <summary>
     /// What must stay distinguishable is the RUNS: each line shows its own slice of the picture.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Runs_on_different_lines_carry_different_slices()
     {
         var terminal = Fresh();
@@ -369,21 +366,21 @@ public class ImageCellLifetimeTests
         var first = ImageAssertions.PlacementAt(terminal, 0, 0);
         var second = ImageAssertions.PlacementAt(terminal, 0, 1);
 
-        Assert.NotNull(first);
-        Assert.NotNull(second);
-        Assert.NotEqual(first!.Value.SrcY, second!.Value.SrcY);
+        first.Should().NotBeNull();
+        second.Should().NotBeNull();
+        (second!.Value.SrcY).Should().NotBe(first!.Value.SrcY);
     }
 
-    [Fact]
+    [TestMethod]
     public void The_alternate_buffer_keeps_its_own_images()
     {
         var terminal = Fresh();
         WriteSixel(terminal);
 
         terminal.Write($"{Esc}[?1049h"); // to the alternate screen
-        Assert.Equal(0, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(0);
 
         terminal.Write($"{Esc}[?1049l"); // and back
-        Assert.Equal(8, ImageCellCount(terminal));
+        ImageCellCount(terminal).Should().Be(8);
     }
 }

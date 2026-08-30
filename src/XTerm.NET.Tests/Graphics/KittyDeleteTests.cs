@@ -14,6 +14,7 @@ namespace XTerm.Tests.Graphics;
 /// crop origin, and they are one-based where the buffer is zero-based -- an off-by-one here deletes
 /// the wrong row and looks like a rendering fault.</para>
 /// </summary>
+[TestClass]
 public class KittyDeleteTests
 {
     private const string Esc = "";
@@ -73,36 +74,36 @@ public class KittyDeleteTests
 
     // ---- by identity ------------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Deleting_by_id_removes_every_appearance_of_that_image()
     {
         var terminal = Fresh();
         terminal.Write(Apc("a=t,i=7,f=32,s=4,v=6,q=2", Pixels()));
         terminal.Write($"{Esc}[1;1H" + Apc("a=p,i=7,q=2"));
         terminal.Write($"{Esc}[5;10H" + Apc("a=p,i=7,q=2"));
-        Assert.Equal(8, TileCount(terminal));
+        TileCount(terminal).Should().Be(8);
 
         terminal.Write(Apc("a=d,d=i,i=7,q=2"));
 
-        Assert.Equal(0, TileCount(terminal));
+        TileCount(terminal).Should().Be(0);
     }
 
     /// <summary>Lower case leaves the picture placeable; upper case does not.</summary>
-    [Fact]
+    [TestMethod]
     public void Lower_case_delete_keeps_the_image_placeable()
     {
         var terminal = Fresh();
         Show(terminal, 7, 0, 0);
 
         terminal.Write(Apc("a=d,d=i,i=7,q=2"));
-        Assert.Equal(0, TileCount(terminal));
+        TileCount(terminal).Should().Be(0);
 
         terminal.Write($"{Esc}[1;1H" + Apc("a=p,i=7,q=2"));
 
-        Assert.Equal(4, TileCount(terminal));
+        TileCount(terminal).Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void Upper_case_delete_frees_the_image()
     {
         var terminal = Fresh();
@@ -112,15 +113,15 @@ public class KittyDeleteTests
         terminal.Write(Apc("a=d,d=I,i=7,q=2"));
         terminal.Write($"{Esc}[1;1H" + Apc("a=p,i=7"));
 
-        Assert.Equal(0, TileCount(terminal));
-        Assert.Contains(replies, r => r.Contains("ENOENT"));
+        TileCount(terminal).Should().Be(0);
+        replies.Should().Contain(r => r.Contains("ENOENT"));
     }
 
     /// <summary>
     /// A placement id names one appearance. The others stay, which is the entire reason the protocol
     /// has placement ids at all.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_placement_id_deletes_only_that_appearance()
     {
         var terminal = Fresh();
@@ -130,15 +131,15 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=i,i=7,p=1,q=2"));
 
-        Assert.False(HasImage(terminal, 0, 0), "the named placement should be gone");
-        Assert.True(HasImage(terminal, 9, 4), "the other placement should have stayed");
+        HasImage(terminal, 0, 0).Should().BeFalse("the named placement should be gone");
+        HasImage(terminal, 9, 4).Should().BeTrue("the other placement should have stayed");
     }
 
     /// <summary>
     /// Even upper case must not free the pixels while another placement still shows them -- doing so
     /// would blank a picture the client never named.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Deleting_one_placement_never_frees_the_shared_image()
     {
         var terminal = Fresh();
@@ -148,10 +149,10 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=I,i=7,p=1,q=2"));
 
-        Assert.True(HasImage(terminal, 9, 4));
+        HasImage(terminal, 9, 4).Should().BeTrue();
         var replies = Replies(terminal);
         terminal.Write($"{Esc}[9;1H" + Apc("a=p,i=7"));
-        Assert.DoesNotContain(replies, r => r.Contains("ENOENT"));
+        replies.Should().NotContain(r => r.Contains("ENOENT"));
     }
 
     // ---- by image number --------------------------------------------------------------------------
@@ -160,7 +161,7 @@ public class KittyDeleteTests
     /// A client that does not want to manage an id space sends I=. The terminal picks an id and must
     /// report both halves, so the client can match the reply and then use the image.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_image_number_is_answered_with_the_assigned_id()
     {
         var terminal = Fresh();
@@ -168,13 +169,13 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=t,I=5,f=32,s=4,v=6", Pixels()));
 
-        var reply = Assert.Single(replies);
-        Assert.Contains("I=5", reply);
-        Assert.Matches(@"i=\d+", reply);
-        Assert.Contains("OK", reply);
+        var reply = replies.Should().ContainSingle().Which;
+        reply.Should().Contain("I=5");
+        reply.Should().MatchRegex(@"i=\d+");
+        reply.Should().Contain("OK");
     }
 
-    [Fact]
+    [TestMethod]
     public void An_image_can_be_placed_by_its_number()
     {
         var terminal = Fresh();
@@ -182,11 +183,11 @@ public class KittyDeleteTests
 
         terminal.Write($"{Esc}[1;1H" + Apc("a=p,I=5,q=2"));
 
-        Assert.Equal(4, TileCount(terminal));
+        TileCount(terminal).Should().Be(4);
     }
 
     /// <summary>Sending the same number again makes a new image, and the number follows the newest.</summary>
-    [Fact]
+    [TestMethod]
     public void A_repeated_number_refers_to_the_newest_image()
     {
         var terminal = Fresh();
@@ -195,11 +196,11 @@ public class KittyDeleteTests
 
         terminal.Write($"{Esc}[1;1H" + Apc("a=p,I=5,q=2"));
 
-        Assert.True(ImageAssertions.IsImageAt(terminal, 0, 0));
-        Assert.Equal(8, ImageAssertions.ImageAt(terminal, 0, 0)!.PixelWidth);
+        ImageAssertions.IsImageAt(terminal, 0, 0).Should().BeTrue();
+        (ImageAssertions.ImageAt(terminal, 0, 0)!.PixelWidth).Should().Be(8);
     }
 
-    [Fact]
+    [TestMethod]
     public void Deleting_by_number_removes_the_image()
     {
         var terminal = Fresh();
@@ -208,7 +209,7 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=n,I=5,q=2"));
 
-        Assert.Equal(0, TileCount(terminal));
+        TileCount(terminal).Should().Be(0);
     }
 
     // ---- by position ------------------------------------------------------------------------------
@@ -217,23 +218,23 @@ public class KittyDeleteTests
     /// A placement found through one of its cells goes in its entirety. Removing only the cells in
     /// the named row would leave a picture with a hole through it.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Deleting_by_row_removes_the_whole_placement_not_just_that_row()
     {
         var terminal = Fresh();
         Show(terminal, 7, 0, 0);           // occupies rows 0 and 1
-        Assert.Equal(4, TileCount(terminal));
+        TileCount(terminal).Should().Be(4);
 
         terminal.Write(Apc("a=d,d=y,y=2,q=2"));   // one-based: screen row 1
 
-        Assert.Equal(0, TileCount(terminal));
+        TileCount(terminal).Should().Be(0);
     }
 
     /// <summary>
     /// Deliberately one column wide each, and adjacent. A two-column picture would swallow an
     /// off-by-one -- column 0 and column 1 both being inside it, the test would pass either way.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Deleting_by_column_leaves_placements_in_other_columns()
     {
         var terminal = Fresh();
@@ -242,11 +243,11 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=x,x=1,q=2"));   // one-based: column 0
 
-        Assert.False(HasImage(terminal, 0, 0), "the picture in column 0 should be gone");
-        Assert.True(HasImage(terminal, 1, 0), "the picture in column 1 should have stayed");
+        HasImage(terminal, 0, 0).Should().BeFalse("the picture in column 0 should be gone");
+        HasImage(terminal, 1, 0).Should().BeTrue("the picture in column 1 should have stayed");
     }
 
-    [Fact]
+    [TestMethod]
     public void Deleting_at_a_cell_removes_the_placement_covering_it()
     {
         var terminal = Fresh();
@@ -256,11 +257,11 @@ public class KittyDeleteTests
         // The second tile of the first placement, one-based.
         terminal.Write(Apc("a=d,d=p,x=2,y=1,q=2"));
 
-        Assert.False(HasImage(terminal, 0, 0));
-        Assert.True(HasImage(terminal, 10, 0));
+        HasImage(terminal, 0, 0).Should().BeFalse();
+        HasImage(terminal, 10, 0).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Deleting_at_a_cell_with_no_picture_removes_nothing()
     {
         var terminal = Fresh();
@@ -268,10 +269,10 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=p,x=20,y=9,q=2"));
 
-        Assert.Equal(4, TileCount(terminal));
+        TileCount(terminal).Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void Deleting_at_the_cursor_removes_the_placement_under_it()
     {
         var terminal = Fresh();
@@ -281,13 +282,13 @@ public class KittyDeleteTests
         terminal.Write($"{Esc}[1;11H");     // onto the second picture
         terminal.Write(Apc("a=d,d=c,q=2"));
 
-        Assert.True(HasImage(terminal, 0, 0));
-        Assert.False(HasImage(terminal, 10, 0));
+        HasImage(terminal, 0, 0).Should().BeTrue();
+        HasImage(terminal, 10, 0).Should().BeFalse();
     }
 
     // ---- by z-index -------------------------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Deleting_by_z_index_selects_only_matching_placements()
     {
         var terminal = Fresh();
@@ -297,27 +298,27 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=z,z=5,q=2"));
 
-        Assert.False(HasImage(terminal, 0, 0), "the z=5 placement should be gone");
-        Assert.True(HasImage(terminal, 9, 4), "the z=9 placement should have stayed");
+        HasImage(terminal, 0, 0).Should().BeFalse("the z=5 placement should be gone");
+        HasImage(terminal, 9, 4).Should().BeTrue("the z=9 placement should have stayed");
     }
 
     /// <summary>d=q is d=p narrowed by z-index: the cell must match and so must the depth.</summary>
-    [Fact]
+    [TestMethod]
     public void Deleting_at_a_cell_with_a_z_index_requires_both_to_match()
     {
         var terminal = Fresh();
         Show(terminal, 7, 0, 0);           // no z given, so z=0
 
         terminal.Write(Apc("a=d,d=q,x=1,y=1,z=3,q=2"));
-        Assert.Equal(4, TileCount(terminal));
+        TileCount(terminal).Should().Be(4);
 
         terminal.Write(Apc("a=d,d=q,x=1,y=1,z=0,q=2"));
-        Assert.Equal(0, TileCount(terminal));
+        TileCount(terminal).Should().Be(0);
     }
 
     // ---- everything, and the edges ----------------------------------------------------------------
 
-    [Fact]
+    [TestMethod]
     public void Deleting_all_clears_the_screen_of_pictures()
     {
         var terminal = Fresh();
@@ -326,14 +327,14 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=a,q=2"));
 
-        Assert.Equal(0, TileCount(terminal));
+        TileCount(terminal).Should().Be(0);
     }
 
     /// <summary>
     /// Nothing here stores animation frames, so there are none to remove. That is a request already
     /// satisfied rather than one this terminal cannot honour, so it is not an error.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void Deleting_animation_frames_succeeds_having_nothing_to_do()
     {
         var terminal = Fresh();
@@ -342,11 +343,11 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=f,i=7"));
 
-        Assert.Equal(4, TileCount(terminal));
-        Assert.DoesNotContain(replies, r => r.Contains("ENOTSUP"));
+        TileCount(terminal).Should().Be(4);
+        replies.Should().NotContain(r => r.Contains("ENOTSUP"));
     }
 
-    [Fact]
+    [TestMethod]
     public void An_unknown_delete_target_is_refused_rather_than_ignored()
     {
         var terminal = Fresh();
@@ -355,15 +356,15 @@ public class KittyDeleteTests
 
         terminal.Write(Apc("a=d,d=w,i=7"));
 
-        Assert.Equal(4, TileCount(terminal));
-        Assert.Contains(replies, r => r.Contains("ENOTSUP"));
+        TileCount(terminal).Should().Be(4);
+        replies.Should().Contain(r => r.Contains("ENOTSUP"));
     }
 
     /// <summary>
     /// The scrollback is deliberately not searched. A picture scrolled out of view is not "at row 1"
     /// however many rows above it happen to be.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void A_positional_delete_ignores_the_scrollback()
     {
         var terminal = Fresh();
@@ -383,6 +384,6 @@ public class KittyDeleteTests
                 survives = true;
         }
 
-        Assert.True(survives, "a picture in the scrollback was deleted by a screen-row delete");
+        survives.Should().BeTrue("a picture in the scrollback was deleted by a screen-row delete");
     }
 }

@@ -3,9 +3,11 @@ using XTerm.Selection;
 
 namespace XTerm.NET.Tests;
 
+[TestClass]
+
 public class SelectionTests
 {
-    [Fact]
+    [TestMethod]
     public void SelectionText_RemainsAnchored_WhenViewportScrolls()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 5, Cols = 80, Scrollback = 100 });
@@ -20,14 +22,14 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(5, 2);
         terminal.Selection.EndSelection();
 
-        Assert.Equal("02", terminal.Selection.GetSelectionText());
+        terminal.Selection.GetSelectionText().Should().Be("02");
 
         terminal.ScrollLines(1);
 
-        Assert.Equal("02", terminal.Selection.GetSelectionText());
+        terminal.Selection.GetSelectionText().Should().Be("02");
     }
 
-    [Fact]
+    [TestMethod]
     public void IsCellSelected_TracksBufferSelectionAcrossViewportScroll()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 5, Cols = 80, Scrollback = 100 });
@@ -42,16 +44,16 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(5, 2);
         terminal.Selection.EndSelection();
 
-        Assert.True(terminal.Selection.IsCellSelected(4, 2));
-        Assert.False(terminal.Selection.IsCellSelected(4, 1));
+        terminal.Selection.IsCellSelected(4, 2).Should().BeTrue();
+        terminal.Selection.IsCellSelected(4, 1).Should().BeFalse();
 
         terminal.ScrollLines(1);
 
-        Assert.True(terminal.Selection.IsCellSelected(4, 1));
-        Assert.False(terminal.Selection.IsCellSelected(4, 2));
+        terminal.Selection.IsCellSelected(4, 1).Should().BeTrue();
+        terminal.Selection.IsCellSelected(4, 2).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SelectAll_IncludesScrollback_NotJustViewport()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 3, Cols = 80, Scrollback = 20 });
@@ -65,11 +67,11 @@ public class SelectionTests
 
         var selectedText = terminal.Selection.GetSelectionText();
 
-        Assert.Contains("Line0", selectedText);
-        Assert.Contains("Line7", selectedText);
+        selectedText.Should().Contain("Line0");
+        selectedText.Should().Contain("Line7");
     }
 
-    [Fact]
+    [TestMethod]
     public void SelectionText_ClampsNegativeColumns()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 3, Cols = 10, Scrollback = 20 });
@@ -79,10 +81,10 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(4, 0);
         terminal.Selection.EndSelection();
 
-        Assert.Equal("alpha", terminal.Selection.GetSelectionText());
+        terminal.Selection.GetSelectionText().Should().Be("alpha");
     }
 
-    [Fact]
+    [TestMethod]
     public void SelectionText_ClampsColumnsPastRightEdge()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 3, Cols = 10, Scrollback = 20 });
@@ -92,10 +94,10 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(30, 0);
         terminal.Selection.EndSelection();
 
-        Assert.StartsWith("alpha", terminal.Selection.GetSelectionText());
+        terminal.Selection.GetSelectionText().Should().StartWith("alpha");
     }
 
-    [Fact]
+    [TestMethod]
     public void SelectionText_ReturnsEmpty_WhenTerminalHasNoColumns()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 3, Cols = 0, Scrollback = 20 });
@@ -104,7 +106,7 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(0, 0);
         terminal.Selection.EndSelection();
 
-        Assert.Equal(string.Empty, terminal.Selection.GetSelectionText());
+        terminal.Selection.GetSelectionText().Should().Be(string.Empty);
     }
     
     public void SelectionText_UsesLineFeedLineEndings()
@@ -118,14 +120,14 @@ public class SelectionTests
 
         var selectedText = terminal.Selection.GetSelectionText();
 
-        Assert.DoesNotContain("\r", selectedText);
-        Assert.Equal(2, selectedText.Count(ch => ch == '\n'));
-        Assert.StartsWith("alpha", selectedText);
-        Assert.Contains("\nbeta", selectedText);
-        Assert.EndsWith("gamma", selectedText);
+        selectedText.Should().NotContain("\r");
+        selectedText.Count(ch => ch == '\n').Should().Be(2);
+        selectedText.Should().StartWith("alpha");
+        selectedText.Should().Contain("\nbeta");
+        selectedText.Should().EndWith("gamma");
     }
 
-    [Fact]
+    [TestMethod]
     public void Selection_IsCleared_WhenTrimRemovesSelectedLines()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 3, Cols = 80, Scrollback = 2 });
@@ -142,26 +144,26 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(4, 0);
         terminal.Selection.EndSelection();
 
-        Assert.Equal(expectedSelectedText, terminal.Selection.GetSelectionText());
+        terminal.Selection.GetSelectionText().Should().Be(expectedSelectedText);
 
         for (int i = 5; i < 10; i++)
         {
             terminal.WriteLine($"Line{i}");
         }
 
-        Assert.False(terminal.Selection.HasSelection);
-        Assert.Equal(string.Empty, terminal.Selection.GetSelectionText());
+        terminal.Selection.HasSelection.Should().BeFalse();
+        terminal.Selection.GetSelectionText().Should().Be(string.Empty);
     }
 
     // ---------------------------------------------------------------- bounds
 
-    [Fact]
+    [TestMethod]
     public void TryGetSelection_ReportsNothing_WhenNothingIsSelected()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 5, Cols = 80 });
 
-        Assert.False(terminal.Selection.TryGetSelection(out var range));
-        Assert.Equal(default, range);
+        terminal.Selection.TryGetSelection(out var range).Should().BeFalse();
+        range.Should().Be(default(SelectionRange));
     }
 
     /// <summary>
@@ -171,7 +173,7 @@ public class SelectionTests
     /// The two ends are stored in the order the user dragged them, so every caller that wanted to
     /// know what was selected had to know to swap them. This is that comparison, done once.
     /// </remarks>
-    [Fact]
+    [TestMethod]
     public void TryGetSelection_OrdersTheEnds_HoweverTheDragWent()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 5, Cols = 80, Scrollback = 100 });
@@ -184,20 +186,20 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(2, 1);
         terminal.Selection.EndSelection();
 
-        Assert.True(terminal.Selection.TryGetSelection(out var backwards));
+        terminal.Selection.TryGetSelection(out var backwards).Should().BeTrue();
 
         terminal.Selection.ClearSelection();
         terminal.Selection.StartSelection(2, 1);
         terminal.Selection.UpdateSelection(6, 3);
         terminal.Selection.EndSelection();
 
-        Assert.True(terminal.Selection.TryGetSelection(out var forwards));
+        terminal.Selection.TryGetSelection(out var forwards).Should().BeTrue();
 
-        Assert.Equal(forwards, backwards);
-        Assert.True(backwards.StartY < backwards.EndY);
+        backwards.Should().Be(forwards);
+        (backwards.StartY < backwards.EndY).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void TryGetSelection_ReportsAbsoluteRows_SoScrollingDoesNotMoveIt()
     {
         // Absolute rows are what makes a range outlive the viewport it was taken in -- the same
@@ -211,84 +213,84 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(5, 2);
         terminal.Selection.EndSelection();
 
-        Assert.True(terminal.Selection.TryGetSelection(out var before));
+        terminal.Selection.TryGetSelection(out var before).Should().BeTrue();
 
         terminal.ScrollLines(1);
 
-        Assert.True(terminal.Selection.TryGetSelection(out var after));
-        Assert.Equal(before, after);
+        terminal.Selection.TryGetSelection(out var after).Should().BeTrue();
+        after.Should().Be(before);
     }
 
     // -------------------------------------------------------------- row spans
 
-    [Fact]
+    [TestMethod]
     public void TryGetRowSpan_CoversTheWholeRow_BetweenTheEnds()
     {
         var range = new SelectionRange(StartX: 5, StartY: 2, EndX: 3, EndY: 6);
 
-        Assert.True(range.TryGetRowSpan(4, cols: 80, out var startX, out var endX));
-        Assert.Equal(0, startX);
-        Assert.Equal(79, endX);
+        range.TryGetRowSpan(4, cols: 80, out var startX, out var endX).Should().BeTrue();
+        startX.Should().Be(0);
+        endX.Should().Be(79);
     }
 
-    [Fact]
+    [TestMethod]
     public void TryGetRowSpan_StartsAndEndsWhereTheSelectionDoes()
     {
         var range = new SelectionRange(StartX: 5, StartY: 2, EndX: 3, EndY: 6);
 
-        Assert.True(range.TryGetRowSpan(2, cols: 80, out var firstStart, out var firstEnd));
-        Assert.Equal(5, firstStart);
-        Assert.Equal(79, firstEnd);
+        range.TryGetRowSpan(2, cols: 80, out var firstStart, out var firstEnd).Should().BeTrue();
+        firstStart.Should().Be(5);
+        firstEnd.Should().Be(79);
 
-        Assert.True(range.TryGetRowSpan(6, cols: 80, out var lastStart, out var lastEnd));
-        Assert.Equal(0, lastStart);
-        Assert.Equal(3, lastEnd);
+        range.TryGetRowSpan(6, cols: 80, out var lastStart, out var lastEnd).Should().BeTrue();
+        lastStart.Should().Be(0);
+        lastEnd.Should().Be(3);
     }
 
-    [Fact]
+    [TestMethod]
     public void TryGetRowSpan_IsOneSpan_WhenTheSelectionIsWithinOneRow()
     {
         var range = new SelectionRange(StartX: 10, StartY: 3, EndX: 20, EndY: 3);
 
-        Assert.True(range.TryGetRowSpan(3, cols: 80, out var startX, out var endX));
-        Assert.Equal(10, startX);
-        Assert.Equal(20, endX);
+        range.TryGetRowSpan(3, cols: 80, out var startX, out var endX).Should().BeTrue();
+        startX.Should().Be(10);
+        endX.Should().Be(20);
     }
 
-    [Fact]
+    [TestMethod]
     public void TryGetRowSpan_DeclinesRowsOutsideTheSelection()
     {
         // The reason a renderer wants this: a row it can skip costs two comparisons rather than one
         // question per column.
         var range = new SelectionRange(StartX: 5, StartY: 2, EndX: 3, EndY: 6);
 
-        Assert.False(range.TryGetRowSpan(1, cols: 80, out _, out _));
-        Assert.False(range.TryGetRowSpan(7, cols: 80, out _, out _));
+        range.TryGetRowSpan(1, cols: 80, out _, out _).Should().BeFalse();
+        range.TryGetRowSpan(7, cols: 80, out _, out _).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void TryGetRowSpan_ClampsToAGridThatHasSinceNarrowed()
     {
         // A range outlives the width it was made at. Asked about a narrower grid it reports the
         // columns that still exist, and declines the row when none of them do.
         var range = new SelectionRange(StartX: 70, StartY: 2, EndX: 75, EndY: 2);
 
-        Assert.True(range.TryGetRowSpan(2, cols: 80, out var wideStart, out var wideEnd));
-        Assert.Equal(70, wideStart);
-        Assert.Equal(75, wideEnd);
+        range.TryGetRowSpan(2, cols: 80, out var wideStart, out var wideEnd).Should().BeTrue();
+        wideStart.Should().Be(70);
+        wideEnd.Should().Be(75);
 
-        Assert.True(range.TryGetRowSpan(2, cols: 40, out var narrowStart, out var narrowEnd));
-        Assert.Equal(39, narrowStart);
-        Assert.Equal(39, narrowEnd);
+        range.TryGetRowSpan(2, cols: 40, out var narrowStart, out var narrowEnd).Should().BeTrue();
+        narrowStart.Should().Be(39);
+        narrowEnd.Should().Be(39);
 
-        Assert.False(range.TryGetRowSpan(2, cols: 0, out _, out _));
+        range.TryGetRowSpan(2, cols: 0, out _, out _).Should().BeFalse();
     }
 
     /// <summary>
     /// The bounds and the per-cell question have to give the same answers, because they are now two
     /// views of one rule and nothing else would notice them drifting.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void TryGetRowSpan_AgreesWithIsCellSelected_AcrossTheGrid()
     {
         var terminal = new Terminal(new TerminalOptions { Rows = 5, Cols = 20, Scrollback = 100 });
@@ -300,7 +302,7 @@ public class SelectionTests
         terminal.Selection.UpdateSelection(4, 3);
         terminal.Selection.EndSelection();
 
-        Assert.True(terminal.Selection.TryGetSelection(out var range));
+        terminal.Selection.TryGetSelection(out var range).Should().BeTrue();
 
         for (int row = 0; row < terminal.Rows; row++)
         {
@@ -310,7 +312,7 @@ public class SelectionTests
             for (int x = 0; x < terminal.Cols; x++)
             {
                 var fromSpan = hasSpan && x >= startX && x <= endX;
-                Assert.Equal(terminal.Selection.IsCellSelected(x, row), fromSpan);
+                fromSpan.Should().Be(terminal.Selection.IsCellSelected(x, row));
             }
         }
     }

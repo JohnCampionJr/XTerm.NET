@@ -3,22 +3,24 @@ using XTerm.Common;
 
 namespace XTerm.Tests.Buffer;
 
+[TestClass]
+
 public class BufferCellTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_Default_SetsNullValues()
     {
         // Arrange & Act
         var cell = new BufferCell();
 
         // Assert
-        Assert.Equal(BufferCell.Empty.Content, cell.Content);
-        Assert.Equal(BufferCell.Empty.Width, cell.Width);
-        Assert.Equal(BufferCell.Empty.CodePoint, cell.CodePoint);
-        Assert.Equal(AttributeData.Default, cell.Attributes);
+        cell.Content.Should().Be(BufferCell.Empty.Content);
+        cell.Width.Should().Be(BufferCell.Empty.Width);
+        cell.CodePoint.Should().Be(BufferCell.Empty.CodePoint);
+        cell.Attributes.Should().Be(AttributeData.Default);
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_WithContent_SetsValues()
     {
         // Arrange
@@ -30,13 +32,13 @@ public class BufferCellTests
         var cell = new BufferCell(content, width, attr);
 
         // Assert
-        Assert.Equal(content, cell.Content);
-        Assert.Equal(width, cell.Width);
-        Assert.Equal('A', cell.CodePoint);
-        Assert.Equal(attr, cell.Attributes);
+        cell.Content.Should().Be(content);
+        cell.Width.Should().Be(width);
+        cell.CodePoint.Should().Be('A');
+        cell.Attributes.Should().Be(attr);
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_WithCodePoint_SetsValues()
     {
         // Arrange
@@ -48,77 +50,77 @@ public class BufferCellTests
         var cell = new BufferCell(codePoint, width, attr);
 
         // Assert
-        Assert.Equal("A", cell.Content);
-        Assert.Equal(width, cell.Width);
-        Assert.Equal(codePoint, cell.CodePoint);
-        Assert.Equal(attr, cell.Attributes);
+        cell.Content.Should().Be("A");
+        cell.Width.Should().Be(width);
+        cell.CodePoint.Should().Be(codePoint);
+        cell.Attributes.Should().Be(attr);
     }
 
-    [Fact]
+    [TestMethod]
     public void Null_Property_ReturnsNullCell()
     {
         // Act
         var cell = BufferCell.Empty;
 
         // Assert
-        Assert.Equal(BufferCell.Empty.Content, cell.Content);
-        Assert.Equal(BufferCell.Empty.Width, cell.Width);
-        Assert.Equal(BufferCell.Empty.CodePoint, cell.CodePoint);
+        cell.Content.Should().Be(BufferCell.Empty.Content);
+        cell.Width.Should().Be(BufferCell.Empty.Width);
+        cell.CodePoint.Should().Be(BufferCell.Empty.CodePoint);
     }
 
-    [Fact]
+    [TestMethod]
     public void Whitespace_Property_ReturnsWhitespaceCell()
     {
         // Act
         var cell = BufferCell.Space;
 
         // Assert
-        Assert.Equal(BufferCell.Space.Content, cell.Content);
-        Assert.Equal(BufferCell.Space.Width, cell.Width);
-        Assert.Equal(BufferCell.Space.CodePoint, cell.CodePoint);
+        cell.Content.Should().Be(BufferCell.Space.Content);
+        cell.Width.Should().Be(BufferCell.Space.Width);
+        cell.CodePoint.Should().Be(BufferCell.Space.CodePoint);
     }
 
-    [Fact]
+    [TestMethod]
     public void IsNull_NullCell_ReturnsTrue()
     {
         // Arrange
         var cell = BufferCell.Empty;
 
         // Act & Assert
-        Assert.True(cell.IsEmpty());
+        cell.IsEmpty().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void IsNull_NonNullCell_ReturnsFalse()
     {
         // Arrange
         var cell = new BufferCell("A", 1, AttributeData.Default);
 
         // Act & Assert
-        Assert.False(cell.IsEmpty());
+        cell.IsEmpty().Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void IsWhitespace_WhitespaceCell_ReturnsTrue()
     {
         // Arrange
         var cell = BufferCell.Space;
 
         // Act & Assert
-        Assert.True(cell.IsSpace());
+        cell.IsSpace().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void IsWhitespace_NonWhitespaceCell_ReturnsFalse()
     {
         // Arrange
         var cell = new BufferCell("A", 1, AttributeData.Default);
 
         // Act & Assert
-        Assert.False(cell.IsSpace());
+        cell.IsSpace().Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void GetWidth_ReturnsWidth()
     {
         // Arrange
@@ -128,10 +130,10 @@ public class BufferCellTests
         var width = cell.Width;
 
         // Assert
-        Assert.Equal(2, width);
+        width.Should().Be(2);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetChars_ReturnsContent()
     {
         // Arrange
@@ -142,10 +144,10 @@ public class BufferCellTests
         var chars = cell.Content;
 
         // Assert
-        Assert.Equal(content, chars);
+        chars.Should().Be(content);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetCode_ReturnsCodePoint()
     {
         // Arrange
@@ -156,10 +158,10 @@ public class BufferCellTests
         var code = cell.CodePoint;
 
         // Assert
-        Assert.Equal(codePoint, code);
+        code.Should().Be(codePoint);
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_SameCells_ReturnsTrue()
     {
         // Arrange
@@ -168,11 +170,11 @@ public class BufferCellTests
         var cell2 = new BufferCell("A", 1, attr);
 
         // Act & Assert
-        Assert.True(cell1.Equals(cell2));
-        Assert.True(cell1 == cell2);
+        cell1.Equals(cell2).Should().BeTrue();
+        ((cell1 == cell2)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_DifferentContent_ReturnsFalse()
     {
         // Arrange
@@ -181,11 +183,11 @@ public class BufferCellTests
         var cell2 = new BufferCell("B", 1, attr);
 
         // Act & Assert
-        Assert.False(cell1.Equals(cell2));
-        Assert.True(cell1 != cell2);
+        cell1.Equals(cell2).Should().BeFalse();
+        ((cell1 != cell2)).Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_DifferentWidth_ReturnsFalse()
     {
         // Arrange
@@ -194,10 +196,10 @@ public class BufferCellTests
         var cell2 = new BufferCell("A", 2, attr);
 
         // Act & Assert
-        Assert.False(cell1.Equals(cell2));
+        cell1.Equals(cell2).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Equals_DifferentAttributes_ReturnsFalse()
     {
         // Arrange
@@ -207,10 +209,10 @@ public class BufferCellTests
         var cell2 = new BufferCell("A", 1, attr2);
 
         // Act & Assert
-        Assert.False(cell1.Equals(cell2));
+        cell1.Equals(cell2).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Clone_CreatesIndependentCopy()
     {
         // Arrange
@@ -221,17 +223,17 @@ public class BufferCellTests
         var clone = cell;
 
         // Assert
-        Assert.Equal(cell.Content, clone.Content);
-        Assert.Equal(cell.Width, clone.Width);
-        Assert.Equal(cell.CodePoint, clone.CodePoint);
-        Assert.Equal(cell.Attributes, clone.Attributes);
+        clone.Content.Should().Be(cell.Content);
+        clone.Width.Should().Be(cell.Width);
+        clone.CodePoint.Should().Be(cell.CodePoint);
+        clone.Attributes.Should().Be(cell.Attributes);
         
         // Verify it's a true copy (modifying attributes doesn't affect original)
         clone.Attributes.SetBold(true);
-        Assert.NotEqual(cell.Attributes.IsBold(), clone.Attributes.IsBold());
+        clone.Attributes.IsBold().Should().NotBe(cell.Attributes.IsBold());
     }
 
-    [Fact]
+    [TestMethod]
     public void GetHashCode_SameCells_ReturnsSameHash()
     {
         // Arrange
@@ -240,21 +242,21 @@ public class BufferCellTests
         var cell2 = new BufferCell("A", 1, attr);
 
         // Act & Assert
-        Assert.Equal(cell1.GetHashCode(), cell2.GetHashCode());
+        cell2.GetHashCode().Should().Be(cell1.GetHashCode());
     }
 
-    [Theory]
-    [InlineData("A", 1)]
-    [InlineData("?", 2)] // Wide character
-    [InlineData("??", 2)] // Emoji
-    [InlineData(" ", 1)] // Space
+    [TestMethod]
+    [DataRow("A", 1)]
+    [DataRow("?", 2)] // Wide character
+    [DataRow("??", 2)] // Emoji
+    [DataRow(" ", 1)] // Space
     public void Constructor_VariousCharacters_HandlesCorrectly(string content, int expectedWidth)
     {
         // Arrange & Act
         var cell = new BufferCell(content, expectedWidth, AttributeData.Default);
 
         // Assert
-        Assert.Equal(content, cell.Content);
-        Assert.Equal(expectedWidth, cell.Width);
+        cell.Content.Should().Be(content);
+        cell.Width.Should().Be(expectedWidth);
     }
 }

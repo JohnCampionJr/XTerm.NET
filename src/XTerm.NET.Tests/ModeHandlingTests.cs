@@ -4,6 +4,8 @@ using XTerm.Options;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class ModeHandlingTests
 {
     private Terminal CreateTerminal(int cols = 80, int rows = 24)
@@ -12,21 +14,21 @@ public class ModeHandlingTests
         return new Terminal(options);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_InsertMode_EnablesInsertMode()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.InsertMode);
+        terminal.InsertMode.Should().BeFalse();
 
         // Act
         terminal.Write($"\x1B[{(int)TerminalMode.InsertMode}h");
 
         // Assert
-        Assert.True(terminal.InsertMode);
+        terminal.InsertMode.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_InsertMode_DisablesInsertMode()
     {
         // Arrange
@@ -37,24 +39,24 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[{(int)TerminalMode.InsertMode}l");
 
         // Assert
-        Assert.False(terminal.InsertMode);
+        terminal.InsertMode.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_ApplicationCursorKeys_EnablesAppCursorKeys()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.ApplicationCursorKeys);
+        terminal.ApplicationCursorKeys.Should().BeFalse();
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.AppCursorKeys}h");
 
         // Assert
-        Assert.True(terminal.ApplicationCursorKeys);
+        terminal.ApplicationCursorKeys.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_ApplicationCursorKeys_DisablesAppCursorKeys()
     {
         // Arrange
@@ -65,10 +67,10 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.AppCursorKeys}l");
 
         // Assert
-        Assert.False(terminal.ApplicationCursorKeys);
+        terminal.ApplicationCursorKeys.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_ShowCursor_EnablesCursorVisibility()
     {
         // Arrange
@@ -79,38 +81,38 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.ShowCursor}h");
 
         // Assert
-        Assert.True(terminal.CursorVisible);
+        terminal.CursorVisible.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_ShowCursor_DisablesCursorVisibility()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.True(terminal.CursorVisible); // Default is true
+        terminal.CursorVisible.Should().BeTrue(); // Default is true
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.ShowCursor}l");
 
         // Assert
-        Assert.False(terminal.CursorVisible);
+        terminal.CursorVisible.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_ApplicationKeypad_EnablesAppKeypad()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.ApplicationKeypad);
+        terminal.ApplicationKeypad.Should().BeFalse();
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.AppKeypad}h");
 
         // Assert
-        Assert.True(terminal.ApplicationKeypad);
+        terminal.ApplicationKeypad.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_ApplicationKeypad_DisablesAppKeypad()
     {
         // Arrange
@@ -121,24 +123,24 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.AppKeypad}l");
 
         // Assert
-        Assert.False(terminal.ApplicationKeypad);
+        terminal.ApplicationKeypad.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_BracketedPasteMode_EnablesBracketedPaste()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.BracketedPasteMode);
+        terminal.BracketedPasteMode.Should().BeFalse();
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.BracketedPasteMode}h");
 
         // Assert
-        Assert.True(terminal.BracketedPasteMode);
+        terminal.BracketedPasteMode.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_BracketedPasteMode_DisablesBracketedPaste()
     {
         // Arrange
@@ -149,46 +151,46 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.BracketedPasteMode}l");
 
         // Assert
-        Assert.False(terminal.BracketedPasteMode);
+        terminal.BracketedPasteMode.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_OriginMode_EnablesOriginMode()
     {
         // Arrange
         var terminal = CreateTerminal();
         terminal.Buffer.SetCursor(10, 10);
-        Assert.False(terminal.OriginMode);
+        terminal.OriginMode.Should().BeFalse();
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.Origin}h");
 
         // Assert
-        Assert.True(terminal.OriginMode);
+        terminal.OriginMode.Should().BeTrue();
         // Cursor should be reset to 0,0
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_OriginMode_MovesCursorToTopMargin()
     {
         // Arrange
         var terminal = CreateTerminal();
         terminal.Buffer.SetScrollRegion(4, 19);
         terminal.Buffer.SetCursor(10, 10);
-        Assert.False(terminal.OriginMode);
+        terminal.OriginMode.Should().BeFalse();
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.Origin}h");
 
         // Assert
-        Assert.True(terminal.OriginMode);
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(4, terminal.Buffer.Y);
+        terminal.OriginMode.Should().BeTrue();
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_OriginMode_DisablesOriginMode()
     {
         // Arrange
@@ -200,13 +202,13 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.Origin}l");
 
         // Assert
-        Assert.False(terminal.OriginMode);
+        terminal.OriginMode.Should().BeFalse();
         // Cursor should be reset to 0,0
-        Assert.Equal(0, terminal.Buffer.X);
-        Assert.Equal(0, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(0);
+        terminal.Buffer.Y.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_AltBuffer_SwitchesToAltBuffer()
     {
         // Arrange
@@ -220,11 +222,11 @@ public class ModeHandlingTests
         // Assert
         terminal.Write("Alt buffer content");
         var altBufferContent = terminal.GetLine(0);
-        Assert.Contains("Alt buffer", altBufferContent);
-        Assert.DoesNotContain("Normal buffer", altBufferContent);
+        altBufferContent.Should().Contain("Alt buffer");
+        altBufferContent.Should().NotContain("Normal buffer");
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_AltBuffer_SwitchesToNormalBuffer()
     {
         // Arrange
@@ -238,10 +240,10 @@ public class ModeHandlingTests
 
         // Assert
         var content = terminal.GetLine(0);
-        Assert.Contains("Normal content", content);
+        content.Should().Contain("Normal content");
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_AltBufferWithCursor_SavesCursor()
     {
         // Arrange
@@ -255,10 +257,10 @@ public class ModeHandlingTests
         // Should be in alt buffer
         terminal.Write("Test");
         var content = terminal.GetLine(0);
-        Assert.Contains("Test", content);
+        content.Should().Contain("Test");
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_AltBufferWithCursor_RestoresCursor()
     {
         // Arrange
@@ -274,25 +276,25 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.AltBufferCursor}l");
 
         // Assert
-        Assert.Equal(savedX, terminal.Buffer.X);
-        Assert.Equal(savedY, terminal.Buffer.Y);
+        terminal.Buffer.X.Should().Be(savedX);
+        terminal.Buffer.Y.Should().Be(savedY);
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_SendFocusEvents_EnablesFocusEvents()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.SendFocusEvents);
+        terminal.SendFocusEvents.Should().BeFalse();
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.SendFocusEvents}h");
 
         // Assert
-        Assert.True(terminal.SendFocusEvents);
+        terminal.SendFocusEvents.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_SendFocusEvents_DisablesFocusEvents()
     {
         // Arrange
@@ -303,10 +305,10 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.SendFocusEvents}l");
 
         // Assert
-        Assert.False(terminal.SendFocusEvents);
+        terminal.SendFocusEvents.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_Wraparound_EnablesWraparound()
     {
         // Arrange
@@ -317,24 +319,24 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.Wraparound}h");
 
         // Assert
-        Assert.True(terminal.Options.Wraparound);
+        terminal.Options.Wraparound.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_Wraparound_DisablesWraparound()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.True(terminal.Options.Wraparound); // Default is true
+        terminal.Options.Wraparound.Should().BeTrue(); // Default is true
 
         // Act - DEC private mode
         terminal.Write($"\x1B[?{(int)TerminalMode.Wraparound}l");
 
         // Assert
-        Assert.False(terminal.Options.Wraparound);
+        terminal.Options.Wraparound.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_MultipleModes_EnablesAll()
     {
         // Arrange
@@ -344,12 +346,12 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.AppCursorKeys};{(int)TerminalMode.ShowCursor};{(int)TerminalMode.AppKeypad}h");
 
         // Assert
-        Assert.True(terminal.ApplicationCursorKeys);
-        Assert.True(terminal.CursorVisible);
-        Assert.True(terminal.ApplicationKeypad);
+        terminal.ApplicationCursorKeys.Should().BeTrue();
+        terminal.CursorVisible.Should().BeTrue();
+        terminal.ApplicationKeypad.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_MultipleModes_DisablesAll()
     {
         // Arrange
@@ -362,12 +364,12 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.AppCursorKeys};{(int)TerminalMode.ShowCursor};{(int)TerminalMode.AppKeypad}l");
 
         // Assert
-        Assert.False(terminal.ApplicationCursorKeys);
-        Assert.False(terminal.CursorVisible);
-        Assert.False(terminal.ApplicationKeypad);
+        terminal.ApplicationCursorKeys.Should().BeFalse();
+        terminal.CursorVisible.Should().BeFalse();
+        terminal.ApplicationKeypad.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void TerminalReset_ResetsAllModes()
     {
         // Arrange
@@ -387,35 +389,35 @@ public class ModeHandlingTests
         terminal.Reset();
 
         // Assert
-        Assert.False(terminal.InsertMode);
-        Assert.False(terminal.ApplicationCursorKeys);
-        Assert.False(terminal.ApplicationKeypad);
-        Assert.False(terminal.BracketedPasteMode);
-        Assert.False(terminal.OriginMode);
-        Assert.True(terminal.CursorVisible); // Default is true
-        Assert.False(terminal.SendFocusEvents);
-        Assert.False(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
-        Assert.False(terminal.AltSendsEscape);
+        terminal.InsertMode.Should().BeFalse();
+        terminal.ApplicationCursorKeys.Should().BeFalse();
+        terminal.ApplicationKeypad.Should().BeFalse();
+        terminal.BracketedPasteMode.Should().BeFalse();
+        terminal.OriginMode.Should().BeFalse();
+        terminal.CursorVisible.Should().BeTrue(); // Default is true
+        terminal.SendFocusEvents.Should().BeFalse();
+        terminal.Win32InputMode.Should().BeFalse();
+        terminal.MetaSendsEscape.Should().BeFalse();
+        terminal.AltSendsEscape.Should().BeFalse();
     }
 
     #region Win32InputMode Tests
 
-    [Fact]
+    [TestMethod]
     public void SetMode_Win32InputMode_EnablesWin32InputMode()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeFalse();
 
         // Act - DEC private mode 9001
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
 
         // Assert
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_Win32InputMode_DisablesWin32InputMode()
     {
         // Arrange
@@ -426,42 +428,42 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}l");
 
         // Assert
-        Assert.False(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_Win32InputMode_DisablesMetaSendsEscape()
     {
         // Arrange
         var terminal = CreateTerminal();
         terminal.MetaSendsEscape = true;
-        Assert.True(terminal.MetaSendsEscape);
+        terminal.MetaSendsEscape.Should().BeTrue();
 
         // Act - Enable Win32InputMode
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
 
         // Assert - MetaSendsEscape should be disabled
-        Assert.True(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeTrue();
+        terminal.MetaSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_Win32InputMode_DisablesAltSendsEscape()
     {
         // Arrange
         var terminal = CreateTerminal();
         terminal.AltSendsEscape = true;
-        Assert.True(terminal.AltSendsEscape);
+        terminal.AltSendsEscape.Should().BeTrue();
 
         // Act - Enable Win32InputMode
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
 
         // Assert - AltSendsEscape should be disabled
-        Assert.True(terminal.Win32InputMode);
-        Assert.False(terminal.AltSendsEscape);
+        terminal.Win32InputMode.Should().BeTrue();
+        terminal.AltSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_Win32InputMode_DisablesBothEscapeModes()
     {
         // Arrange
@@ -473,30 +475,30 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
 
         // Assert - Both escape modes should be disabled
-        Assert.True(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
-        Assert.False(terminal.AltSendsEscape);
+        terminal.Win32InputMode.Should().BeTrue();
+        terminal.MetaSendsEscape.Should().BeFalse();
+        terminal.AltSendsEscape.Should().BeFalse();
     }
 
     #endregion
 
     #region MetaSendsEscape Tests
 
-    [Fact]
+    [TestMethod]
     public void SetMode_MetaSendsEscape_EnablesMetaSendsEscape()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.MetaSendsEscape.Should().BeFalse();
 
         // Act - DEC private mode 1036
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}h");
 
         // Assert
-        Assert.True(terminal.MetaSendsEscape);
+        terminal.MetaSendsEscape.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_MetaSendsEscape_DisablesMetaSendsEscape()
     {
         // Arrange
@@ -507,44 +509,44 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}l");
 
         // Assert
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.MetaSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_MetaSendsEscape_DisablesWin32InputMode()
     {
         // Arrange
         var terminal = CreateTerminal();
         terminal.Win32InputMode = true;
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
 
         // Act - Enable MetaSendsEscape
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}h");
 
         // Assert - Win32InputMode should be disabled
-        Assert.True(terminal.MetaSendsEscape);
-        Assert.False(terminal.Win32InputMode);
+        terminal.MetaSendsEscape.Should().BeTrue();
+        terminal.Win32InputMode.Should().BeFalse();
     }
 
     #endregion
 
     #region AltSendsEscape Tests
 
-    [Fact]
+    [TestMethod]
     public void SetMode_AltSendsEscape_EnablesAltSendsEscape()
     {
         // Arrange
         var terminal = CreateTerminal();
-        Assert.False(terminal.AltSendsEscape);
+        terminal.AltSendsEscape.Should().BeFalse();
 
         // Act - DEC private mode 1039
         terminal.Write($"\x1B[?{(int)TerminalMode.AltSendsEscape}h");
 
         // Assert
-        Assert.True(terminal.AltSendsEscape);
+        terminal.AltSendsEscape.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ResetMode_AltSendsEscape_DisablesAltSendsEscape()
     {
         // Arrange
@@ -555,79 +557,79 @@ public class ModeHandlingTests
         terminal.Write($"\x1B[?{(int)TerminalMode.AltSendsEscape}l");
 
         // Assert
-        Assert.False(terminal.AltSendsEscape);
+        terminal.AltSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void SetMode_AltSendsEscape_DisablesWin32InputMode()
     {
         // Arrange
         var terminal = CreateTerminal();
         terminal.Win32InputMode = true;
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
 
         // Act - Enable AltSendsEscape
         terminal.Write($"\x1B[?{(int)TerminalMode.AltSendsEscape}h");
 
         // Assert - Win32InputMode should be disabled
-        Assert.True(terminal.AltSendsEscape);
-        Assert.False(terminal.Win32InputMode);
+        terminal.AltSendsEscape.Should().BeTrue();
+        terminal.Win32InputMode.Should().BeFalse();
     }
 
     #endregion
 
     #region Mode Switching Scenarios
 
-    [Fact]
+    [TestMethod]
     public void ModeSwitching_Win32ToMeta_SwitchesCorrectly()
     {
         // Arrange - Start with Win32InputMode enabled (like cmd.exe)
         var terminal = CreateTerminal();
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
 
         // Act - Switch to MetaSendsEscape (like EDIT does)
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}h");
 
         // Assert
-        Assert.False(terminal.Win32InputMode);
-        Assert.True(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeFalse();
+        terminal.MetaSendsEscape.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ModeSwitching_MetaToWin32_SwitchesCorrectly()
     {
         // Arrange - Start with MetaSendsEscape enabled
         var terminal = CreateTerminal();
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}h");
-        Assert.True(terminal.MetaSendsEscape);
+        terminal.MetaSendsEscape.Should().BeTrue();
 
         // Act - Switch back to Win32InputMode (like when EDIT exits and cmd.exe regains control)
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
 
         // Assert
-        Assert.True(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeTrue();
+        terminal.MetaSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ModeSwitching_DisableMetaThenEnableWin32_WorksCorrectly()
     {
         // Arrange - Start with MetaSendsEscape enabled
         var terminal = CreateTerminal();
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}h");
-        Assert.True(terminal.MetaSendsEscape);
+        terminal.MetaSendsEscape.Should().BeTrue();
 
         // Act - First disable Meta, then enable Win32 (explicit cleanup scenario)
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}l");
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
 
         // Assert
-        Assert.True(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeTrue();
+        terminal.MetaSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ModeSwitching_ChildProcessScenario_CmdToEditAndBack()
     {
         // This simulates: cmd.exe -> user runs EDIT -> EDIT exits -> back to cmd.exe
@@ -635,26 +637,26 @@ public class ModeHandlingTests
 
         // Step 1: cmd.exe starts and enables Win32InputMode
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
-        Assert.True(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeTrue();
+        terminal.MetaSendsEscape.Should().BeFalse();
 
         // Step 2: User runs EDIT, which enables MetaSendsEscape
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}h");
-        Assert.False(terminal.Win32InputMode);
-        Assert.True(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeFalse();
+        terminal.MetaSendsEscape.Should().BeTrue();
 
         // Step 3: User exits EDIT, which disables MetaSendsEscape
         terminal.Write($"\x1B[?{(int)TerminalMode.MetaSendsEscape}l");
-        Assert.False(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeFalse();
+        terminal.MetaSendsEscape.Should().BeFalse();
 
         // Step 4: cmd.exe regains control and re-enables Win32InputMode
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
-        Assert.True(terminal.Win32InputMode);
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.Win32InputMode.Should().BeTrue();
+        terminal.MetaSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void ModeSwitching_MultipleApps_ComplexScenario()
     {
         // Simulates: cmd.exe -> FAR Manager -> vim (nested child processes)
@@ -662,53 +664,53 @@ public class ModeHandlingTests
 
         // cmd.exe starts
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
 
         // FAR Manager starts (also uses Win32, re-asserts mode)
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
 
         // vim starts from FAR, uses AltSendsEscape
         terminal.Write($"\x1B[?{(int)TerminalMode.AltSendsEscape}h");
-        Assert.False(terminal.Win32InputMode);
-        Assert.True(terminal.AltSendsEscape);
+        terminal.Win32InputMode.Should().BeFalse();
+        terminal.AltSendsEscape.Should().BeTrue();
 
         // vim exits
         terminal.Write($"\x1B[?{(int)TerminalMode.AltSendsEscape}l");
-        Assert.False(terminal.AltSendsEscape);
+        terminal.AltSendsEscape.Should().BeFalse();
 
         // FAR re-enables Win32
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
 
         // FAR exits, cmd.exe re-enables Win32
         terminal.Write($"\x1B[?{(int)TerminalMode.Win32InputMode}h");
-        Assert.True(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeTrue();
     }
 
     #endregion
 
     #region Default Values Tests
 
-    [Fact]
+    [TestMethod]
     public void DefaultValues_Win32InputMode_IsFalse()
     {
         var terminal = CreateTerminal();
-        Assert.False(terminal.Win32InputMode);
+        terminal.Win32InputMode.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void DefaultValues_MetaSendsEscape_IsFalse()
     {
         var terminal = CreateTerminal();
-        Assert.False(terminal.MetaSendsEscape);
+        terminal.MetaSendsEscape.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void DefaultValues_AltSendsEscape_IsFalse()
     {
         var terminal = CreateTerminal();
-        Assert.False(terminal.AltSendsEscape);
+        terminal.AltSendsEscape.Should().BeFalse();
     }
 
     #endregion

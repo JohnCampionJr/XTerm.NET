@@ -5,6 +5,8 @@ using XTerm.Events;
 
 namespace XTerm.Tests;
 
+[TestClass]
+
 public class ITerm2OscTests
 {
     private static Terminal CreateTerminal() => new(new TerminalOptions
@@ -17,19 +19,19 @@ public class ITerm2OscTests
 
     private static string Osc(string data) => $"\u001b]1337;{data}\u001b\\";
 
-    [Fact]
+    [TestMethod]
     public void File_InlinePng_IsDecodedAndPlaced()
     {
         var terminal = CreateTerminal();
         terminal.Write(Osc($"File=inline=1:{Png}"));
 
         var image = ImageAssertions.ImageAt(terminal, 0, 0);
-        Assert.NotNull(image);
-        Assert.Equal(5, image!.PixelWidth);
-        Assert.Equal(3, image.PixelHeight);
+        image.Should().NotBeNull();
+        (image!.PixelWidth).Should().Be(5);
+        image.PixelHeight.Should().Be(3);
     }
 
-    [Fact]
+    [TestMethod]
     public void ShellIntegrationValues_AreRecorded()
     {
         var terminal = CreateTerminal();
@@ -39,23 +41,23 @@ public class ITerm2OscTests
         terminal.Write(Osc("ShellIntegrationVersion=12"));
         terminal.Write(Osc("RemoteHost=me@example.test"));
 
-        Assert.Equal("value", terminal.UserVariables["prompt"]);
-        Assert.Equal("/home/me", terminal.CurrentDirectory);
-        Assert.Equal("12", terminal.ShellIntegrationVersion);
-        Assert.Equal("me@example.test", terminal.RemoteHost);
+        (terminal.UserVariables["prompt"]).Should().Be("value");
+        terminal.CurrentDirectory.Should().Be("/home/me");
+        terminal.ShellIntegrationVersion.Should().Be("12");
+        terminal.RemoteHost.Should().Be("me@example.test");
     }
 
-    [Fact]
+    [TestMethod]
     public void CurrentDir_PreservesLiteralPercentSequences()
     {
         var terminal = CreateTerminal();
 
         terminal.Write(Osc("CurrentDir=/data/AB%20CD"));
 
-        Assert.Equal("/data/AB%20CD", terminal.CurrentDirectory);
+        terminal.CurrentDirectory.Should().Be("/data/AB%20CD");
     }
 
-    [Fact]
+    [TestMethod]
     public void File_ExceedingRegistryBudget_IsIgnored()
     {
         var terminal = new Terminal(new TerminalOptions
@@ -66,10 +68,10 @@ public class ITerm2OscTests
         });
         terminal.Write(Osc($"File=inline=1:{Png}"));
 
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void File_IsIgnoredWhenITerm2ImagesAreDisabled()
     {
         var terminal = CreateTerminal();
@@ -77,10 +79,10 @@ public class ITerm2OscTests
 
         terminal.Write(Osc($"File=inline=1:{Png}"));
 
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void DroppedFile_IsReportedAsUnrecognized()
     {
         var terminal = CreateTerminal();
@@ -89,10 +91,10 @@ public class ITerm2OscTests
 
         terminal.Write(Osc("File=inline=1:not-a-png"));
 
-        Assert.False(received!.Recognized);
+        (received!.Recognized).Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void UserVariables_AreBounded()
     {
         var terminal = CreateTerminal();
@@ -103,11 +105,11 @@ public class ITerm2OscTests
         terminal.Write(Osc("SetUserVar=two=YWJjZA=="));
         terminal.Write(Osc("SetUserVar=one=dG9vIGxvbmc="));
 
-        Assert.Equal("abcd", terminal.UserVariables["one"]);
-        Assert.Single(terminal.UserVariables);
+        (terminal.UserVariables["one"]).Should().Be("abcd");
+        terminal.UserVariables.Should().ContainSingle();
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowExtensions_RespectPermissions()
     {
         var terminal = CreateTerminal();
@@ -118,19 +120,19 @@ public class ITerm2OscTests
 
         terminal.Write(Osc("StealFocus="));
         terminal.Write(Osc("RequestAttention="));
-        Assert.False(raised);
-        Assert.False(attention);
+        raised.Should().BeFalse();
+        attention.Should().BeFalse();
 
         terminal.Options.WindowOptions.RaiseWin = true;
         terminal.Options.WindowOptions.RequestAttention = true;
         terminal.Write(Osc("StealFocus"));
         terminal.Write(Osc("RequestAttention=no"));
 
-        Assert.True(raised);
-        Assert.True(attention);
+        raised.Should().BeTrue();
+        attention.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ReportCellSize_RespondsWhenAllowed()
     {
         var terminal = CreateTerminal();
@@ -140,10 +142,10 @@ public class ITerm2OscTests
 
         terminal.Write(Osc("ReportCellSize"));
 
-        Assert.Equal("\u001b]1337;ReportCellSize=3.0;2.0;1.0\u001b\\", response);
+        response.Should().Be("\u001b]1337;ReportCellSize=3.0;2.0;1.0\u001b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void RequestAttention_PreservesItsAction()
     {
         var terminal = CreateTerminal();
@@ -153,10 +155,10 @@ public class ITerm2OscTests
 
         terminal.Write(Osc("RequestAttention=no"));
 
-        Assert.Equal("no", action);
+        action.Should().Be("no");
     }
 
-    [Fact]
+    [TestMethod]
     public void File_ImageIsErasedByText()
     {
         var terminal = CreateTerminal();
@@ -164,18 +166,18 @@ public class ITerm2OscTests
 
         terminal.Write("\u001b[1;1HX");
 
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void UnknownKey_IsIgnored()
     {
         var terminal = CreateTerminal();
 
         terminal.Write(Osc("Unrecognised=value"));
 
-        Assert.Empty(terminal.UserVariables);
-        Assert.Null(ImageAssertions.ImageAt(terminal, 0, 0));
+        terminal.UserVariables.Should().BeEmpty();
+        ImageAssertions.ImageAt(terminal, 0, 0).Should().BeNull();
     }
 
     private const string Png = "iVBORw0KGgoAAAANSUhEUgAAAAUAAAADCAYAAABbNsX4AAAAAXNSR0IArs4c6QAAAARnQU1BAACx" +
@@ -183,7 +185,7 @@ public class ITerm2OscTests
                                "iqH48PW8jmcxTXN1V07bFKC36nhx9T6GO9NOXPq40/eZ2J1ZvxigAAD9BhlVn28K4gAAAABJRU5E" +
                                "rkJggg==";
 
-    [Fact]
+    [TestMethod]
     public void File_HugePayloadIsRejectedBeforeDecoding()
     {
         // A valid-base64 blob larger than the registry budget must be dropped from its LENGTH,
@@ -196,10 +198,10 @@ public class ITerm2OscTests
         var huge = Convert.ToBase64String(new byte[8192]);   // 8x the budget, valid base64
         terminal.Write($"\u001b]1337;File=inline=1:{huge}\u001b\\");
 
-        Assert.Equal(new[] { false }, recognized);
+        recognized.Should().Equal(new[] { false });
     }
 
-    [Fact]
+    [TestMethod]
     public void ReportCellSize_SpeaksPointsAndScale()
     {
         // iTerm2's fields are points with a pixels-per-point scale: 20px cells on a 2x display
@@ -216,10 +218,10 @@ public class ITerm2OscTests
 
         terminal.Write("\u001b]1337;ReportCellSize\u001b\\");
 
-        Assert.Equal("\u001b]1337;ReportCellSize=18.0;9.0;2.0\u001b\\", response);
+        response.Should().Be("\u001b]1337;ReportCellSize=18.0;9.0;2.0\u001b\\");
     }
 
-    [Fact]
+    [TestMethod]
     public void Capabilities_ReportsTheImplementedSet()
     {
         var terminal = CreateTerminal();
@@ -228,6 +230,6 @@ public class ITerm2OscTests
 
         terminal.Write(Osc("Capabilities"));
 
-        Assert.Equal("\u001b]1337;Capabilities=T24CwLrMUBFGsGoSyHNoSx\u001b\\", response);
+        response.Should().Be("\u001b]1337;Capabilities=T24CwLrMUBFGsGoSyHNoSx\u001b\\");
     }
 }

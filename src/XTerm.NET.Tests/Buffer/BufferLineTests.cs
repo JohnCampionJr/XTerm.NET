@@ -2,9 +2,11 @@ using XTerm.Buffer;
 
 namespace XTerm.Tests.Buffer;
 
+[TestClass]
+
 public class BufferLineTests
 {
-    [Fact]
+    [TestMethod]
     public void Constructor_CreatesLineWithSpecifiedColumns()
     {
         // Arrange
@@ -14,11 +16,11 @@ public class BufferLineTests
         var line = new BufferLine(cols);
 
         // Assert
-        Assert.Equal(cols, line.Length);
-        Assert.False(line.IsWrapped);
+        line.Length.Should().Be(cols);
+        line.IsWrapped.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void Constructor_WithFillCell_FillsAllCells()
     {
         // Arrange
@@ -31,11 +33,11 @@ public class BufferLineTests
         // Assert
         for (int i = 0; i < cols; i++)
         {
-            Assert.Equal("X", line[i].Content);
+            line[i].Content.Should().Be("X");
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void Indexer_Get_ReturnsCell()
     {
         // Arrange
@@ -47,10 +49,10 @@ public class BufferLineTests
         var retrieved = line[5];
 
         // Assert
-        Assert.Equal("A", retrieved.Content);
+        retrieved.Content.Should().Be("A");
     }
 
-    [Fact]
+    [TestMethod]
     public void Indexer_Set_SetsCell()
     {
         // Arrange
@@ -61,10 +63,10 @@ public class BufferLineTests
         line[3] = cell;
 
         // Assert
-        Assert.Equal("B", line[3].Content);
+        line[3].Content.Should().Be("B");
     }
 
-    [Fact]
+    [TestMethod]
     public void Indexer_OutOfBounds_ReturnsNullCell()
     {
         // Arrange
@@ -75,11 +77,11 @@ public class BufferLineTests
         var cell2 = line[100];
 
         // Assert
-        Assert.True(cell.IsEmpty());
-        Assert.True(cell2.IsEmpty());
+        cell.IsEmpty().Should().BeTrue();
+        cell2.IsEmpty().Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Indexer_Set_OutOfBounds_DoesNotThrow()
     {
         // Arrange
@@ -91,7 +93,7 @@ public class BufferLineTests
         line[100] = cell;
     }
 
-    [Fact]
+    [TestMethod]
     public void SetCell_SetsCell()
     {
         // Arrange
@@ -102,10 +104,10 @@ public class BufferLineTests
         line.SetCell(4, ref cell);
 
         // Assert
-        Assert.Equal("D", line[4].Content);
+        line[4].Content.Should().Be("D");
     }
 
-    [Fact]
+    [TestMethod]
     public void GetCodePoint_ReturnsCodePoint()
     {
         // Arrange
@@ -117,10 +119,10 @@ public class BufferLineTests
         var code = line.GetCodePoint(6);
 
         // Assert
-        Assert.Equal(65, code);
+        code.Should().Be(65);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetCodePoint_OutOfBounds_ReturnsZero()
     {
         // Arrange
@@ -131,11 +133,11 @@ public class BufferLineTests
         var code2 = line.GetCodePoint(100);
 
         // Assert
-        Assert.Equal(0, code);
-        Assert.Equal(0, code2);
+        code.Should().Be(0);
+        code2.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_Expand_AddsNewCells()
     {
         // Arrange
@@ -147,12 +149,12 @@ public class BufferLineTests
         line.Resize(20, fillCell);
 
         // Assert
-        Assert.Equal(20, line.Length);
-        Assert.Equal("A", line[5].Content); // Original data preserved
-        Assert.Equal("X", line[15].Content); // New cells filled
+        line.Length.Should().Be(20);
+        line[5].Content.Should().Be("A"); // Original data preserved
+        line[15].Content.Should().Be("X"); // New cells filled
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_Shrink_TruncatesCells()
     {
         // Arrange
@@ -164,10 +166,10 @@ public class BufferLineTests
         line.Resize(10, fillCell);
 
         // Assert
-        Assert.Equal(10, line.Length);
+        line.Length.Should().Be(10);
     }
 
-    [Fact]
+    [TestMethod]
     public void Resize_SameSize_DoesNothing()
     {
         // Arrange
@@ -179,11 +181,11 @@ public class BufferLineTests
         line.Resize(10, fillCell);
 
         // Assert
-        Assert.Equal(10, line.Length);
-        Assert.Equal("A", line[5].Content);
+        line.Length.Should().Be(10);
+        line[5].Content.Should().Be("A");
     }
 
-    [Fact]
+    [TestMethod]
     public void Fill_FillsRange()
     {
         // Arrange
@@ -194,14 +196,14 @@ public class BufferLineTests
         line.Fill(fillCell, 2, 5);
 
         // Assert
-        Assert.True(line[1].IsSpace()); // Before range
-        Assert.Equal("F", line[2].Content);
-        Assert.Equal("F", line[3].Content);
-        Assert.Equal("F", line[4].Content);
-        Assert.True(line[5].IsSpace()); // After range
+        (line[1].IsSpace()).Should().BeTrue(); // Before range
+        line[2].Content.Should().Be("F");
+        line[3].Content.Should().Be("F");
+        line[4].Content.Should().Be("F");
+        (line[5].IsSpace()).Should().BeTrue(); // After range
     }
 
-    [Fact]
+    [TestMethod]
     public void Fill_NoParameters_FillsEntireLine()
     {
         // Arrange
@@ -214,11 +216,11 @@ public class BufferLineTests
         // Assert
         for (int i = 0; i < 10; i++)
         {
-            Assert.Equal("G", line[i].Content);
+            line[i].Content.Should().Be("G");
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void CopyCellsFrom_Forward_CopiesCells()
     {
         // Arrange
@@ -232,12 +234,12 @@ public class BufferLineTests
         destLine.CopyCellsFrom(srcLine, 2, 5, 3, false);
 
         // Assert
-        Assert.Equal("A", destLine[5].Content);
-        Assert.Equal("B", destLine[6].Content);
-        Assert.Equal("C", destLine[7].Content);
+        destLine[5].Content.Should().Be("A");
+        destLine[6].Content.Should().Be("B");
+        destLine[7].Content.Should().Be("C");
     }
 
-    [Fact]
+    [TestMethod]
     public void CopyCellsFrom_Reverse_CopiesCells()
     {
         // Arrange
@@ -251,12 +253,12 @@ public class BufferLineTests
         destLine.CopyCellsFrom(srcLine, 2, 5, 3, true);
 
         // Assert
-        Assert.Equal("A", destLine[5].Content);
-        Assert.Equal("B", destLine[6].Content);
-        Assert.Equal("C", destLine[7].Content);
+        destLine[5].Content.Should().Be("A");
+        destLine[6].Content.Should().Be("B");
+        destLine[7].Content.Should().Be("C");
     }
 
-    [Fact]
+    [TestMethod]
     public void TranslateToString_ConvertsLineToString()
     {
         // Arrange
@@ -271,10 +273,10 @@ public class BufferLineTests
         var result = line.TranslateToString();
 
         // Assert
-        Assert.Equal("Hello", result);
+        result.Should().Be("Hello");
     }
 
-    [Fact]
+    [TestMethod]
     public void TranslateToString_TrimRight_TrimsWhitespace()
     {
         // Arrange
@@ -287,10 +289,10 @@ public class BufferLineTests
         var result = line.TranslateToString(trimRight: true);
 
         // Assert
-        Assert.Equal("Hi", result.TrimEnd());
+        result.TrimEnd().Should().Be("Hi");
     }
 
-    [Fact]
+    [TestMethod]
     public void TranslateToString_WithRange_ConvertsRange()
     {
         // Arrange
@@ -303,10 +305,10 @@ public class BufferLineTests
         var result = line.TranslateToString(false, 2, 5);
 
         // Assert
-        Assert.Contains("ABC", result);
+        result.Should().Contain("ABC");
     }
 
-    [Fact]
+    [TestMethod]
     public void GetTrimmedLength_ReturnsTrimmedLength()
     {
         // Arrange
@@ -321,10 +323,10 @@ public class BufferLineTests
         var length = line.GetTrimmedLength();
 
         // Assert
-        Assert.Equal(4, length);
+        length.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void GetTrimmedLength_EmptyLine_ReturnsZero()
     {
         // Arrange
@@ -334,10 +336,10 @@ public class BufferLineTests
         var length = line.GetTrimmedLength();
 
         // Assert
-        Assert.Equal(0, length);
+        length.Should().Be(0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Clone_CreatesIndependentCopy()
     {
         // Arrange
@@ -350,18 +352,18 @@ public class BufferLineTests
         var clone = line.Clone();
 
         // Assert
-        Assert.Equal(line.Length, clone.Length);
-        Assert.Equal(line.IsWrapped, clone.IsWrapped);
-        Assert.Equal("A", clone[0].Content);
-        Assert.Equal("B", clone[1].Content);
+        clone.Length.Should().Be(line.Length);
+        clone.IsWrapped.Should().Be(line.IsWrapped);
+        clone[0].Content.Should().Be("A");
+        clone[1].Content.Should().Be("B");
         
         // Verify independence
         clone[0] = new BufferCell("Z", 1, AttributeData.Default);
-        Assert.Equal("A", line[0].Content);
-        Assert.Equal("Z", clone[0].Content);
+        line[0].Content.Should().Be("A");
+        clone[0].Content.Should().Be("Z");
     }
 
-    [Fact]
+    [TestMethod]
     public void CopyFrom_CopiesEntireLine()
     {
         // Arrange
@@ -376,13 +378,13 @@ public class BufferLineTests
         destLine.CopyFrom(srcLine);
 
         // Assert
-        Assert.Equal(srcLine.Length, destLine.Length);
-        Assert.Equal(srcLine.IsWrapped, destLine.IsWrapped);
-        Assert.Equal("X", destLine[0].Content);
-        Assert.Equal("Y", destLine[1].Content);
+        destLine.Length.Should().Be(srcLine.Length);
+        destLine.IsWrapped.Should().Be(srcLine.IsWrapped);
+        destLine[0].Content.Should().Be("X");
+        destLine[1].Content.Should().Be("Y");
     }
 
-    [Fact]
+    [TestMethod]
     public void CopyFrom_DifferentSize_ResizesAndCopies()
     {
         // Arrange
@@ -395,11 +397,11 @@ public class BufferLineTests
         destLine.CopyFrom(srcLine);
 
         // Assert
-        Assert.Equal(20, destLine.Length);
-        Assert.Equal("M", destLine[0].Content);
+        destLine.Length.Should().Be(20);
+        destLine[0].Content.Should().Be("M");
     }
 
-    [Fact]
+    [TestMethod]
     public void IsWrapped_CanBeSetAndGet()
     {
         // Arrange
@@ -409,27 +411,27 @@ public class BufferLineTests
         line.IsWrapped = true;
 
         // Assert
-        Assert.True(line.IsWrapped);
+        line.IsWrapped.Should().BeTrue();
 
         // Act
         line.IsWrapped = false;
 
         // Assert
-        Assert.False(line.IsWrapped);
+        line.IsWrapped.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void LineAttribute_DefaultsToNormal()
     {
         // Arrange & Act
         var line = new BufferLine(10);
 
         // Assert
-        Assert.Equal(LineAttribute.Normal, line.LineAttribute);
-        Assert.False(line.IsDoubleWidth);
+        line.LineAttribute.Should().Be(LineAttribute.Normal);
+        line.IsDoubleWidth.Should().BeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void LineAttribute_CanBeSetToDoubleWidth()
     {
         // Arrange
@@ -439,11 +441,11 @@ public class BufferLineTests
         line.LineAttribute = LineAttribute.DoubleWidth;
 
         // Assert
-        Assert.Equal(LineAttribute.DoubleWidth, line.LineAttribute);
-        Assert.True(line.IsDoubleWidth);
+        line.LineAttribute.Should().Be(LineAttribute.DoubleWidth);
+        line.IsDoubleWidth.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void LineAttribute_DoubleHeightTop_IsDoubleWidth()
     {
         // Arrange
@@ -453,11 +455,11 @@ public class BufferLineTests
         line.LineAttribute = LineAttribute.DoubleHeightTop;
 
         // Assert
-        Assert.Equal(LineAttribute.DoubleHeightTop, line.LineAttribute);
-        Assert.True(line.IsDoubleWidth);
+        line.LineAttribute.Should().Be(LineAttribute.DoubleHeightTop);
+        line.IsDoubleWidth.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void LineAttribute_DoubleHeightBottom_IsDoubleWidth()
     {
         // Arrange
@@ -467,11 +469,11 @@ public class BufferLineTests
         line.LineAttribute = LineAttribute.DoubleHeightBottom;
 
         // Assert
-        Assert.Equal(LineAttribute.DoubleHeightBottom, line.LineAttribute);
-        Assert.True(line.IsDoubleWidth);
+        line.LineAttribute.Should().Be(LineAttribute.DoubleHeightBottom);
+        line.IsDoubleWidth.Should().BeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void Clone_PreservesLineAttribute()
     {
         // Arrange
@@ -482,10 +484,10 @@ public class BufferLineTests
         var clone = line.Clone();
 
         // Assert
-        Assert.Equal(LineAttribute.DoubleWidth, clone.LineAttribute);
+        clone.LineAttribute.Should().Be(LineAttribute.DoubleWidth);
     }
 
-    [Fact]
+    [TestMethod]
     public void CopyFrom_PreservesLineAttribute()
     {
         // Arrange
@@ -498,10 +500,10 @@ public class BufferLineTests
         destLine.CopyFrom(srcLine);
 
         // Assert
-        Assert.Equal(LineAttribute.DoubleHeightTop, destLine.LineAttribute);
+        destLine.LineAttribute.Should().Be(LineAttribute.DoubleHeightTop);
     }
 
-    [Fact]
+    [TestMethod]
     public void LineAttribute_SetClearsCache()
     {
         // Arrange
@@ -512,6 +514,6 @@ public class BufferLineTests
         line.LineAttribute = LineAttribute.DoubleWidth;
 
         // Assert
-        Assert.Null(line.Cache);
+        line.Cache.Should().BeNull();
     }
 }

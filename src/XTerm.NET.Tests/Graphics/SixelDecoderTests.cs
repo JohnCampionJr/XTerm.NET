@@ -12,6 +12,7 @@ namespace XTerm.Tests.Graphics;
 /// six stacked pixels as the low six bits of <c>c - 0x3F</c>, so '@' is the top pixel alone and
 /// '~' is all six.</para>
 /// </summary>
+[TestClass]
 public class SixelDecoderTests
 {
     private const string Esc = "\u001b";
@@ -45,7 +46,7 @@ public class SixelDecoderTests
                                         Action<TerminalOptions>? configure = null)
     {
         var image = TryDecode(body, backgroundSelect, configure);
-        Assert.True(image is not null, "no image reached the buffer");
+        (image is not null).Should().BeTrue("no image reached the buffer");
         return image!;
     }
 
@@ -61,170 +62,170 @@ public class SixelDecoderTests
     private static readonly (byte R, byte G, byte B, byte A) Blue = (0, 0, 255, 255);
     private static readonly (byte R, byte G, byte B, byte A) Clear = (0, 0, 0, 0);
 
-    [Fact]
+    [TestMethod]
     public void A_single_sixel_sets_the_top_pixel_of_its_band()
     {
         var image = Decode("#0;2;100;0;0@");
 
-        Assert.Equal(1, image.PixelWidth);
-        Assert.Equal(6, image.PixelHeight);
-        Assert.Equal(Red, Pixel(image, 0, 0));
-        Assert.Equal(Clear, Pixel(image, 0, 1));
+        image.PixelWidth.Should().Be(1);
+        image.PixelHeight.Should().Be(6);
+        Pixel(image, 0, 0).Should().Be(Red);
+        Pixel(image, 0, 1).Should().Be(Clear);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_full_sixel_sets_all_six_pixels_of_its_band()
     {
         var image = Decode("#0;2;0;100;0~");
 
-        Assert.Equal(6, image.PixelHeight);
+        image.PixelHeight.Should().Be(6);
         for (int y = 0; y < 6; y++)
-            Assert.Equal(Green, Pixel(image, 0, y));
+            Pixel(image, 0, y).Should().Be(Green);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_question_mark_advances_without_drawing()
     {
         var image = Decode("#0;2;100;0;0??@");
 
-        Assert.Equal(3, image.PixelWidth);
-        Assert.Equal(Clear, Pixel(image, 0, 0));
-        Assert.Equal(Clear, Pixel(image, 1, 0));
-        Assert.Equal(Red, Pixel(image, 2, 0));
+        image.PixelWidth.Should().Be(3);
+        Pixel(image, 0, 0).Should().Be(Clear);
+        Pixel(image, 1, 0).Should().Be(Clear);
+        Pixel(image, 2, 0).Should().Be(Red);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_repeat_introducer_repeats_the_following_sixel()
     {
         var image = Decode("#0;2;0;0;100!4~");
 
-        Assert.Equal(4, image.PixelWidth);
-        Assert.Equal(6, image.PixelHeight);
-        Assert.Equal(Blue, Pixel(image, 0, 0));
-        Assert.Equal(Blue, Pixel(image, 3, 5));
+        image.PixelWidth.Should().Be(4);
+        image.PixelHeight.Should().Be(6);
+        Pixel(image, 0, 0).Should().Be(Blue);
+        Pixel(image, 3, 5).Should().Be(Blue);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_graphics_newline_starts_the_next_band_six_rows_down()
     {
         var image = Decode("#0;2;100;0;0@-#0;2;0;0;100@");
 
-        Assert.Equal(12, image.PixelHeight);
-        Assert.Equal(Red, Pixel(image, 0, 0));
-        Assert.Equal(Blue, Pixel(image, 0, 6));
+        image.PixelHeight.Should().Be(12);
+        Pixel(image, 0, 0).Should().Be(Red);
+        Pixel(image, 0, 6).Should().Be(Blue);
     }
 
-    [Fact]
+    [TestMethod]
     public void A_graphics_carriage_return_returns_to_the_left_of_the_same_band()
     {
         // Three red columns, back to the start, then one blue sixel over the first of them.
         var image = Decode("#0;2;100;0;0!3~$#1;2;0;0;100@");
 
-        Assert.Equal(3, image.PixelWidth);
-        Assert.Equal(Blue, Pixel(image, 0, 0));
-        Assert.Equal(Red, Pixel(image, 0, 1));
-        Assert.Equal(Red, Pixel(image, 1, 0));
+        image.PixelWidth.Should().Be(3);
+        Pixel(image, 0, 0).Should().Be(Blue);
+        Pixel(image, 0, 1).Should().Be(Red);
+        Pixel(image, 1, 0).Should().Be(Red);
     }
 
-    [Fact]
+    [TestMethod]
     public void Raster_attributes_declare_the_image_size()
     {
         // Six rows are drawn; the raster attribute says the image is two rows tall.
         var image = Decode("\"1;1;3;2#0;2;100;0;0!3~");
 
-        Assert.Equal(3, image.PixelWidth);
-        Assert.Equal(2, image.PixelHeight);
-        Assert.Equal(Red, Pixel(image, 2, 1));
+        image.PixelWidth.Should().Be(3);
+        image.PixelHeight.Should().Be(2);
+        Pixel(image, 2, 1).Should().Be(Red);
     }
 
-    [Fact]
+    [TestMethod]
     public void An_image_without_raster_attributes_is_sized_by_what_it_drew()
     {
         var image = Decode("#0;2;100;0;0!7~");
 
-        Assert.Equal(7, image.PixelWidth);
-        Assert.Equal(6, image.PixelHeight);
+        image.PixelWidth.Should().Be(7);
+        image.PixelHeight.Should().Be(6);
     }
 
     /// <summary>
     /// Sixel's hue ring is rotated 120 degrees from the usual one -- hue 0 is blue, not red. A
     /// conversion that looks correct but skips the rotation produces plausible, wrong colours.
     /// </summary>
-    [Theory]
-    [InlineData(0, 0, 0, 255)]     // hue 0   -> blue
-    [InlineData(120, 255, 0, 0)]   // hue 120 -> red
-    [InlineData(240, 0, 255, 0)]   // hue 240 -> green
+    [TestMethod]
+    [DataRow(0, (byte)0, (byte)0, (byte)255)]     // hue 0   -> blue
+    [DataRow(120, (byte)255, (byte)0, (byte)0)]   // hue 120 -> red
+    [DataRow(240, (byte)0, (byte)255, (byte)0)]   // hue 240 -> green
     public void Hls_colours_are_converted_on_sixels_hue_ring(int hue, byte r, byte g, byte b)
     {
         var image = Decode($"#0;1;{hue};50;100@");
 
-        Assert.Equal((r, g, b, (byte)255), Pixel(image, 0, 0));
+        Pixel(image, 0, 0).Should().Be((r, g, b, (byte)255));
     }
 
-    [Fact]
+    [TestMethod]
     public void An_hls_colour_with_no_saturation_is_grey()
     {
         var image = Decode("#0;1;120;50;0@");
 
         var pixel = Pixel(image, 0, 0);
-        Assert.Equal(pixel.R, pixel.G);
-        Assert.Equal(pixel.G, pixel.B);
-        Assert.InRange(pixel.R, 126, 129);
+        pixel.G.Should().Be(pixel.R);
+        pixel.B.Should().Be(pixel.G);
+        pixel.R.Should().BeInRange(126, 129);
     }
 
-    [Fact]
+    [TestMethod]
     public void Selecting_a_register_without_defining_it_uses_the_vt340_default()
     {
         // Register 2 is the VT340's red, 80/13/13 percent.
         var image = Decode("#2~");
 
         var pixel = Pixel(image, 0, 0);
-        Assert.Equal((byte)204, pixel.R);
-        Assert.Equal((byte)33, pixel.G);
-        Assert.Equal((byte)33, pixel.B);
+        pixel.R.Should().Be((byte)204);
+        pixel.G.Should().Be((byte)33);
+        pixel.B.Should().Be((byte)33);
     }
 
-    [Fact]
+    [TestMethod]
     public void Unset_pixels_are_transparent_under_background_select_one()
     {
         var image = Decode("#0;2;100;0;0@", Transparent);
 
-        Assert.Equal((byte)0, Pixel(image, 0, 5).A);
+        (Pixel(image, 0, 5).A).Should().Be((byte)0);
     }
 
-    [Fact]
+    [TestMethod]
     public void Unset_pixels_take_the_terminal_background_otherwise()
     {
         var image = Decode("#0;2;100;0;0@", OpaqueBackground);
 
         var background = Pixel(image, 0, 5);
-        Assert.Equal((byte)255, background.A);
-        Assert.Equal(Red, Pixel(image, 0, 0));
+        background.A.Should().Be((byte)255);
+        Pixel(image, 0, 0).Should().Be(Red);
     }
 
     /// <summary>
     /// A payload declares no size until it has been drawn, so without a ceiling a process can make
     /// the terminal allocate until it dies.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void An_image_larger_than_the_budget_is_discarded()
     {
         var image = TryDecode("\"1;1;4000;4000#0;2;100;0;0~",
             configure: o => o.MaxSixelPixels = 1000);
 
-        Assert.Null(image);
+        image.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void An_image_that_grows_past_the_budget_while_drawing_is_discarded()
     {
         // No raster attribute, so the size only becomes apparent as it is drawn.
         var image = TryDecode("#0;2;100;0;0!5000~", configure: o => o.MaxSixelPixels = 600);
 
-        Assert.Null(image);
+        image.Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void An_abandoned_payload_produces_no_image()
     {
         var terminal = Fresh();
@@ -232,47 +233,47 @@ public class SixelDecoderTests
         // CAN mid-payload: the sequence is dropped rather than terminated.
         terminal.Write($"{Esc}P0;1;0q#0;2;100;0;0!20~\u0018");
 
-        Assert.Null((terminal.Buffer.Lines[0]!.TryGetImageAt(0, out var __i2) ? __i2 : null));
+        (terminal.Buffer.Lines[0]!.TryGetImageAt(0, out var __i2) ? __i2 : null).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void An_empty_payload_produces_no_image()
     {
         var terminal = Fresh();
         terminal.Write($"{Esc}P0;1;0q{St}");
 
-        Assert.Null((terminal.Buffer.Lines[0]!.TryGetImageAt(0, out var __i3) ? __i3 : null));
+        (terminal.Buffer.Lines[0]!.TryGetImageAt(0, out var __i3) ? __i3 : null).Should().BeNull();
     }
 
     /// <summary>
     /// The payload is untrusted output from someone else's process. Nonsense in it must not reach
     /// the caller as an exception.
     /// </summary>
-    [Theory]
-    [InlineData("#", "a bare colour introducer")]
-    [InlineData("#;;;;;", "empty colour parameters")]
-    [InlineData("#999999999;2;999;999;999~", "absurd register and channel values")]
-    [InlineData("!", "a bare repeat introducer")]
-    [InlineData("!999999999~", "an absurd repeat count")]
-    [InlineData("\"", "a bare raster introducer")]
-    [InlineData("\"0;0;0;0~", "zero raster dimensions")]
-    [InlineData("$$$---", "controls with no data")]
-    [InlineData("#0;7;1;2;3~", "an unknown colour system")]
-    [InlineData("\n\r\t   ~", "whitespace between the data")]
+    [TestMethod]
+    [DataRow("#", "a bare colour introducer")]
+    [DataRow("#;;;;;", "empty colour parameters")]
+    [DataRow("#999999999;2;999;999;999~", "absurd register and channel values")]
+    [DataRow("!", "a bare repeat introducer")]
+    [DataRow("!999999999~", "an absurd repeat count")]
+    [DataRow("\"", "a bare raster introducer")]
+    [DataRow("\"0;0;0;0~", "zero raster dimensions")]
+    [DataRow("$$$---", "controls with no data")]
+    [DataRow("#0;7;1;2;3~", "an unknown colour system")]
+    [DataRow("\n\r\t   ~", "whitespace between the data")]
     public void Malformed_payloads_are_survived(string body, string what)
     {
         var terminal = Fresh();
 
         var exception = Record.Exception(() => WriteSixel(terminal, body));
 
-        Assert.True(exception is null, $"{what} threw: {exception}");
+        (exception is null).Should().BeTrue($"{what} threw: {exception}");
 
         // And the parser still comes back.
         terminal.Write("OK");
-        Assert.Contains("OK", terminal.GetLine(terminal.Buffer.Y));
+        terminal.GetLine(terminal.Buffer.Y).Should().Contain("OK");
     }
 
-    [Fact]
+    [TestMethod]
     public void A_payload_split_across_writes_decodes_the_same()
     {
         var whole = Fresh();
@@ -286,24 +287,23 @@ public class SixelDecoderTests
         var a = whole.Buffer.Lines[0]!.TryGetImageAt(0, out var wholeImage) ? wholeImage : null;
         var b = split.Buffer.Lines[0]!.TryGetImageAt(0, out var splitImage) ? splitImage : null;
 
-        Assert.NotNull(a);
-        Assert.NotNull(b);
-        Assert.Equal(a!.PixelWidth, b!.PixelWidth);
-        Assert.Equal(a.PixelHeight, b.PixelHeight);
-        Assert.True(a.Pixels.Span.SequenceEqual(b.Pixels.Span),
-            "the same payload decoded differently depending on where the write boundaries fell");
+        a.Should().NotBeNull();
+        b.Should().NotBeNull();
+        (b!.PixelWidth).Should().Be(a!.PixelWidth);
+        b.PixelHeight.Should().Be(a.PixelHeight);
+        a.Pixels.Span.SequenceEqual(b.Pixels.Span).Should().BeTrue("the same payload decoded differently depending on where the write boundaries fell");
     }
 
-    [Fact]
+    [TestMethod]
     public void Sixel_can_be_switched_off_entirely()
     {
         var terminal = Fresh(o => o.SixelEnabled = false);
         WriteSixel(terminal, "#0;2;100;0;0~");
 
-        Assert.Null((terminal.Buffer.Lines[0]!.TryGetImageAt(0, out var __i4) ? __i4 : null));
+        (terminal.Buffer.Lines[0]!.TryGetImageAt(0, out var __i4) ? __i4 : null).Should().BeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void The_tile_grid_follows_the_configured_cell_size()
     {
         // A 4x12 image over 2x3 cells covers two columns and four rows.
@@ -313,13 +313,13 @@ public class SixelDecoderTests
             o.CellHeightPixels = 3;
         });
 
-        Assert.Equal(4, image.PixelWidth);
-        Assert.Equal(12, image.PixelHeight);
-        Assert.Equal(2, image.Cols);
-        Assert.Equal(4, image.Rows);
+        image.PixelWidth.Should().Be(4);
+        image.PixelHeight.Should().Be(12);
+        image.Cols.Should().Be(2);
+        image.Rows.Should().Be(4);
     }
 
-    [Fact]
+    [TestMethod]
     public void An_edge_tile_reports_only_the_pixels_it_actually_covers()
     {
         // 7 pixels wide over 2-pixel cells: four columns, the last holding a single pixel.
@@ -329,14 +329,14 @@ public class SixelDecoderTests
             o.CellHeightPixels = 3;
         });
 
-        Assert.Equal(4, image.Cols);
+        image.Cols.Should().Be(4);
 
-        Assert.True(image.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h));
-        Assert.Equal((0, 0, 2, 3), (x, y, w, h));
+        image.TryGetTileSource(0, 0, out var x, out var y, out var w, out var h).Should().BeTrue();
+        (x, y, w, h).Should().Be((0, 0, 2, 3));
 
-        Assert.True(image.TryGetTileSource(3, 0, out x, out y, out w, out h));
-        Assert.Equal((6, 0, 1, 3), (x, y, w, h));
+        image.TryGetTileSource(3, 0, out x, out y, out w, out h).Should().BeTrue();
+        (x, y, w, h).Should().Be((6, 0, 1, 3));
 
-        Assert.False(image.TryGetTileSource(4, 0, out _, out _, out _, out _));
+        image.TryGetTileSource(4, 0, out _, out _, out _, out _).Should().BeFalse();
     }
 }
