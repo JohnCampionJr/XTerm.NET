@@ -715,9 +715,7 @@ public partial class InputHandler
         // with DECNRCM set and ASCII without it, so the designation has to outlive the
         // resolution -- a program designating French and then enabling NRC mode expects
         // French, and it never designates again.
-        _charsetIds[mode] = charsetId;
-        _charsets[mode] = Charsets.GetCharset(charsetId, _terminal.NationalReplacementCharsets);
-        RefreshActiveCharset();
+        Designate(mode, charsetId, ninetySix: false);
     }
 
     /// <summary>
@@ -732,16 +730,34 @@ public partial class InputHandler
     /// </remarks>
     private void SetNinetySixCharset(CharsetMode mode, string charsetId)
     {
-        _charsetIds[mode] = charsetId;
-        _charsets[mode] = Charsets.ASCII;
+        Designate(mode, charsetId, ninetySix: true);
+    }
+
+    private void Designate(CharsetMode mode, string charsetId, bool ninetySix)
+    {
+        var designation = (charsetId, ninetySix);
+        _charsetIds[mode] = designation;
+        _charsets[mode] = Resolve(designation);
         RefreshActiveCharset();
     }
+
+    /// <summary>
+    /// The table a designation resolves to NOW -- which depends on DECNRCM, and so is asked
+    /// again every time that mode moves rather than being decided once at designation time.
+    /// </summary>
+    private Dictionary<char, string>? Resolve((string Id, bool NinetySix) designation) =>
+        // The 96-set space has its own identifiers, and only ASCII-transparent members: routing
+        // one through the 94-set lookup is what turns a Latin-1 designation into the UK set.
+        // DECNRCM does not reach here either -- the national replacement sets are all 94-set.
+        designation.NinetySix
+            ? Charsets.ASCII
+            : Charsets.GetCharset(designation.Id, _terminal.NationalReplacementCharsets);
 
     /// <summary>Re-resolves every designation, for when DECNRCM changes under them.</summary>
     internal void RefreshDesignatedCharsets()
     {
         foreach (var mode in _charsetIds.Keys.ToList())
-            _charsets[mode] = Charsets.GetCharset(_charsetIds[mode], _terminal.NationalReplacementCharsets);
+            _charsets[mode] = Resolve(_charsetIds[mode]);
 
         RefreshActiveCharset();
     }

@@ -21,6 +21,11 @@ public class VtTestBehaviourTests
 {
     private const string Esc = "\u001b";
 
+    // Written as escapes rather than as the bytes themselves: a literal control character in a
+    // source file survives nothing that touches the file on the way here.
+    private const string ShiftOut = "\u000e";                   // SO, invokes G1 into GL
+    private const string ShiftIn = "\u000f";                    // SI, back to G0
+
     private static Terminal Sized(int cols = 40, int rows = 6) =>
         new(new TerminalOptions { Cols = cols, Rows = rows });
 
@@ -294,7 +299,47 @@ public class VtTestBehaviourTests
         Assert.Equal("£@[", uk.GetLine(0));
 
         var latin1 = Sized(30, 3);
-        latin1.Write($"{Esc}-A#@[");
+        latin1.Write($"{Esc}-A{ShiftOut}#@[{ShiftIn}");
         Assert.Equal("#@[", latin1.GetLine(0));
+    }
+
+    /// <summary>
+    /// A 96-set designation survives DECNRCM moving under it.
+    /// </summary>
+    /// <remarks>
+    /// DECNRCM re-resolves every designation, because a national set means one thing with the mode
+    /// set and ASCII without it. That re-resolution has to know which SPACE each identifier came
+    /// from, and it did not: 'A' designated as a 96-set is Latin-1 and stays Latin-1 however the
+    /// mode moves, while re-asking the 94-set lookup for it answers United Kingdom. So the
+    /// collision the 96-set designators were given their own space to avoid came back the first
+    /// time DECNRCM moved -- and stayed, because resetting the mode re-resolves it the same wrong
+    /// way.
+    ///
+    /// <para>The national replacement sets are all 94-set, so there is no DECNRCM state in which a
+    /// 96-set designation means anything else; both directions are asserted rather than only the
+    /// one that was broken. The French half is here so the two cannot agree for the boring reason
+    /// that nothing is being re-resolved at all.</para>
+    /// </remarks>
+    [Fact]
+    public void A_96_set_designation_is_not_re_resolved_as_a_94_set()
+    {
+        var enabled = Sized(30, 3);
+        enabled.Write($"{Esc}-A");
+        enabled.Write($"{Esc}[?42h");                        // DECNRCM set, after the designation
+        enabled.Write($"{ShiftOut}#@[{ShiftIn}");
+        Assert.Equal("#@[", enabled.GetLine(0));
+
+        var andBack = Sized(30, 3);
+        andBack.Write($"{Esc}-A");
+        andBack.Write($"{Esc}[?42h");
+        andBack.Write($"{Esc}[?42l");                        // and reset again
+        andBack.Write($"{ShiftOut}#@[{ShiftIn}");
+        Assert.Equal("#@[", andBack.GetLine(0));
+
+        var french = Sized(30, 3);
+        french.Write($"{Esc})R");                            // French: a 94-set that DOES move
+        french.Write($"{Esc}[?42h");
+        french.Write($"{ShiftOut}#@[{ShiftIn}");
+        Assert.Equal("£à°", french.GetLine(0));
     }
 }

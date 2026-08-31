@@ -44,8 +44,13 @@ public partial class InputHandler
     /// Kept alongside the resolved tables because a designation outlives its resolution: a
     /// national set resolves to ASCII while DECNRCM is reset and to itself once it is set, and
     /// the program that designated it does not designate again when the mode changes.
+    ///
+    /// <para>The SPACE the identifier came from is kept with it, because the identifier alone does
+    /// not say which set it names: 'A' is the United Kingdom set after <c>ESC (</c> and ISO Latin-1
+    /// after <c>ESC -</c>. Re-resolving without it turns a Latin-1 designation into UK the first
+    /// time DECNRCM moves.</para>
     /// </remarks>
-    private readonly Dictionary<CharsetMode, string> _charsetIds = new();
+    private readonly Dictionary<CharsetMode, (string Id, bool NinetySix)> _charsetIds = new();
 
     /// <summary>
     /// The set a SINGLE shift has invoked for the next printed character, or null.
