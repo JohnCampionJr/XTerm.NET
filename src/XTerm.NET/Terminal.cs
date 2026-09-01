@@ -103,9 +103,54 @@ public class Terminal : IDisposable
     // back exactly, or a program that writes a status message loses its place mid-screen.
     private int _cursorXBeforeStatus, _cursorYBeforeStatus;
 
+    private void EnsureStatusBuffer()
+    {
+        _statusBuffer ??= new Buffer.TerminalBuffer(Cols, 1, 0, hasScrollback: false);
+        _statusBuffer.Resize(Cols, 1);
+    }
+
+    /// <summary>Puts the cursor back on the display the status line borrowed it from.</summary>
+    /// <remarks>
+    /// Through the RAW move plus the flag rather than SetCursor, which clamps and clears pending
+    /// wrap. The guard is for the zero-size buffer Resize explicitly allows: a host reports zero
+    /// while its control exists but has not been laid out, and SetCursor's clamp is
+    /// <c>Clamp(x, 0, Cols - 1)</c>, which throws when the maximum is negative.
+    /// </remarks>
+    private void RestoreDisplayCursor()
+    {
+        if (Cols <= 0 || Rows <= 0)
+            return;
+
+        // Clamped to Cols, not Cols - 1. The phantom column past the last cell is a real cursor
+        // position and the one the print path tests to decide whether to wrap; clamping it onto the
+        // last cell turns a line about to wrap into one that overwrites its own last character.
+        // SetCursorRaw derives the flag from that column, which is why it is not set separately.
+        _buffer.SetCursorRaw(Math.Clamp(_cursorXBeforeStatus, 0, Cols),
+                             Math.Clamp(_cursorYBeforeStatus, 0, Rows - 1));
+    }
+
     internal void RaiseStatusLineChanged() => StatusLineChanged?.Invoke(this, EventArgs.Empty);
 
     private bool _statusLineDirty;
+    private bool _parsing;
+
+    /// <summary>Records a status-line change, to be announced at the end of the batch.</summary>
+    /// <remarks>
+    /// Outside a batch -- a host calling the API directly -- there is no end to wait for, so the
+    /// event goes out immediately. Inside one it is held, which is what makes the batching real
+    /// rather than documented: a single write carrying DECSSDT, DECSASD and a message used to emit
+    /// three events, one per setter plus one for the flush.
+    /// </remarks>
+    private void NoteStatusLineChanged()
+    {
+        if (_parsing)
+        {
+            _statusLineDirty = true;
+            return;
+        }
+
+        RaiseStatusLineChanged();
+    }
 
     /// <summary>Announces a status-line change, at most once for the batch just parsed.</summary>
     /// <remarks>
@@ -161,7 +206,7 @@ public class Terminal : IDisposable
             _statusBuffer.Resize(Cols, 1);
         }
 
-        RaiseStatusLineChanged();
+        NoteStatusLineChanged();
     }
 
     /// <summary>
@@ -188,25 +233,31 @@ public class Terminal : IDisposable
 
         if (wantStatus)
         {
+            // X is saved as it stands, phantom column included: that column is what the print path
+            // reads to decide whether the next character wraps, so rounding it off here would turn
+            // a line about to wrap into one that overwrites its own last character.
             _cursorXBeforeStatus = _buffer.X;
             _cursorYBeforeStatus = _buffer.Y;
 
-            _statusBuffer ??= new Buffer.TerminalBuffer(Cols, 1, 0, hasScrollback: false);
-            _statusBuffer.Resize(Cols, 1);
+            EnsureStatusBuffer();
             _statusLineActive = true;
-            _buffer = _statusBuffer;
+            _buffer = _statusBuffer!;
             _inputHandler.SetBuffer(_buffer);
-            _buffer.SetCursor(0, 0);
+
+            // NOT homed. Each display keeps its own cursor, and that has to mean across repeated
+            // selections too: a program that writes half a status message, goes back to the screen
+            // and returns would otherwise start again at column one and overwrite what it wrote.
+            // The buffer is created at (0, 0), which is where a first selection finds it.
         }
         else
         {
             _statusLineActive = false;
             _buffer = _usingAltBuffer ? _altBuffer! : _normalBuffer!;
             _inputHandler.SetBuffer(_buffer);
-            _buffer.SetCursor(_cursorXBeforeStatus, _cursorYBeforeStatus);
+            RestoreDisplayCursor();
         }
 
-        RaiseStatusLineChanged();
+        NoteStatusLineChanged();
     }
 
     /// <summary>
@@ -835,7 +886,10 @@ public class Terminal : IDisposable
         if (_disposed || string.IsNullOrEmpty(data))
             return;
 
-        _parser.Parse(data);
+        _parsing = true;
+        try { _parser.Parse(data); }
+        finally { _parsing = false; }
+
         FlushStatusLineChange();
     }
 
@@ -853,7 +907,10 @@ public class Terminal : IDisposable
         if (_disposed || data.IsEmpty)
             return;
 
-        _parser.Parse(data);
+        _parsing = true;
+        try { _parser.Parse(data); }
+        finally { _parsing = false; }
+
         FlushStatusLineChange();
     }
 
@@ -1913,6 +1970,17 @@ public class Terminal : IDisposable
         var shapeBefore = PointerShape;
         // ONE cursor, two screens: xterm shares the cursor across the switch, which is what lets
         // DECSET 47 flip screens mid-drawing without teleporting the pen.
+        // Switching screens ends the status line's turn with the cursor. Holding the status row as
+        // the write target across the switch is not available: the switch's own work -- 1049's
+        // erase among it -- runs through the input handler's buffer, so leaving that pointed at a
+        // one-row status buffer sends a full-screen erase off the end of it. Handing the cursor
+        // back first keeps one rule: the status line is selected, or the screen is.
+        //
+        // The ROW is untouched. Only the selection ends, so a program that switches screens and
+        // comes back finds its status message still there.
+        if (_statusLineActive)
+            SetActiveStatusDisplay(0);
+
         var x = _buffer.X;
         var y = _buffer.Y;
         _buffer = _altBuffer!;
@@ -1938,6 +2006,17 @@ public class Terminal : IDisposable
             return;
 
         var shapeBefore = PointerShape;
+        // Switching screens ends the status line's turn with the cursor. Holding the status row as
+        // the write target across the switch is not available: the switch's own work -- 1049's
+        // erase among it -- runs through the input handler's buffer, so leaving that pointed at a
+        // one-row status buffer sends a full-screen erase off the end of it. Handing the cursor
+        // back first keeps one rule: the status line is selected, or the screen is.
+        //
+        // The ROW is untouched. Only the selection ends, so a program that switches screens and
+        // comes back finds its status message still there.
+        if (_statusLineActive)
+            SetActiveStatusDisplay(0);
+
         var x = _buffer.X;
         var y = _buffer.Y;
         _buffer = _normalBuffer!;

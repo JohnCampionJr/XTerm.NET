@@ -184,4 +184,144 @@ public class StatusLineTests
         Assert.Equal(0, terminal.StatusDisplayType);
         Assert.False(terminal.StatusLineActive);
     }
+
+    // ------------------------------------------------ from the review on the first version
+
+    [Fact]
+    public void The_status_line_keeps_its_own_cursor_across_selections()
+    {
+        // "Each display has its own cursor" has to hold for the SECOND selection too. Homing on
+        // every DECSASD 1 meant a program writing half a message, stepping back to the screen and
+        // returning began again at column one and overwrote what it had written.
+        var terminal = Fresh();
+        terminal.Write(Type(2));
+
+        terminal.Write(Select(1) + "abc" + Select(0));
+        terminal.Write(Select(1) + "def" + Select(0));
+
+        Assert.Equal("abcdef", StatusText(terminal));
+    }
+
+    [Fact]
+    public void The_displays_pending_wrap_survives_a_trip_to_the_status_line()
+    {
+        // A cursor at the phantom column past the last cell is a different state from one clamped
+        // onto that cell. SetCursor clears the flag, so restoring through it turned a line that was
+        // about to wrap into one that overwrote its own last character.
+        var terminal = Fresh();
+        var width = terminal.Cols;
+
+        terminal.Write(new string('x', width));
+        Assert.True(terminal.Buffer.PendingWrap, "sanity: the cursor is at the phantom column");
+
+        terminal.Write(Type(2) + Select(1) + "status" + Select(0));
+
+        terminal.Write("Z");
+
+        Assert.Equal(new string('x', width), Row(terminal, 0));
+        Assert.Equal("Z", Row(terminal, 1));
+    }
+
+    [Fact]
+    public void Switching_screens_ends_the_status_lines_turn_with_the_cursor()
+    {
+        // The first version reassigned the write target here, so the program's next characters went
+        // to the alternate screen while DECRQSS still reported the status line selected. Holding
+        // the status row instead is not available: the switch's own work -- 1049's erase among it
+        // -- runs through the input handler's buffer, and a full-screen erase against a one-row
+        // buffer indexes off the end of it. So the selection ends, and one rule holds: the status
+        // line is selected, or the screen is.
+        var terminal = Fresh();
+        terminal.Write(Type(2) + Select(1) + "message");
+
+        terminal.Write(Csi("?1049h"));
+
+        Assert.False(terminal.StatusLineActive);
+
+        terminal.Write("on the alternate screen");
+        Assert.Equal("on the alternate screen", Row(terminal, 0));
+
+        // The ROW survives -- only the selection ended.
+        Assert.Equal("message", StatusText(terminal));
+    }
+
+    [Fact]
+    public void The_status_line_can_be_selected_again_from_the_alternate_screen()
+    {
+        var terminal = Fresh();
+        terminal.Write(Type(2) + Select(1) + "message" + Select(0));
+        terminal.Write(Csi("?1049h"));
+
+        terminal.Write(Select(1) + "!" + Select(0));
+
+        Assert.Equal("message!", StatusText(terminal));
+
+        terminal.Write("screen");
+        Assert.Equal("screen", Row(terminal, 0));
+    }
+
+    [Fact]
+    public void DECRQSS_stops_reporting_a_status_line_that_RIS_undid()
+    {
+        // The controls were cached for the report and nothing reset the cache, so after RIS the
+        // terminal said the status line was still selected and still host-writable. A program that
+        // asks is then told yes about a row that no longer exists -- the same lie in a new place.
+        var terminal = Fresh();
+        var replies = new List<string>();
+        terminal.DataReceived += (_, e) => replies.Add(e.Data);
+
+        terminal.Write(Type(2) + Select(1));
+        terminal.Write("\u001bc");
+
+        replies.Clear();
+        terminal.Write("\u001bP$q$}\u001b\\");
+        terminal.Write("\u001bP$q$~\u001b\\");
+
+        Assert.All(replies, r => Assert.DoesNotContain("1$}", r));
+        Assert.All(replies, r => Assert.DoesNotContain("2$~", r));
+    }
+
+    [Fact]
+    public void One_event_for_a_batch_that_selects_and_writes_together()
+    {
+        // The claim the first version made in a comment and did not keep: the two setters each
+        // raised synchronously and the flush raised again, so this emitted three.
+        var terminal = Fresh();
+
+        var changes = 0;
+        terminal.StatusLineChanged += (_, _) => changes++;
+
+        terminal.Write(Type(2) + Select(1) + "hello");
+
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
+    public void A_host_calling_the_api_directly_is_told_straight_away()
+    {
+        // Outside a batch there is no end to wait for.
+        var terminal = Fresh();
+
+        var changes = 0;
+        terminal.StatusLineChanged += (_, _) => changes++;
+
+        terminal.SetStatusDisplayType(2);
+
+        Assert.Equal(1, changes);
+    }
+
+    [Fact]
+    public void A_zero_sized_terminal_can_still_leave_the_status_line()
+    {
+        // Resize explicitly allows zero -- a host reports it while its control exists but has not
+        // been laid out. SetCursor's clamp is Clamp(x, 0, Cols - 1), which throws when Cols is 0.
+        var terminal = Fresh();
+        terminal.Write(Type(2) + Select(1));
+
+        terminal.Resize(0, 0);
+
+        terminal.Write(Select(0));
+
+        Assert.False(terminal.StatusLineActive);
+    }
 }

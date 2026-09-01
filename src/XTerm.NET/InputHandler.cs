@@ -761,15 +761,11 @@ public partial class InputHandler
                 // rather than the requested one is the point: DECSASD 1 is refused unless a
                 // host-writable status line exists, and reporting back a selection that was
                 // refused is what told a program its text had somewhere to go when it did not.
-                _activeStatusDisplay = parameters.GetParam(0, 0);
-                _terminal.SetActiveStatusDisplay(_activeStatusDisplay);
-                _activeStatusDisplay = _terminal.StatusLineActive ? 1 : 0;
+                _terminal.SetActiveStatusDisplay(parameters.GetParam(0, 0));
                 break;
 
             case CsiCommand.SelectStatusDisplayType:
-                _statusDisplayType = parameters.GetParam(0, 0);
-                _terminal.SetStatusDisplayType(_statusDisplayType);
-                _statusDisplayType = _terminal.StatusDisplayType;
+                _terminal.SetStatusDisplayType(parameters.GetParam(0, 0));
                 break;
 
             case CsiCommand.RequestTerminalParameters:
