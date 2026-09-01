@@ -63,6 +63,152 @@ public class Terminal : IDisposable
     /// <summary>DECCOLM's current answer: whether the screen is in 132-column mode.</summary>
     public bool ColumnMode132 { get; private set; }
 
+    // ---------------------------------------------------------------- DEC status line
+
+    /// <summary>The status line's single row, or <see langword="null"/> when there is not one.</summary>
+    /// <remarks>
+    /// <para>Present only while DECSSDT has selected a type that HAS a row -- host-writable (2), and
+    /// the indicator (1), whose contents the terminal would own. Null for type 0, which is the
+    /// default and means the display has no status line at all.</para>
+    /// <para>A host draws this below the text area. It is deliberately not one of the terminal's
+    /// <see cref="Rows"/>: an application told it has N rows must have N rows it can write to, and
+    /// every size report is computed from that count.</para>
+    /// </remarks>
+    public Buffer.BufferLine? StatusLine => _statusDisplayType == 0 ? null : _statusBuffer?.GetLine(0);
+
+    /// <summary>
+    /// DECSSDT's current answer: 0 none, 1 indicator, 2 host-writable.
+    /// </summary>
+    public int StatusDisplayType => _statusDisplayType;
+
+    /// <summary>
+    /// DECSASD's current answer: whether writes are going to the status line rather than the screen.
+    /// </summary>
+    public bool StatusLineActive => _statusLineActive;
+
+    /// <summary>Raised when the status line's contents, type or cursor change.</summary>
+    /// <remarks>
+    /// Shaped like <see cref="TitleChanged"/> because a host consumes it the same way: something
+    /// small changed that only the host can show. Raised on the write path, so a host that repaints
+    /// on it repaints once per batch rather than per character.
+    /// </remarks>
+    public event EventHandler? StatusLineChanged;
+
+    private Buffer.TerminalBuffer? _statusBuffer;
+    private int _statusDisplayType;
+    private bool _statusLineActive;
+
+    // Where the cursor was on the ordinary display while the status line has it. DEC gives each
+    // display its own cursor: DECSASD 1 must not move the application's, and DECSASD 0 must put it
+    // back exactly, or a program that writes a status message loses its place mid-screen.
+    private int _cursorXBeforeStatus, _cursorYBeforeStatus;
+
+    internal void RaiseStatusLineChanged() => StatusLineChanged?.Invoke(this, EventArgs.Empty);
+
+    private bool _statusLineDirty;
+
+    /// <summary>Announces a status-line change, at most once for the batch just parsed.</summary>
+    /// <remarks>
+    /// <para>Asked HERE rather than on the print path, which is the hottest code in the parser: a
+    /// per-character test for a state that is almost never on would pay a compare for every
+    /// character of ordinary output to catch a status message that arrives once a second. The
+    /// batch boundary asks the same question once.</para>
+    /// <para>Being selected is enough to count as changed. While DECSASD has the status line, every
+    /// printed character goes into it by definition -- so a batch parsed in that state either wrote
+    /// to the row or was the batch that selected it, and both are things a host wants to repaint
+    /// for. The cost of not tracking it precisely is a repaint of an unchanged row; the cost of
+    /// tracking it precisely is paid by every character the terminal ever prints.</para>
+    /// </remarks>
+    private void FlushStatusLineChange()
+    {
+        if (!_statusLineDirty && !_statusLineActive)
+            return;
+
+        _statusLineDirty = false;
+        RaiseStatusLineChanged();
+    }
+
+    /// <summary>
+    /// DECSSDT ($ ~). Chooses whether there is a status line and who owns it.
+    /// </summary>
+    /// <remarks>
+    /// <para>Type 0 removes it. Leaving the status line SELECTED while removing its row would leave
+    /// writes going nowhere with no way back, so this returns the cursor to the main display first
+    /// -- the same care DECSASD 0 takes.</para>
+    /// <para>Type 1 is the indicator: the terminal owns the contents, not the application. The row
+    /// exists so a host can show something there, and writes are not routed to it.</para>
+    /// </remarks>
+    public void SetStatusDisplayType(int type)
+    {
+        if (type is < 0 or > 2)
+            return;
+
+        if (type == _statusDisplayType)
+            return;
+
+        if (_statusLineActive)
+            SetActiveStatusDisplay(0);
+
+        _statusDisplayType = type;
+
+        if (type == 0)
+        {
+            _statusBuffer = null;
+        }
+        else
+        {
+            _statusBuffer ??= new Buffer.TerminalBuffer(Cols, 1, 0, hasScrollback: false);
+            _statusBuffer.Resize(Cols, 1);
+        }
+
+        RaiseStatusLineChanged();
+    }
+
+    /// <summary>
+    /// DECSASD ($ }). Sends what is written next to the status line (1) or the main display (0).
+    /// </summary>
+    /// <remarks>
+    /// <para>Refused unless DECSSDT has selected the HOST-WRITABLE type. Type 0 has no row, and the
+    /// indicator's contents belong to the terminal -- honouring the selection for either would put
+    /// the application's text somewhere it can never be seen, which is the failure this whole
+    /// control exists to stop: text meant for a status line landing in the middle of the screen.</para>
+    /// <para>The buffer swap is the alternate screen's, for the same reason: the input handler
+    /// writes through whichever buffer it was given, so redirecting output is a matter of giving it
+    /// a different one rather than teaching every write about status lines.</para>
+    /// </remarks>
+    public void SetActiveStatusDisplay(int display)
+    {
+        var wantStatus = display == 1;
+
+        if (wantStatus && _statusDisplayType != 2)
+            return;
+
+        if (wantStatus == _statusLineActive)
+            return;
+
+        if (wantStatus)
+        {
+            _cursorXBeforeStatus = _buffer.X;
+            _cursorYBeforeStatus = _buffer.Y;
+
+            _statusBuffer ??= new Buffer.TerminalBuffer(Cols, 1, 0, hasScrollback: false);
+            _statusBuffer.Resize(Cols, 1);
+            _statusLineActive = true;
+            _buffer = _statusBuffer;
+            _inputHandler.SetBuffer(_buffer);
+            _buffer.SetCursor(0, 0);
+        }
+        else
+        {
+            _statusLineActive = false;
+            _buffer = _usingAltBuffer ? _altBuffer! : _normalBuffer!;
+            _inputHandler.SetBuffer(_buffer);
+            _buffer.SetCursor(_cursorXBeforeStatus, _cursorYBeforeStatus);
+        }
+
+        RaiseStatusLineChanged();
+    }
+
     /// <summary>
     /// DECSET/DECRST 3. Switching clears the screen, homes the cursor and resets the margins --
     /// the DEC behaviour programs rely on for a clean slate -- and resizes the grid to 132 or 80
@@ -690,6 +836,7 @@ public class Terminal : IDisposable
             return;
 
         _parser.Parse(data);
+        FlushStatusLineChange();
     }
 
     /// <summary>
@@ -707,6 +854,7 @@ public class Terminal : IDisposable
             return;
 
         _parser.Parse(data);
+        FlushStatusLineChange();
     }
 
     /// <summary>
@@ -824,6 +972,11 @@ public class Terminal : IDisposable
         _normalBuffer?.Resize(cols, rows);
         _altBuffer?.Resize(cols, rows);
 
+        // One row always, only ever as wide as the screen. It is not part of the grid, so the row
+        // count never reaches it -- but a status line narrower than the display would clip its own
+        // text after a widen, and wider would hold text nothing can show.
+        _statusBuffer?.Resize(cols, 1);
+
         Resized?.Invoke(this, new TerminalEvents.ResizeEventArgs(cols, rows));
 
         // After the host has been told, not before. The spec requires the report to follow the
@@ -937,6 +1090,12 @@ public class Terminal : IDisposable
         ResetTabStops();
 
         var shapeBefore = PointerShape;
+
+        // The status line goes with everything else RIS undoes: its type, its selection and its
+        // contents. Returning the cursor to the main display FIRST, so the reset below is applied
+        // to the screen rather than to a row that is about to stop existing.
+        SetActiveStatusDisplay(0);
+        SetStatusDisplayType(0);
 
         // Reset to normal buffer
         if (_usingAltBuffer)
