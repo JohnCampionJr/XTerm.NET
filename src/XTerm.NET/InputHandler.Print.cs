@@ -756,10 +756,29 @@ public partial class InputHandler
     /// <summary>Re-resolves every designation, for when DECNRCM changes under them.</summary>
     internal void RefreshDesignatedCharsets()
     {
-        foreach (var mode in _charsetIds.Keys.ToList())
+        foreach (var mode in GSets)
             _charsets[mode] = Resolve(_charsetIds[mode]);
 
         RefreshActiveCharset();
+    }
+
+    /// <summary>The designation a G-set is holding, for DECSC to save.</summary>
+    internal (string Id, bool NinetySix) DesignationOf(CharsetMode mode) => _charsetIds[mode];
+
+    /// <summary>
+    /// Puts a saved designation back, for DECRC, resolving it against the mode state as it is NOW.
+    /// </summary>
+    /// <remarks>
+    /// The DESIGNATION is what DECSC saves, not the table it had resolved to. Saving the table
+    /// restores the right glyphs and leaves the identifier behind it stale, so the next DECNRCM
+    /// re-resolves the restored slot from whatever was designated after the save -- and a program
+    /// doing ESC ( 0, DECSC, ESC ( R, DECRC gets its line drawing back and then loses it again the
+    /// first time the mode moves, which is further from the fault than any test looks.
+    /// </remarks>
+    internal void RestoreDesignation(CharsetMode mode, (string Id, bool NinetySix) designation)
+    {
+        _charsetIds[mode] = designation;
+        _charsets[mode] = Resolve(designation);
     }
 
     /// <summary>
@@ -815,14 +834,20 @@ public partial class InputHandler
     /// </summary>
     public void ResetCharsets()
     {
-        _charsetIds.Clear();
-        _charsets[CharsetMode.G0] = Charsets.ASCII;
-        _charsets[CharsetMode.G1] = Charsets.ASCII;
-        _charsets[CharsetMode.G2] = Charsets.ASCII;
-        _charsets[CharsetMode.G3] = Charsets.ASCII;
+        foreach (var mode in GSets)
+        {
+            // Seeded rather than cleared: US ASCII IS the designation every slot starts with, and
+            // saying so keeps every walk over the four total.
+            _charsetIds[mode] = (UsAsciiId, NinetySix: false);
+            _charsets[mode] = Charsets.ASCII;
+        }
+
         _currentCharset = CharsetMode.G0;
         RefreshActiveCharset();
     }
+
+    /// <summary>The identifier US ASCII is designated by, which is where every G-set starts.</summary>
+    private const string UsAsciiId = "B";
 
     /// <summary>
     /// Prints the payload of an OSC 66 whose metadata could not be parsed, as ordinary text.

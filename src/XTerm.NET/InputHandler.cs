@@ -49,8 +49,16 @@ public partial class InputHandler
     /// not say which set it names: 'A' is the United Kingdom set after <c>ESC (</c> and ISO Latin-1
     /// after <c>ESC -</c>. Re-resolving without it turns a Latin-1 designation into UK the first
     /// time DECNRCM moves.</para>
+    ///
+    /// <para>All four slots are always present, seeded to US ASCII, so a designation is a value
+    /// rather than a value-or-absent. Both DECRC and DECNRCM walk every slot, and "never
+    /// designated" and "designated B" mean the same thing to both.</para>
     /// </remarks>
     private readonly Dictionary<CharsetMode, (string Id, bool NinetySix)> _charsetIds = new();
+
+    /// <summary>The four G-sets, for the walks that touch all of them.</summary>
+    private static readonly CharsetMode[] GSets =
+        [CharsetMode.G0, CharsetMode.G1, CharsetMode.G2, CharsetMode.G3];
 
     /// <summary>
     /// The set a SINGLE shift has invoked for the next printed character, or null.
@@ -115,8 +123,8 @@ public partial class InputHandler
             { CharsetMode.G3, Charsets.ASCII }
         };
 
-        _currentCharset = CharsetMode.G0; // G0 is active by default
-        RefreshActiveCharset();
+        // And the designations behind them, which ResetCharsets seeds alongside the tables.
+        ResetCharsets();
     }
 
     /// <summary>

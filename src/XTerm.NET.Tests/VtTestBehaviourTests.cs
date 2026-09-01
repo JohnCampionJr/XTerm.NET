@@ -295,7 +295,7 @@ public class VtTestBehaviourTests
     public void The_96_character_set_designators_are_a_separate_space()
     {
         var uk = Sized(30, 3);
-        uk.Write($"{Esc}(A#@[");
+        uk.Write($"{Esc})A{ShiftOut}#@[{ShiftIn}");
         Assert.Equal("£@[", uk.GetLine(0));
 
         var latin1 = Sized(30, 3);
@@ -341,5 +341,44 @@ public class VtTestBehaviourTests
         french.Write($"{Esc}[?42h");
         french.Write($"{ShiftOut}#@[{ShiftIn}");
         Assert.Equal("£à°", french.GetLine(0));
+    }
+
+    /// <summary>
+    /// DECRC puts back the DESIGNATION, so a later DECNRCM re-resolves what was restored.
+    /// </summary>
+    /// <remarks>
+    /// DECSC saved the table each G-set had resolved to rather than what it was designated as, so
+    /// the identifier behind a restored slot stayed as whatever had been designated AFTER the
+    /// save. The screen was right and the state behind it was not, which is why this needs a mode
+    /// change to show at all: the next DECNRCM re-resolves the restored slot into the wrong set,
+    /// arbitrarily far from the DECRC that caused it.
+    ///
+    /// <para>Both spaces, because they fail differently. The 94-set pair loses line drawing to a
+    /// national set -- ESC ( 0, DECSC, ESC ( R, DECRC draws borders until the mode moves and then
+    /// draws letters. The 96-set pair is the identifier collision again: Latin-1 restored, then
+    /// re-resolved as the United Kingdom set.</para>
+    /// </remarks>
+    [Fact]
+    public void DECRC_restores_what_was_designated_not_what_it_resolved_to()
+    {
+        var graphics = Sized(30, 3);
+        graphics.Write($"{Esc})0{Esc}7{Esc})R{Esc}8");        // graphics, DECSC, French, DECRC
+        graphics.Write($"{Esc}[?42h");                        // DECNRCM, which re-resolves
+        graphics.Write($"{ShiftOut}qqq{ShiftIn}");
+        Assert.Equal("───", graphics.GetLine(0));
+
+        var latin1 = Sized(30, 3);
+        latin1.Write($"{Esc}-A{Esc}7{Esc})A{Esc}8");          // Latin-1, DECSC, UK, DECRC
+        latin1.Write($"{Esc}[?42h");
+        latin1.Write($"{ShiftOut}#@[{ShiftIn}");
+        Assert.Equal("#@[", latin1.GetLine(0));
+
+        // And the restore itself, which was never the broken half: without the mode change both
+        // of the above already came back right, and a test that stopped there would pass on the
+        // defect.
+        var immediate = Sized(30, 3);
+        immediate.Write($"{Esc})0{Esc}7{Esc})R{Esc}8");
+        immediate.Write($"{ShiftOut}qqq{ShiftIn}");
+        Assert.Equal("───", immediate.GetLine(0));
     }
 }
