@@ -2170,6 +2170,7 @@ public class Terminal : IDisposable
         SynchronizedOutputChanged = null;
         BufferChanged = null;
         TitleChanged = null;
+        StatusLineChanged = null;
         BellRang = null;
         Resized = null;
         Scrolled = null;
