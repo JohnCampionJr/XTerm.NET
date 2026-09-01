@@ -493,5 +493,17 @@ public class VtTestBehaviourTests
         var once = Sized(20, 3);
         once.Write($"{Esc}*0{Esc}N" + "qq");
         Assert.Equal("─q", once.GetLine(0));
+
+        // A SUPPLEMENTARY character spends it too. It reaches Print as two UTF-16 code units,
+        // and the clear that spends the shift used to sit inside the single-code-unit branch --
+        // so the shift survived the emoji and landed on whatever came next. That does not skip
+        // the shift, it MOVES it: the q below drew as a box-drawing glyph on a terminal whose G2
+        // the program had finished with, the same class of bug as the RIS case above.
+        //
+        // The emoji itself is untranslated, because a 94-character set has no entry outside the
+        // BMP -- spending the shift and translating through it are different things.
+        var supplementary = Sized(20, 3);
+        supplementary.Write($"{Esc}*0{Esc}N" + "\U0001F600q");
+        Assert.Equal("\U0001F600q", supplementary.GetLine(0));
     }
 }

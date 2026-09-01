@@ -404,6 +404,20 @@ public partial class InputHandler
                 translatedData = Charsets.TranslateChar(data[0], _activeCharset);
             }
         }
+        else if (_singleShift is not null)
+        {
+            // A supplementary character is a graphic character too, and spends the shift like any
+            // other -- it just has nothing to spend it ON, because a 94- or 96-character set has no
+            // entry outside the BMP and TranslateChar takes a single code unit. Leaving the shift
+            // standing through it does not skip the shift, it MOVES it: the character after the
+            // emoji gets translated instead, so `SS2 <emoji> q` drew q as a box-drawing glyph on a
+            // terminal whose G2 the program had finished with.
+            //
+            // Second, after the length test rather than before it, because that is the branch every
+            // ordinary character takes -- see CLAUDE.md's first section. This one runs only for a
+            // surrogate pair, and only to clear a field.
+            _singleShift = null;
+        }
 
         var width = GetStringCellWidth(translatedData);
 
