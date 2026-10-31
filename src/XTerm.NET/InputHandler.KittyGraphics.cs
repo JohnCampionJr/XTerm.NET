@@ -118,8 +118,8 @@ public partial class InputHandler
         if (!_terminal.Options.KittyGraphicsEnabled)
             return false;
 
-        // Mode 0 is a palette index; only a direct colour carries an id.
-        if (_curAttr.GetFgColorMode() == 0)
+        // Only a direct colour carries an id; either palette is an ordinary coloured character.
+        if (_curAttr.GetFgColorMode() != (int)ColorMode.RGB)
             return false;
 
         var imageId = (uint)_curAttr.GetFgColor();

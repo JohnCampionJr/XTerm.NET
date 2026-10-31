@@ -109,7 +109,7 @@ public class StyledUnderlineTests
 
         Assert.True(FirstCell(terminal).Attributes.TryGetUnderlineColor(out var color, out var mode));
         Assert.Equal(196, color);
-        Assert.Equal(0, mode);
+        Assert.Equal((int)ColorMode.Palette256, mode);
     }
 
     [Fact]

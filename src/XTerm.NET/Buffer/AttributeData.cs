@@ -128,9 +128,44 @@ public struct AttributeData : IEquatable<AttributeData>
 
     public int GetFgColor() => Fg & 0x1FFFFFF;
     public int GetBgColor() => Bg & 0x1FFFFFF;
-    
+
+    /// <summary>
+    /// The foreground's stored mode: 0 for a 16-palette index or the default (colour 256), 1 for
+    /// RGB, 2 for a 256-palette index -- the values of <see cref="Common.ColorMode"/>.
+    /// </summary>
+    /// <remarks>
+    /// Before 256-palette indexes had a mode of their own they were stored as 0, so a host that
+    /// reads 0 as "palette" and anything else as RGB must also read 2 as palette. Matching on
+    /// <see cref="GetFgColorKind"/> avoids the numbers altogether.
+    /// </remarks>
     public int GetFgColorMode() => Fg >> 25;
+
+    /// <summary>
+    /// The background's stored mode, read as <see cref="GetFgColorMode"/> is; the default
+    /// background is colour 257.
+    /// </summary>
     public int GetBgColorMode() => Bg >> 25;
+
+    /// <summary>
+    /// How to read <see cref="GetFgColor"/>, with the default foreground named rather than left
+    /// as colour 256 under mode 0.
+    /// </summary>
+    public readonly Common.ColorMode GetFgColorKind() => KindOf(Fg);
+
+    /// <summary>
+    /// How to read <see cref="GetBgColor"/>, with the default background named rather than left
+    /// as colour 257 under mode 0.
+    /// </summary>
+    public readonly Common.ColorMode GetBgColorKind() => KindOf(Bg);
+
+    // Mode 0 holds the sixteen at 0-15 and the defaults at 256 and 257, so the value says which.
+    private static Common.ColorMode KindOf(int packed)
+    {
+        var mode = packed >> 25;
+        if (mode == (int)Common.ColorMode.Palette16 && (packed & 0x1FFFFFF) >= Common.ColorPalette.Size)
+            return Common.ColorMode.Default;
+        return (Common.ColorMode)mode;
+    }
 
     public void SetFgColor(int color, int mode = 0)
     {

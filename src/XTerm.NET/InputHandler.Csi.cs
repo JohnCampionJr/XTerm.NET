@@ -132,10 +132,16 @@ public partial class InputHandler
         // Foreground colour
         var fgMode = attr.GetFgColorMode();
         var fg = attr.GetFgColor();
-        if (fgMode == 1)
+        if (fgMode == (int)ColorMode.RGB)
         {
             // RGB truecolor
             parts.Add($"38;2;{(fg >> 16) & 0xFF};{(fg >> 8) & 0xFF};{fg & 0xFF}");
+        }
+        else if (fgMode == (int)ColorMode.Palette256)
+        {
+            // 38;5 even below 16, so the reply replays to the same mode: 31 would come back as a
+            // 16-palette colour, which bold brightens and a 256-palette index is not.
+            parts.Add($"38;5;{fg}");
         }
         else if (fg <= 7)
         {
@@ -154,10 +160,15 @@ public partial class InputHandler
         // Background colour
         var bgMode = attr.GetBgColorMode();
         var bg = attr.GetBgColor();
-        if (bgMode == 1)
+        if (bgMode == (int)ColorMode.RGB)
         {
             // RGB truecolor
             parts.Add($"48;2;{(bg >> 16) & 0xFF};{(bg >> 8) & 0xFF};{bg & 0xFF}");
+        }
+        else if (bgMode == (int)ColorMode.Palette256)
+        {
+            // 48;5 even below 16, so the reply replays to the same mode, as the foreground does.
+            parts.Add($"48;5;{bg}");
         }
         else if (bg <= 7)
         {

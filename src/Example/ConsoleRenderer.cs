@@ -150,6 +150,11 @@ public class ConsoleRenderer
             var b = color & 0xFF;
             return $"38;2;{r};{g};{b}";
         }
+        else if (mode == (int)XTerm.Common.ColorMode.Palette256)
+        {
+            // Kept as 38;5 even below 16, which bold does not brighten.
+            return $"38;5;{color}";
+        }
         else
         {
             // 256 color palette mode
@@ -180,6 +185,11 @@ public class ConsoleRenderer
             var g = (color >> 8) & 0xFF;
             var b = color & 0xFF;
             return $"48;2;{r};{g};{b}";
+        }
+        else if (mode == (int)XTerm.Common.ColorMode.Palette256)
+        {
+            // Kept as 48;5 even below 16, which bold does not brighten.
+            return $"48;5;{color}";
         }
         else
         {
