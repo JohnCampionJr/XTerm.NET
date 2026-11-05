@@ -1,0 +1,15 @@
+src/Iciclecreek.Avalonia.TerminalWindow/TerminalView.Pty.cs
+  ai_agent 1020,1085,1132-1135,1137,1140-1179
+src/Iciclecreek.Avalonia.Terminal.Tests/TestConnections.cs
+  ai_agent 187,192-194,223
+src/Iciclecreek.Avalonia.Terminal.Tests/ExitReportingTests.cs
+  ai_agent 284-528
+src/Iciclecreek.Avalonia.TerminalWindow/TerminalView.cs
+  ai_agent 222-224,228-231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.2",
+  "base_commit_sha": "278eea3a5326888de7ce537e395d54856e70c7dc",
+  "prompts": {}
+}
